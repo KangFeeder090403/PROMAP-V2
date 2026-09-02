@@ -185,10 +185,9 @@ model Division {
   actionPlans ActionPlan[]
 
   // Unik per (companyId, name) HANYA untuk baris aktif — dipasang sebagai
-  // partial unique index lewat SQL di migration, karena Prisma belum
-  // mendukung `WHERE "deletedAt" IS NULL` pada @@unique.
-  // Tanpa partial: nama divisi yang sudah di-soft-delete akan memblokir
-  // pembuatan ulang nama yang sama.
+  // partial unique index lewat SQL manual di migration
+  // 20260902100000_division_partial_unique/migration.sql, karena Prisma
+  // belum mendukung `WHERE "deletedAt" IS NULL` pada @@unique.
   @@index([companyId, deletedAt])
 }
 
