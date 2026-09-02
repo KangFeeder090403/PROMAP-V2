@@ -316,11 +316,13 @@ model Proposal {
   reviewNote  String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
   proposer User @relation(fields: [proposerId], references: [id])
 
   @@index([proposerId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model Notification {

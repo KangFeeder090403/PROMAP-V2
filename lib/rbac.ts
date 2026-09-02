@@ -114,6 +114,34 @@ export function canManageUsers(user: User) {
 }
 
 /**
+ * Scope untuk query model Proposal — via relasi proposer (Proposal tidak
+ * punya companyId/divisionId langsung).
+ */
+export function proposalScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { proposer: { companyId: user.companyId! } }
+  if (user.role === 'MANAGER') return { proposer: { divisionId: user.divisionId } }
+  return { proposerId: user.id }
+}
+
+/** Manager boleh review proposal divisi sendiri, kecuali proposal miliknya sendiri. */
+export function canReviewProposal(
+  user: User,
+  proposal: { proposerId: string },
+  proposerDivisionId: string | null
+) {
+  if (user.role !== 'MANAGER') return false
+  if (user.divisionId !== proposerDivisionId) return false
+  if (proposal.proposerId === user.id) return false
+  return true
+}
+
+/** Hanya proposer sendiri, dan hanya selagi status DRAFT. */
+export function canEditProposal(user: User, proposal: { proposerId: string; status: string }) {
+  return user.id === proposal.proposerId && proposal.status === 'DRAFT'
+}
+
+/**
  * Siapa boleh sentuh UserLabel dan apa efeknya:
  * - SUPER_ADMIN/ADMIN_OPERATIONAL: create/edit/delete, langsung ACTIVE.
  * - MANAGER: hanya boleh usul (POST), status DIPAKSA PENDING di server —
