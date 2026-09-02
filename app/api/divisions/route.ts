@@ -48,6 +48,10 @@ export async function POST(req: Request) {
       if (!body.companyId) {
         return NextResponse.json({ error: 'companyId is required for SUPER_ADMIN' }, { status: 400 })
       }
+      const company = await prisma.company.findUnique({ where: { id: body.companyId } })
+      if (!company || company.deletedAt) {
+        return NextResponse.json({ error: 'Invalid companyId' }, { status: 400 })
+      }
       targetCompanyId = body.companyId
     }
 

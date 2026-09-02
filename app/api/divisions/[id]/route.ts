@@ -33,7 +33,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     // Only SUPER_ADMIN can change companyId
     if (user.role === 'SUPER_ADMIN' && body.companyId !== undefined) {
-       updateData.companyId = body.companyId
+      const company = await prisma.company.findUnique({ where: { id: body.companyId } })
+      if (!company || company.deletedAt) {
+        return NextResponse.json({ error: 'Invalid companyId' }, { status: 400 })
+      }
+      updateData.companyId = body.companyId
     }
 
     const result = await prisma.division.update({
