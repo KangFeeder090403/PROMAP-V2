@@ -72,6 +72,37 @@ export function buildWhereClause(user: User) {
   return { picId: user.id }
 }
 
+/** Scope untuk query model Project */
+export function projectScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
+  // MANAGER + PIC: read-only, terbatas divisi sendiri
+  return { companyId: user.companyId!, divisionId: user.divisionId }
+}
+
+/** Siapa boleh create/edit/delete Project. MANAGER hanya utk divisi sendiri. */
+export function canManageProject(user: User, existingDivisionId?: string | null) {
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') return existingDivisionId === user.divisionId
+  return false
+}
+
+/**
+ * Scope untuk query model Task — CUSTOM, Task tidak punya companyId langsung
+ * (harus lewat relasi division).
+ */
+export function taskScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { division: { companyId: user.companyId! } }
+  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  return { picId: user.id }
+}
+
+/** Siapa boleh assign/create Task. */
+export function canAssignTask(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+}
+
 /** Hanya Super Admin boleh kelola Lead (lintas-tenant by design). */
 export function canManageLeads(user: User) {
   return user.role === 'SUPER_ADMIN'
