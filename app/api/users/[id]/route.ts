@@ -73,7 +73,16 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const companyId = existing.companyId
     const updateData: Record<string, unknown> = {}
 
-    if (body.role !== undefined) updateData.role = body.role
+    if (body.role !== undefined) {
+      const ADMIN_OPERATIONAL_ASSIGNABLE = ['ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
+      if (user.role === 'ADMIN_OPERATIONAL' && !ADMIN_OPERATIONAL_ASSIGNABLE.includes(body.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      if (body.role === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      updateData.role = body.role
+    }
 
     if (body.divisionId !== undefined) {
       if (body.divisionId === null) {

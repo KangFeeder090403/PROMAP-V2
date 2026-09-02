@@ -5,6 +5,8 @@ import { notify } from '@/lib/notifications'
 
 export async function GET() {
   try {
+    // Sengaja tidak block role PIC (beda dari /api/users): PIC butuh dropdown
+    // UserLabel saat mengisi form lain (PRD baris 105), bukan lupa guard.
     const user = await getSessionUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
