@@ -11,3 +11,4 @@ next-env.d.ts
 .DS_Store
 .prd-extract.txt
 .claude/
+lib/generated/

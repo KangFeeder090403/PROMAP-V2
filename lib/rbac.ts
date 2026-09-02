@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import type { User, Role } from '@prisma/client'
+import type { User, Role } from '@/lib/generated/prisma/client'
 
 /**
  * Ambil user dari sesi — tolak jika null, inactive, guest, atau deleted.

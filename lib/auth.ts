@@ -2,7 +2,7 @@ import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import type { Role, UserStatus } from '@prisma/client'
+import type { Role, UserStatus } from '@/lib/generated/prisma/client'
 
 // Claim tambahan yang dititipkan ke JWT. Dipakai handler GET agar tidak
 // query User tiap request. Handler MUTASI wajib re-fetch dari DB —
