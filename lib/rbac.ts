@@ -72,6 +72,11 @@ export function buildWhereClause(user: User) {
   return { picId: user.id }
 }
 
+/** Hanya Super Admin boleh kelola Lead (lintas-tenant by design). */
+export function canManageLeads(user: User) {
+  return user.role === 'SUPER_ADMIN'
+}
+
 /** Hanya Super Admin & Admin Ops boleh kelola user (CRUD + approve). */
 export function canManageUsers(user: User) {
   return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL'
