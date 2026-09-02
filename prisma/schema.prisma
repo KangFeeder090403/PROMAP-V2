@@ -246,7 +246,7 @@ model ActionPlan {
   id             String           @id @default(cuid())
   taskId         String?
   picId          String
-  divisionId     String
+  divisionId     String?
   companyId      String
   title          String
   outcomeKpi     String
@@ -265,7 +265,7 @@ model ActionPlan {
 
   task         Task?         @relation(fields: [taskId], references: [id])
   pic          User          @relation(fields: [picId], references: [id])
-  division     Division      @relation(fields: [divisionId], references: [id])
+  division     Division?     @relation(fields: [divisionId], references: [id])
   checklists   Checklist[]
   comments     Comment[]
   activityLogs ActivityLog[]

@@ -141,6 +141,24 @@ export function canEditProposal(user: User, proposal: { proposerId: string; stat
   return user.id === proposal.proposerId && proposal.status === 'DRAFT'
 }
 
+/** Scope untuk query model ActionPlan. */
+export function apScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
+  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  return { picId: user.id }
+}
+
+/** Semua role terautentikasi (kecuali GUEST, sudah ditolak di getSessionUser) boleh create AP. */
+export function canCreateAP(_user: User) {
+  return true
+}
+
+/** Siapa boleh reassign AP. Guard divisi Manager dicek manual di route. */
+export function canReassignAP(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+}
+
 /**
  * Siapa boleh sentuh UserLabel dan apa efeknya:
  * - SUPER_ADMIN/ADMIN_OPERATIONAL: create/edit/delete, langsung ACTIVE.
