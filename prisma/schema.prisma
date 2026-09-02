@@ -104,11 +104,12 @@ model UserLabel {
   approvedById  String? // Admin Ops yang approve
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
 
   company Company @relation(fields: [companyId], references: [id])
   users   User[]
 
-  @@index([companyId])
+  @@index([companyId, deletedAt])
 }
 
 model User {

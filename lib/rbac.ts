@@ -71,3 +71,18 @@ export function buildWhereClause(user: User) {
   if (user.role === 'MANAGER') return { divisionId: user.divisionId }
   return { picId: user.id }
 }
+
+/** Hanya Super Admin & Admin Ops boleh kelola user (CRUD + approve). */
+export function canManageUsers(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL'
+}
+
+/**
+ * Siapa boleh sentuh UserLabel dan apa efeknya:
+ * - SUPER_ADMIN/ADMIN_OPERATIONAL: create/edit/delete, langsung ACTIVE.
+ * - MANAGER: hanya boleh usul (POST), status DIPAKSA PENDING di server —
+ *   jangan pernah percaya body.status dari client manapun.
+ */
+export function canManageUserLabel(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+}
