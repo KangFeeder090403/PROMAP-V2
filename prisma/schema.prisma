@@ -1,0 +1,354 @@
+// ============================================================
+// PRISMA SCHEMA — ProMaP V2.2
+// Database : PostgreSQL (Neon Serverless)
+// Sumber   : PRD.md BAB 4 — disalin utuh, jangan dipangkas.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN_OPERATIONAL
+  MANAGER
+  PIC
+  GUEST
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+enum UserLabelStatus {
+  PENDING // Diusulkan Manager, menunggu approval Admin Ops
+  ACTIVE // Sudah disetujui, tampil di dropdown
+  REJECTED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ActionPlanStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PENDING_APPROVAL
+  EVIDENCE_REQUIRED
+  APPROVED
+  REJECTED
+  OVERDUE
+  COMPLETE
+}
+
+enum ProposalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW // Baru isi form demo
+  TRIAL_ACTIVE // Sudah aktivasi trial 30 hari
+  CONVERTED // Sudah jadi klien berbayar
+  COLD // Tidak ada respon
+}
+
+enum SubscriptionTier {
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+// ─── MODELS ──────────────────────────────────────────────────
+
+model Company {
+  id           String           @id @default(cuid())
+  name         String
+  uniqueCode   String           @unique
+  logoUrl      String?
+  subscription SubscriptionTier @default(BASIC)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+
+  divisions     Division[]
+  users         User[]
+  projects      Project[]
+  userLabels    UserLabel[]
+  notifications Notification[]
+
+  @@index([deletedAt])
+}
+
+// Label jabatan dinamis per perusahaan (Magang, Karyawan, dll)
+model UserLabel {
+  id            String          @id @default(cuid())
+  companyId     String
+  name          String // "Magang", "Karyawan", "Koordinator", dll
+  status        UserLabelStatus @default(ACTIVE)
+  requestedById String? // Jika diusulkan oleh Manager
+  approvedById  String? // Admin Ops yang approve
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  users   User[]
+
+  @@index([companyId])
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  phone        String?
+  password     String?
+  role         Role       @default(PIC)
+  status       UserStatus @default(PENDING)
+  companyId    String?
+  divisionId   String?
+  supervisorId String?
+  userLabelId  String? // Label jabatan (Magang, Karyawan, dll)
+  // Guest fields
+  isGuest      Boolean    @default(false)
+  guestExpiry  DateTime? // Session expired 2 jam
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  company       Company?     @relation(fields: [companyId], references: [id])
+  division      Division?    @relation(fields: [divisionId], references: [id])
+  userLabel     UserLabel?   @relation(fields: [userLabelId], references: [id])
+  supervisor    User?        @relation("Supervision", fields: [supervisorId], references: [id])
+  subordinates  User[]       @relation("Supervision")
+  assignedTasks Task[]       @relation("TaskPIC")
+  createdTasks  Task[]       @relation("TaskCreator")
+  actionPlans   ActionPlan[]
+  proposals     Proposal[]
+  comments      Comment[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+
+  @@index([companyId, deletedAt])
+  @@index([divisionId])
+  @@index([supervisorId])
+  @@index([userLabelId])
+}
+
+// Tabel Leads untuk tracking prospek dari Guest Demo
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  email        String
+  phone        String
+  companyName  String
+  status       LeadStatus @default(NEW)
+  trialStartAt DateTime?
+  trialEndAt   DateTime?
+  loginCount   Int        @default(0) // Track berapa kali login Guest
+  lastLoginAt  DateTime?
+  notes        String? // Catatan follow-up dari Super Admin
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
+model Division {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  companyId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  users       User[]
+  tasks       Task[]
+  actionPlans ActionPlan[]
+
+  // Unik per (companyId, name) HANYA untuk baris aktif — dipasang sebagai
+  // partial unique index lewat SQL di migration, karena Prisma belum
+  // mendukung `WHERE "deletedAt" IS NULL` pada @@unique.
+  // Tanpa partial: nama divisi yang sudah di-soft-delete akan memblokir
+  // pembuatan ulang nama yang sama.
+  @@index([companyId, deletedAt])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  companyId   String
+  createdById String
+  isActive    Boolean   @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  company Company @relation(fields: [companyId], references: [id])
+  tasks   Task[]
+
+  @@index([companyId, deletedAt])
+}
+
+model Task {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  projectId   String
+  divisionId  String
+  picId       String
+  createdById String
+  priority    Priority         @default(MEDIUM)
+  status      ActionPlanStatus @default(NOT_STARTED)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+
+  project     Project      @relation(fields: [projectId], references: [id])
+  division    Division     @relation(fields: [divisionId], references: [id])
+  pic         User         @relation("TaskPIC", fields: [picId], references: [id])
+  createdBy   User         @relation("TaskCreator", fields: [createdById], references: [id])
+  actionPlans ActionPlan[]
+
+  @@index([projectId])
+  @@index([divisionId, deletedAt])
+  @@index([picId, deletedAt])
+  @@index([createdById])
+}
+
+model ActionPlan {
+  id             String           @id @default(cuid())
+  taskId         String?
+  picId          String
+  divisionId     String
+  companyId      String
+  title          String
+  outcomeKpi     String
+  priority       Priority         @default(MEDIUM)
+  status         ActionPlanStatus @default(NOT_STARTED)
+  startDate      DateTime
+  endDate        DateTime
+  isPersonal     Boolean          @default(false)
+  // Evidence & Approval
+  evaluationNote String? // Diisi PIC saat submit
+  evidenceLink   String? // Link bukti kerja
+  reviewNote     String? // Catatan Manager (approve/reject/revisi)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+
+  task         Task?         @relation(fields: [taskId], references: [id])
+  pic          User          @relation(fields: [picId], references: [id])
+  division     Division      @relation(fields: [divisionId], references: [id])
+  checklists   Checklist[]
+  comments     Comment[]
+  activityLogs ActivityLog[]
+
+  @@index([companyId, deletedAt])
+  @@index([divisionId, deletedAt])
+  @@index([picId, deletedAt])
+  @@index([taskId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// Thread diskusi per Action Plan
+model Comment {
+  id           String   @id @default(cuid())
+  actionPlanId String
+  authorId     String
+  content      String // Mendukung @mention dengan format @userId
+  createdAt    DateTime @default(now())
+  // Tidak ada updatedAt/deletedAt — komentar tidak bisa dihapus (audit trail)
+
+  actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
+  author     User       @relation(fields: [authorId], references: [id])
+
+  @@index([actionPlanId, createdAt])
+  @@index([authorId])
+}
+
+model Checklist {
+  id           String   @id @default(cuid())
+  actionPlanId String
+  title        String
+  isDone       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
+
+  @@index([actionPlanId])
+}
+
+model Proposal {
+  id          String         @id @default(cuid())
+  proposerId  String
+  title       String
+  description String
+  status      ProposalStatus @default(DRAFT)
+  reviewNote  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  proposer User @relation(fields: [proposerId], references: [id])
+
+  @@index([proposerId])
+  @@index([status])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String?
+  title     String
+  message   String
+  link      String? // URL navigasi saat notif diklik
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([companyId])
+}
+
+model ActivityLog {
+  id           String   @id @default(cuid())
+  userId       String
+  actionPlanId String?
+  action       String // STATUS_CHANGED | EVIDENCE_SUBMITTED | COMMENT_ADDED | REASSIGNED
+  oldValue     String?
+  newValue     String?
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id])
+  actionPlan ActionPlan? @relation(fields: [actionPlanId], references: [id])
+
+  @@index([actionPlanId, createdAt])
+  @@index([userId])
+}
