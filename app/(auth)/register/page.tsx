@@ -3,35 +3,40 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import type { z } from 'zod'
+
+import { registerSchema } from '@/lib/validations/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+
+type RegisterValues = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function update(field: string, value: string) {
-    setForm((f) => ({ ...f, [field]: value }))
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function onSubmit(values: RegisterValues) {
     setError('')
-
-    if (form.password !== form.confirmPassword) {
-      setError('Password tidak cocok')
-      return
-    }
-    if (form.password.length < 8) {
-      setError('Password minimal 8 karakter')
-      return
-    }
-
     setLoading(true)
+
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
+      body: JSON.stringify({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      }),
     })
 
     setLoading(false)
@@ -46,40 +51,85 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm p-8 bg-white rounded-lg shadow">
-        <h1 className="text-2xl font-bold text-center mb-6">Daftar ProMaP</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nama</label>
-            <input id="name" type="text" required value={form.name} onChange={(e) => update('name', e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <div className="bg-slate-50 min-h-screen flex items-center justify-center">
+      <div className="w-full bg-white rounded-lg border border-slate-200 shadow-sm p-8 max-w-sm mx-auto">
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight text-center mb-6">
+          Daftar ProMaP
+        </h1>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-slate-700">
+              Nama
+            </Label>
+            <Input id="name" type="text" aria-invalid={!!errors.name} {...register('name')} />
+            {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
           </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input id="email" type="email" required value={form.email} onChange={(e) => update('email', e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-slate-700">
+              Email
+            </Label>
+            <Input id="email" type="email" aria-invalid={!!errors.email} {...register('email')} />
+            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input id="password" type="password" required value={form.password} onChange={(e) => update('password', e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-slate-700">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              aria-invalid={!!errors.password}
+              {...register('password')}
+            />
+            {errors.password && (
+              <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
           </div>
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Konfirmasi Password</label>
-            <input id="confirmPassword" type="password" required value={form.confirmPassword} onChange={(e) => update('confirmPassword', e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="confirmPassword" className="text-slate-700">
+              Konfirmasi Password
+            </Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              aria-invalid={!!errors.confirmPassword}
+              {...register('confirmPassword')}
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+            )}
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+
+          {error && (
+            <p
+              role="alert"
+              aria-live="polite"
+              className="text-sm text-red-600 bg-red-50 rounded-md p-2"
+            >
+              {error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-500 hover:bg-blue-600 text-white w-full"
+          >
             {loading ? 'Mendaftar...' : 'Daftar'}
-          </button>
+          </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Sudah punya akun? <Link href="/login" className="text-blue-600 hover:underline">Masuk</Link>
+
+        <p className="mt-4 text-center text-sm text-slate-500">
+          Sudah punya akun?{' '}
+          <Link href="/login" className="text-blue-500 hover:underline text-sm">
+            Masuk
+          </Link>
         </p>
-        <p className="mt-1 text-center text-xs text-gray-400">
+        <p className="text-xs text-slate-400 text-center mt-1">
           Status akun baru: Pending — butuh approval Admin.
         </p>
       </div>
