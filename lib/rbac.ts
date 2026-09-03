@@ -160,6 +160,27 @@ export function canReassignAP(user: User) {
 }
 
 /**
+ * Siapa boleh review ActionPlan (approve/reject/evidence-required).
+ * - Tidak boleh review AP milik sendiri (no self-review).
+ * - SUPER_ADMIN: semua.
+ * - ADMIN_OPERATIONAL: AP di company sendiri — termasuk personal AP (divisionId null),
+ *   ini fallback reviewer utk personal AP (keputusan bisnis implisit, PRD tidak eksplisit
+ *   sebut approver personal AP — catat di komentar untuk Product Owner).
+ * - MANAGER: AP divisi sendiri, divisionId WAJIB match non-null (personal AP divisionId
+ *   null TIDAK PERNAH match manager manapun).
+ */
+export function canReviewActionPlan(
+  user: User,
+  ap: { picId: string; divisionId: string | null; companyId: string }
+) {
+  if (ap.picId === user.id) return false
+  if (user.role === 'SUPER_ADMIN') return true
+  if (user.role === 'ADMIN_OPERATIONAL') return ap.companyId === user.companyId
+  if (user.role === 'MANAGER') return ap.divisionId !== null && ap.divisionId === user.divisionId
+  return false
+}
+
+/**
  * Siapa boleh sentuh UserLabel dan apa efeknya:
  * - SUPER_ADMIN/ADMIN_OPERATIONAL: create/edit/delete, langsung ACTIVE.
  * - MANAGER: hanya boleh usul (POST), status DIPAKSA PENDING di server —
