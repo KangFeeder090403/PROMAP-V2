@@ -5,7 +5,7 @@ import { SettingsClient } from '@/components/settings/SettingsClient'
 export default async function SettingsPage() {
   const user = await getSessionUser()
   if (!user) redirect('/login')
-  if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN_OPERATIONAL') redirect('/')
+  if (user.role === 'PIC' || user.role === 'GUEST') redirect('/')
 
   return <SettingsClient role={user.role} companyId={user.companyId} />
 }
