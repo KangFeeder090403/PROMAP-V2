@@ -93,8 +93,8 @@ export function ProjectsClient({ role }: { role: Role }) {
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => router.push(`/kanban?projectId=${p.id}`)}
-              onKeyDown={(e) => e.key === 'Enter' && router.push(`/kanban?projectId=${p.id}`)}
+              onClick={() => router.push(`/board?projectId=${p.id}`)}
+              onKeyDown={(e) => e.key === 'Enter' && router.push(`/board?projectId=${p.id}`)}
               className="bg-white rounded-lg border border-slate-200 shadow-sm p-5 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all text-left"
             >
               <div className="flex items-start justify-between gap-2">

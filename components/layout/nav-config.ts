@@ -6,7 +6,6 @@ import {
   FileText,
   Kanban,
   Calendar,
-  BarChart3,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -29,14 +28,10 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Projects', href: '/projects', icon: FolderKanban, roles: ALL_ROLES },
   { label: 'Action Plans', href: '/action-plans', icon: ListChecks, roles: ALL_ROLES },
   { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
-  { label: 'Kanban', href: '/kanban', icon: Kanban, roles: ALL_ROLES },
+  { label: 'Board', href: '/board', icon: Kanban, roles: ALL_ROLES },
   { label: 'Calendar', href: '/calendar', icon: Calendar, roles: ALL_ROLES },
-  {
-    label: 'Reports',
-    href: '/reports',
-    icon: BarChart3,
-    roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'],
-  },
+  // Reports sengaja belum didaftarkan — halamannya belum ada, link mati lebih buruk
+  // daripada menu belum lengkap. Masukkan lagi saat UI-12 dikerjakan.
   { label: 'Settings', href: '/settings', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL'] },
 ]
 

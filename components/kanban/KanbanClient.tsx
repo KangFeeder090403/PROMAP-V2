@@ -123,7 +123,7 @@ export function KanbanClient({
               <button
                 key={p.id}
                 type="button"
-                onClick={() => router.push(`/kanban?projectId=${p.id}`)}
+                onClick={() => router.push(`/board?projectId=${p.id}`)}
                 className="bg-white rounded-lg border border-slate-200 shadow-sm p-5 text-left hover:border-blue-300 hover:shadow-md transition-all"
               >
                 <p className="text-[15px] font-medium text-slate-800">{p.name}</p>
@@ -157,7 +157,7 @@ export function KanbanClient({
     <div className="space-y-3">
       <button
         type="button"
-        onClick={() => router.push('/kanban')}
+        onClick={() => router.push('/board')}
         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
       >
         &larr; Ganti project
