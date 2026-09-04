@@ -103,6 +103,11 @@ export function canAssignTask(user: User) {
   return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 }
 
+/** Siapa boleh update status Task saja (drag Kanban). PIC hanya task miliknya sendiri. */
+export function canUpdateTaskStatus(user: User, task: { picId: string }) {
+  return canAssignTask(user) || task.picId === user.id
+}
+
 /** Hanya Super Admin boleh kelola Lead (lintas-tenant by design). */
 export function canManageLeads(user: User) {
   return user.role === 'SUPER_ADMIN'
