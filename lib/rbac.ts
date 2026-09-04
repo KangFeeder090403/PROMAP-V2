@@ -181,6 +181,17 @@ export function canReviewActionPlan(
 }
 
 /**
+ * Siapa boleh kelola Checklist AP (create/toggle/delete).
+ * - Hanya PIC pemilik AP (tidak ada delegasi ke Manager).
+ * - Hanya selagi status AP masih bisa dikerjakan: NOT_STARTED/IN_PROGRESS/EVIDENCE_REQUIRED.
+ */
+export function canManageChecklist(user: User, ap: { picId: string; status: string }) {
+  if (ap.picId !== user.id) return false
+  return ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+}
+
+
+/**
  * Siapa boleh sentuh UserLabel dan apa efeknya:
  * - SUPER_ADMIN/ADMIN_OPERATIONAL: create/edit/delete, langsung ACTIVE.
  * - MANAGER: hanya boleh usul (POST), status DIPAKSA PENDING di server —
