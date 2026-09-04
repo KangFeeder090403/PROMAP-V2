@@ -72,9 +72,112 @@ export function buildWhereClause(user: User) {
   return { picId: user.id }
 }
 
+/** Scope untuk query model Project */
+export function projectScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
+  // MANAGER + PIC: read-only, terbatas divisi sendiri
+  return { companyId: user.companyId!, divisionId: user.divisionId }
+}
+
+/** Siapa boleh create/edit/delete Project. MANAGER hanya utk divisi sendiri. */
+export function canManageProject(user: User, existingDivisionId?: string | null) {
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') return existingDivisionId === user.divisionId
+  return false
+}
+
+/**
+ * Scope untuk query model Task — CUSTOM, Task tidak punya companyId langsung
+ * (harus lewat relasi division).
+ */
+export function taskScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { division: { companyId: user.companyId! } }
+  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  return { picId: user.id }
+}
+
+/** Siapa boleh assign/create Task. */
+export function canAssignTask(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+}
+
+/** Hanya Super Admin boleh kelola Lead (lintas-tenant by design). */
+export function canManageLeads(user: User) {
+  return user.role === 'SUPER_ADMIN'
+}
+
 /** Hanya Super Admin & Admin Ops boleh kelola user (CRUD + approve). */
 export function canManageUsers(user: User) {
   return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL'
+}
+
+/**
+ * Scope untuk query model Proposal — via relasi proposer (Proposal tidak
+ * punya companyId/divisionId langsung).
+ */
+export function proposalScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { proposer: { companyId: user.companyId! } }
+  if (user.role === 'MANAGER') return { proposer: { divisionId: user.divisionId } }
+  return { proposerId: user.id }
+}
+
+/** Manager boleh review proposal divisi sendiri, kecuali proposal miliknya sendiri. */
+export function canReviewProposal(
+  user: User,
+  proposal: { proposerId: string },
+  proposerDivisionId: string | null
+) {
+  if (user.role !== 'MANAGER') return false
+  if (user.divisionId !== proposerDivisionId) return false
+  if (proposal.proposerId === user.id) return false
+  return true
+}
+
+/** Hanya proposer sendiri, dan hanya selagi status DRAFT. */
+export function canEditProposal(user: User, proposal: { proposerId: string; status: string }) {
+  return user.id === proposal.proposerId && proposal.status === 'DRAFT'
+}
+
+/** Scope untuk query model ActionPlan. */
+export function apScope(user: User) {
+  if (user.role === 'SUPER_ADMIN') return {}
+  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
+  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  return { picId: user.id }
+}
+
+/** Semua role terautentikasi (kecuali GUEST, sudah ditolak di getSessionUser) boleh create AP. */
+export function canCreateAP(_user: User) {
+  return true
+}
+
+/** Siapa boleh reassign AP. Guard divisi Manager dicek manual di route. */
+export function canReassignAP(user: User) {
+  return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+}
+
+/**
+ * Siapa boleh review ActionPlan (approve/reject/evidence-required).
+ * - Tidak boleh review AP milik sendiri (no self-review).
+ * - SUPER_ADMIN: semua.
+ * - ADMIN_OPERATIONAL: AP di company sendiri — termasuk personal AP (divisionId null),
+ *   ini fallback reviewer utk personal AP (keputusan bisnis implisit, PRD tidak eksplisit
+ *   sebut approver personal AP — catat di komentar untuk Product Owner).
+ * - MANAGER: AP divisi sendiri, divisionId WAJIB match non-null (personal AP divisionId
+ *   null TIDAK PERNAH match manager manapun).
+ */
+export function canReviewActionPlan(
+  user: User,
+  ap: { picId: string; divisionId: string | null; companyId: string }
+) {
+  if (ap.picId === user.id) return false
+  if (user.role === 'SUPER_ADMIN') return true
+  if (user.role === 'ADMIN_OPERATIONAL') return ap.companyId === user.companyId
+  if (user.role === 'MANAGER') return ap.divisionId !== null && ap.divisionId === user.divisionId
+  return false
 }
 
 /**

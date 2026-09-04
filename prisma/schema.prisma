@@ -183,6 +183,7 @@ model Division {
   users       User[]
   tasks       Task[]
   actionPlans ActionPlan[]
+  projects    Project[]
 
   // Unik per (companyId, name) HANYA untuk baris aktif — dipasang sebagai
   // partial unique index lewat SQL manual di migration
@@ -196,6 +197,7 @@ model Project {
   name        String
   description String?
   companyId   String
+  divisionId  String?
   createdById String
   isActive    Boolean   @default(true)
   startDate   DateTime?
@@ -204,10 +206,12 @@ model Project {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  company Company @relation(fields: [companyId], references: [id])
-  tasks   Task[]
+  company  Company   @relation(fields: [companyId], references: [id])
+  division Division? @relation(fields: [divisionId], references: [id])
+  tasks    Task[]
 
   @@index([companyId, deletedAt])
+  @@index([divisionId])
 }
 
 model Task {
@@ -242,7 +246,7 @@ model ActionPlan {
   id             String           @id @default(cuid())
   taskId         String?
   picId          String
-  divisionId     String
+  divisionId     String?
   companyId      String
   title          String
   outcomeKpi     String
@@ -261,7 +265,7 @@ model ActionPlan {
 
   task         Task?         @relation(fields: [taskId], references: [id])
   pic          User          @relation(fields: [picId], references: [id])
-  division     Division      @relation(fields: [divisionId], references: [id])
+  division     Division?     @relation(fields: [divisionId], references: [id])
   checklists   Checklist[]
   comments     Comment[]
   activityLogs ActivityLog[]
@@ -312,11 +316,13 @@ model Proposal {
   reviewNote  String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
   proposer User @relation(fields: [proposerId], references: [id])
 
   @@index([proposerId])
   @@index([status])
+  @@index([deletedAt])
 }
 
 model Notification {

@@ -12,3 +12,5 @@ next-env.d.ts
 .prd-extract.txt
 .claude/
 lib/generated/
+skills-lock.json
+catatan kecil.txt
