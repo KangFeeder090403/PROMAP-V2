@@ -1,11 +1,11 @@
 import type { Role } from '@/lib/generated/prisma/client'
 import {
-  LayoutDashboard,
+  Home,
+  CheckSquare,
   FolderKanban,
-  ListChecks,
-  FileText,
   Kanban,
   Calendar,
+  FileText,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -17,28 +17,71 @@ export interface NavItem {
   roles: Role[]
 }
 
-const ALL_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
+export interface NavGroup {
+  /** null = grup tanpa judul (dirender polos, dipisah divider) */
+  label: string | null
+  items: NavItem[]
+}
+
+export const ALL_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
 
 // Role filter di sini HANYA convenience tampilan (sembunyikan menu yang
 // user tidak punya akses). Backend API tetap WAJIB guard sendiri
 // (requireRole / scope helper di lib/rbac.ts) — jangan pernah andalkan
 // filter ini sebagai satu-satunya lapis otorisasi.
-export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ALL_ROLES },
-  { label: 'Projects', href: '/projects', icon: FolderKanban, roles: ALL_ROLES },
-  { label: 'Action Plans', href: '/action-plans', icon: ListChecks, roles: ALL_ROLES },
-  { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
-  { label: 'Board', href: '/board', icon: Kanban, roles: ALL_ROLES },
-  { label: 'Calendar', href: '/calendar', icon: Calendar, roles: ALL_ROLES },
-  // Reports sengaja belum didaftarkan — halamannya belum ada, link mati lebih buruk
-  // daripada menu belum lengkap. Masukkan lagi saat UI-12 dikerjakan.
-  { label: 'Settings', href: '/settings', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL'] },
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Workspace',
+    items: [
+      { label: 'Home', href: '/', icon: Home, roles: ALL_ROLES },
+      { label: 'My Work', href: '/my-work', icon: CheckSquare, roles: ALL_ROLES },
+      { label: 'Projects', href: '/projects', icon: FolderKanban, roles: ALL_ROLES },
+    ],
+  },
+  {
+    label: 'Execution',
+    items: [
+      { label: 'Board', href: '/board', icon: Kanban, roles: ALL_ROLES },
+      { label: 'Calendar', href: '/calendar', icon: Calendar, roles: ALL_ROLES },
+      { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
+    ],
+  },
+  // Grup INSIGHTS (Reports) sengaja belum ada — halamannya belum dibuat,
+  // link mati lebih buruk daripada menu belum lengkap. Tambahkan saat UI-12.
+  // Action Plans sengaja tidak ada slot nav (keputusan PO, §B2).
+  // Route /action-plans tetap hidup dan diakses dari Board / Project detail.
+  {
+    label: null,
+    items: [
+      {
+        label: 'Settings',
+        href: '/settings',
+        icon: Settings,
+        roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL'],
+      },
+    ],
+  },
 ]
 
+/** Versi flat — dipakai Breadcrumb/Header untuk pathname match tanpa duplikasi logic. */
+export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items)
+
+/** Satu-satunya definisi "apakah href ini cocok dengan pathname sekarang". */
+export function matchesPath(href: string, pathname: string) {
+  if (href === '/') return pathname === '/'
+  return pathname === href || pathname.startsWith(href + '/')
+}
+
+export function findNavItem(pathname: string) {
+  return ALL_NAV_ITEMS.find((item) => matchesPath(item.href, pathname))
+}
+
 // Self-check runtime — TypeScript tidak menangkap array kosong.
-// Kalau ada item roles: [] kesalahan tipo, gagal cepat saat module load.
-for (const item of NAV_ITEMS) {
-  if (item.roles.length === 0) {
-    throw new Error(`nav-config: NAV_ITEMS "${item.label}" punya roles kosong`)
+// Kalau ada item roles: [] karena tipo, gagal cepat saat module load.
+for (const group of NAV_GROUPS) {
+  for (const item of group.items) {
+    if (item.roles.length === 0) {
+      throw new Error(`nav-config: NAV_ITEMS "${item.label}" punya roles kosong`)
+    }
   }
 }

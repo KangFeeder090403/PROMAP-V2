@@ -14,3 +14,6 @@ next-env.d.ts
 lib/generated/
 skills-lock.json
 catatan kecil.txt
+
+# Artefak review Playwright
+.playwright-mcp/

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { NAV_ITEMS } from '@/components/layout/nav-config'
+import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 
 function initials(name: string) {
@@ -24,12 +24,13 @@ export function Sidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(user.role))
 
-  function isActive(href: string) {
-    if (href === '/') return pathname === '/'
-    return pathname === href || pathname.startsWith(href + '/')
-  }
+  // Urutan wajib: filter item by role DULU, baru buang grup yang jadi kosong.
+  // Kalau dibalik, grup tanpa item yang boleh dilihat user tetap kerender.
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.roles.includes(user.role)),
+  })).filter((group) => group.items.length > 0)
 
   return (
     <aside
@@ -41,26 +42,38 @@ export function Sidebar({
         <span className="text-sm font-semibold text-white">ProMaP</span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {items.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                active
-                  ? 'bg-white font-medium text-slate-900'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 space-y-6 overflow-y-auto p-3">
+        {groups.map((group, gi) => (
+          <div key={group.label ?? `group-${gi}`} className="space-y-1">
+            {group.label ? (
+              <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                {group.label}
+              </p>
+            ) : (
+              <div className="mb-3 border-t border-slate-800" />
+            )}
+            {group.items.map((item) => {
+              const Icon = item.icon
+              const active = matchesPath(item.href, pathname)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                    active
+                      ? 'bg-white font-medium text-slate-900'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="border-t border-slate-800 p-3">
