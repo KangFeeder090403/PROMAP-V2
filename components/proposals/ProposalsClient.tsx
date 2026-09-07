@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -21,7 +22,16 @@ export interface Proposal {
 
 const STATUS_FILTERS = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'] as const
 
-export function ProposalsClient({ role, userId }: { role: Role; userId: string }) {
+export function ProposalsClient({
+  role,
+  userId,
+  openCreate,
+}: {
+  role: Role
+  userId: string
+  openCreate?: boolean
+}) {
+  const router = useRouter()
   const [data, setData] = useState<Proposal[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -37,6 +47,17 @@ export function ProposalsClient({ role, userId }: { role: Role; userId: string }
   useEffect(() => {
     fetchData()
   }, [statusFilter])
+
+  // Header "+ New > Proposal" mengarah ke /proposals?new=1. Buka modal, lalu
+  // bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
+  useEffect(() => {
+    if (!openCreate) return
+    setEditing(null)
+    setFormOpen(true)
+    // ponytail: pathname literal — cukup selama route ini statis.
+    // Kalau /proposals jadi dinamis, ganti ke usePathname().
+    router.replace('/proposals', { scroll: false })
+  }, [openCreate])
 
   async function fetchData() {
     try {

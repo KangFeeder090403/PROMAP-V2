@@ -20,7 +20,8 @@ const CREATE_ITEMS: CreateItem[] = [
   // cermin canManageProject: PIC tidak bisa bikin project
   { label: 'Project', href: '/projects?new=1', roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'] },
   { label: 'Action Plan', href: '/action-plans?new=1', roles: ALL_ROLES },
-  { label: 'Personal Task', href: '/my-work?new=1', roles: ALL_ROLES },
+  // 'Personal Task' dihapus: /my-work belum punya modal create → link mati.
+  // Dikembalikan saat UI-4 (My Work) selesai.
   { label: 'Proposal', href: '/proposals?new=1', roles: ALL_ROLES },
 ]
 

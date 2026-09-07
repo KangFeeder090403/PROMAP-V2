@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_STATUS_STYLE, AP_STATUS_LABEL, AP_PRIORITY_STYLE, AP_PRIORITY_LABEL } from '@/lib/status-labels'
@@ -39,7 +40,16 @@ const STATUS_FILTERS = [
 
 const PRIORITY_FILTERS = ['HIGH', 'MEDIUM', 'LOW'] as const
 
-export function ActionPlansClient({ role, userId }: { role: Role; userId: string }) {
+export function ActionPlansClient({
+  role,
+  userId,
+  openCreate,
+}: {
+  role: Role
+  userId: string
+  openCreate?: boolean
+}) {
+  const router = useRouter()
   const [data, setData] = useState<ActionPlan[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -53,6 +63,17 @@ export function ActionPlansClient({ role, userId }: { role: Role; userId: string
   useEffect(() => {
     fetchData()
   }, [statusFilter, priorityFilter])
+
+  // Header "+ New > Action Plan" mengarah ke /action-plans?new=1. Buka modal,
+  // lalu bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
+  useEffect(() => {
+    if (!openCreate) return
+    setEditing(null)
+    setFormOpen(true)
+    // ponytail: pathname literal — cukup selama route ini statis.
+    // Kalau /action-plans jadi dinamis, ganti ke usePathname().
+    router.replace('/action-plans', { scroll: false })
+  }, [openCreate])
 
   async function fetchData() {
     try {

@@ -19,7 +19,7 @@ export interface Project {
 
 const CAN_MANAGE: Role[] = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER']
 
-export function ProjectsClient({ role }: { role: Role }) {
+export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: boolean }) {
   const router = useRouter()
   const [data, setData] = useState<Project[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,6 +32,17 @@ export function ProjectsClient({ role }: { role: Role }) {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Header "+ New > Project" mengarah ke /projects?new=1. Buka modal, lalu
+  // bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
+  useEffect(() => {
+    if (!openCreate) return
+    setEditing(null)
+    setFormOpen(true)
+    // ponytail: pathname literal — cukup selama route ini statis.
+    // Kalau /projects jadi dinamis, ganti ke usePathname().
+    router.replace('/projects', { scroll: false })
+  }, [openCreate])
 
   async function fetchData() {
     try {
