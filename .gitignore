@@ -17,3 +17,6 @@ catatan kecil.txt
 
 # Artefak review Playwright
 .playwright-mcp/
+
+# Konfigurasi editor — bisa memuat kredensial MCP
+.vscode/
