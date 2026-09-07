@@ -20,3 +20,6 @@ catatan kecil.txt
 
 # Konfigurasi editor — bisa memuat kredensial MCP
 .vscode/
+
+# Mockup referensi Stitch — unduh lokal, jangan di-commit
+docs/design-reference/
