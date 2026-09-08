@@ -2,11 +2,12 @@ import { AuthTopBar } from '@/components/auth/AuthTopBar'
 import { AuthSystemFooter } from '@/components/auth/AuthSystemFooter'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  // Auth pakai slate-100, bukan slate-50 — card putih perlu kontras dari latar
   return (
-    <div className="min-h-screen bg-[#0F172A] text-slate-800 antialiased flex flex-col justify-between">
+    <div className="flex min-h-screen flex-col bg-slate-100 antialiased dark:bg-slate-900">
       <AuthTopBar />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 flex items-center justify-center">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         {children}
       </main>
 

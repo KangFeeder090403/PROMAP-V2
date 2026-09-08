@@ -1,79 +1,60 @@
-import { CheckSquare, ClipboardCheck, Eye, Network } from 'lucide-react'
+import { ClipboardCheck, ListTodo, Target } from 'lucide-react'
 
-const ROLES = [
+const FLOW = [
   {
-    icon: Eye,
-    name: 'Super Admin',
-    desc: 'Memantau semua tenant & alur prospek',
+    icon: Target,
+    name: 'Rencana',
+    desc: 'Project dipecah jadi task dengan penanggung jawab yang jelas.',
   },
   {
-    icon: Network,
-    name: 'Admin Operasional',
-    desc: 'Mengelola seluruh divisi satu perusahaan',
+    icon: ListTodo,
+    name: 'Eksekusi',
+    desc: 'PIC mengerjakan action plan, statusnya terlihat oleh seluruh tim.',
   },
   {
     icon: ClipboardCheck,
-    name: 'Manager',
-    desc: 'Meninjau & menyetujui pekerjaan divisi',
-  },
-  {
-    icon: CheckSquare,
-    name: 'PIC',
-    desc: 'Mengeksekusi tugas & mengunggah bukti',
+    name: 'Bukti',
+    desc: 'Manager menyetujui setelah bukti penyelesaian diunggah.',
   },
 ]
 
 export function AuthHero() {
   return (
-    <div className="text-white space-y-8 sm:space-y-12">
-      {/* Headline */}
-      <div className="space-y-5 sm:space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-xs text-slate-300 font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          Sebuah ruang kerja untuk semua ide tim Anda
-        </div>
-        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15]">
-          Satu Tempat untuk Mengubah{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300">
-            Rencana Menjadi Nyata.
-          </span>
+    <div className="space-y-8 sm:space-y-10">
+      <div className="space-y-5">
+        <h1 className="text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+          Satu tempat kerja
+          <br />
+          untuk seluruh tim.
         </h1>
-        <p className="text-slate-300 text-sm sm:text-base lg:text-lg max-w-xl leading-relaxed">
-          Rapikan alur kerja tim Anda — dari ide, tugas, hingga aksi nyata. Setiap langkah
-          tercatat, setiap penyelesaian terbukti, dan setiap pencapaian terukur dalam satu
-          wadah yang sama.
+        <p className="max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base dark:text-slate-300">
+          Dari rencana sampai bukti selesai. Project, task, dan action plan berjalan dalam
+          satu alur yang sama — setiap langkah tercatat, setiap penyelesaian terbukti.
         </p>
       </div>
 
-      {/* Role badges — grid di desktop, horizontal scroll di mobile */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {ROLES.map((role) => (
-          <div
-            key={role.name}
-            className="group p-4 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.08] hover:border-white/[0.12] hover:-translate-y-0.5"
-          >
-            <div
-              className={`inline-flex items-center justify-center w-9 h-9 rounded-xl border ${'bg-white/[0.06] text-slate-300 border-white/[0.08]'} mb-3 transition-transform duration-300 group-hover:scale-110`}
-            >
-              <role.icon className="w-[18px] h-[18px]" strokeWidth={1.75} aria-hidden="true" />
+      {/* Alur kerja produk — bukan daftar role, karena role ditentukan sistem, bukan dipilih saat masuk */}
+      <ol className="space-y-4">
+        {FLOW.map((step, i) => (
+          <li key={step.name} className="flex gap-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-800">
+              <step.icon
+                className="h-4 w-4 text-slate-500 dark:text-slate-300"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
             </div>
-            <p className="text-sm font-semibold text-slate-100">{role.name}</p>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">{role.desc}</p>
-          </div>
+            <div>
+              <p className="text-sm font-medium text-slate-900 dark:text-white">
+                {i + 1}. {step.name}
+              </p>
+              <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {step.desc}
+              </p>
+            </div>
+          </li>
         ))}
-      </div>
-
-      {/* Trust note */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-white/[0.04] border border-white/[0.08] transition-colors duration-300 hover:border-white/[0.14]">
-        <p className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" aria-hidden="true" />
-          Data Anda terlindungi
-        </p>
-        <p className="text-slate-400 leading-relaxed text-xs mt-1.5">
-          Akses hanya untuk tim yang berwenang. Kehadiran tercatat, keputusan terdokumentasi,
-          dan setiap tim bekerja dalam lingkupnya sendiri.
-        </p>
-      </div>
+      </ol>
     </div>
   )
 }
