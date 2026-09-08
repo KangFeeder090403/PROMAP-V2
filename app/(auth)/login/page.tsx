@@ -1,5 +1,6 @@
-import { Suspense } from 'react'
-import Link from 'next/link'
+'use client'
+
+import { Suspense, useState } from 'react'
 
 import { AuthHero } from '@/components/auth/AuthHero'
 import { LoginForm } from '@/components/auth/LoginForm'
@@ -7,85 +8,69 @@ import { GuestDemoPanel } from '@/components/auth/GuestDemoPanel'
 import { AuthFormSkeleton } from '@/components/auth/AuthFormSkeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+const TRIGGER =
+  'h-8 rounded-sm text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:text-slate-400 dark:hover:text-white dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white'
+
 export default function LoginPage() {
+  const [tab, setTab] = useState('enterprise')
+
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start lg:items-center">
-      {/* Right-first on mobile: Glass login panel */}
-      <div className="order-1 lg:order-2 lg:col-span-5 xl:col-span-5 w-full animate-in fade-in slide-in-from-bottom-6 duration-700 ease-out">
-        <div className="rounded-3xl bg-white/[0.06] backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Panel header + tabs */}
-          <div className="pt-7 pb-0">
-            <div className="px-6 pb-5">
-              <h2 className="text-lg font-bold text-white tracking-tight">
-                Masuk ke Workspace
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Pilih metode autentikasi sesuai otorisasi Anda
-              </p>
-            </div>
-
-            <Tabs defaultValue="enterprise">
-              <TabsList className="w-full justify-start gap-8 rounded-none bg-transparent h-auto p-0 border-0 border-b border-white/10">
-                <TabsTrigger
-                  value="enterprise"
-                  className="px-6 pb-3.5 pt-0 text-xs font-semibold text-slate-400 rounded-none border-b-2 border-transparent bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:shadow-none hover:text-slate-200 transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                >
-                  Akun Perusahaan
-                </TabsTrigger>
-                <TabsTrigger
-                  value="guest"
-                  className="gap-1.5 px-6 pb-3.5 pt-0 text-xs font-medium text-slate-400 rounded-none border-b-2 border-transparent bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:shadow-none hover:text-slate-200 transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                >
-                  Guest Demo
-                  <span className="bg-blue-500/15 text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    Trial
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent
-                value="enterprise"
-                className="mt-0 focus-visible:ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out"
-              >
-                <Suspense fallback={<AuthFormSkeleton fields={3} />}>
-                  <LoginForm />
-                </Suspense>
-              </TabsContent>
-
-              <TabsContent
-                value="guest"
-                className="mt-0 focus-visible:ring-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out"
-              >
-                <GuestDemoPanel />
-              </TabsContent>
-            </Tabs>
+    <div className="grid w-full grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14">
+      {/* Panel auth — tampil lebih dulu di mobile */}
+      <div className="order-1 w-full lg:order-2 lg:justify-self-center">
+        <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-800">
+          <div className="px-6 pt-6">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              Masuk ke Workspace
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+              Pilih cara masuk sesuai akun Anda.
+            </p>
           </div>
 
-          {/* Register strip */}
-          <div className="px-6 pb-6">
-            <Link
-              href="/register"
-              className="block text-center text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors duration-200"
-            >
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="mx-6 mt-6 grid w-auto grid-cols-2 gap-1 dark:border-slate-700 dark:bg-slate-900">
+              <TabsTrigger value="enterprise" className={TRIGGER}>
+                Akun Perusahaan
+              </TabsTrigger>
+              <TabsTrigger value="guest" className={TRIGGER}>
+                Coba Demo
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="enterprise" className="mt-0">
+              <Suspense fallback={<AuthFormSkeleton fields={2} />}>
+                <LoginForm />
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="guest" className="mt-0">
+              <GuestDemoPanel />
+            </TabsContent>
+          </Tabs>
+
+          {/*
+            Calon klien belum punya perusahaan terdaftar — arahkan ke Guest Demo
+            (tersimpan sebagai Lead untuk ditindaklanjuti), bukan ke /register
+            yang membuat akun karyawan menunggu approval Admin.
+          */}
+          <div className="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Perusahaan belum terdaftar?{' '}
-              <span className="font-semibold text-blue-400 hover:underline">
-                Jadwalkan Onboarding &amp; Demo
-              </span>
-            </Link>
-          </div>
-
-          {/* Panel footer */}
-          <div className="bg-white/[0.04] px-6 py-3.5 border-t border-white/[0.08] flex items-center justify-center text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" aria-hidden="true" />
-              Aman. Terpercaya. Siap membantu tim Anda.
-            </span>
+              <button
+                type="button"
+                onClick={() => setTab('guest')}
+                className="font-medium text-blue-500 transition-colors hover:underline"
+              >
+                Coba Demo Gratis
+              </button>
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Left on desktop: Hero */}
-      <div className="order-2 lg:order-1 lg:col-span-7 xl:col-span-7 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 ease-out">
+      {/* Hero */}
+      <div className="order-2 lg:order-1">
         <AuthHero />
       </div>
     </div>

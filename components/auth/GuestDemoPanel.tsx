@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertCircle, ArrowRight, Clock, Mail, User } from 'lucide-react'
+import { Check, Clock, Mail, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,6 +21,12 @@ const guestSchema = z.object({
 type GuestValues = z.infer<typeof guestSchema>
 
 type Phase = 'active' | 'expired' | 'form'
+
+const LABEL = 'text-sm font-medium text-slate-700 dark:text-slate-200'
+const INPUT =
+  'h-9 w-full rounded-md border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-400'
+const CTA =
+  'h-9 w-full rounded-md bg-blue-500 text-sm font-medium text-white transition-colors hover:bg-blue-600'
 
 export function GuestDemoPanel() {
   const router = useRouter()
@@ -98,14 +104,17 @@ export function GuestDemoPanel() {
 
   if (phase === 'active') {
     return (
-      <div className="p-5 sm:p-6 text-center">
-        <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="p-6 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
+          <Check
+            className="h-6 w-6 text-emerald-700 dark:text-emerald-200"
+            aria-hidden="true"
+          />
         </div>
-        <h2 className="text-lg font-semibold text-white mb-2">Demo Aktif</h2>
-        <p className="text-sm text-slate-400 mb-6">
+        <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
+          Demo Aktif
+        </h2>
+        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
           Sesi demo Anda sedang berjalan. Jelajahi ProMaP dengan data contoh.
         </p>
         <Button
@@ -113,156 +122,149 @@ export function GuestDemoPanel() {
             router.push('/')
             router.refresh()
           }}
-          className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-200"
+          className={CTA}
         >
           Masuk ke Dashboard
-          <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </Button>
-        <p className="mt-3 text-xs text-slate-400">Sesi berlaku 2 jam sejak pendaftaran.</p>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          Sesi berlaku 2 jam sejak pendaftaran.
+        </p>
       </div>
     )
   }
 
   if (phase === 'expired') {
     return (
-      <div className="p-5 sm:p-6 text-center">
-        <div className="w-12 h-12 rounded-full bg-amber-400/15 flex items-center justify-center mx-auto mb-4">
-          <Clock className="w-6 h-6 text-amber-400" aria-hidden="true" />
+      <div className="p-6 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900">
+          <Clock className="h-6 w-6 text-amber-700 dark:text-amber-200" aria-hidden="true" />
         </div>
-        <h2 className="text-lg font-semibold text-white mb-2">Sesi Demo Berakhir</h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Sesi demo Anda sudah habis. Daftar ulang atau buat akun.
+        <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
+          Sesi Demo Berakhir
+        </h2>
+        <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+          Sesi demo Anda sudah habis. Mulai ulang atau daftarkan akun.
         </p>
-        <div className="space-y-2">
-          <Button
-            onClick={handleRestart}
-            disabled={loading}
-            className="w-full h-10 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg active:scale-[0.98] transition-all duration-200"
-          >
-            Mulai Ulang Demo
-          </Button>
-          <Link
-            href="/register"
-            className="block text-center text-xs font-semibold text-blue-400 hover:text-blue-300 mt-3 transition-colors"
-          >
-            Daftar Akun
-          </Link>
-        </div>
+        <Button onClick={handleRestart} disabled={loading} className={CTA}>
+          Mulai Ulang Demo
+        </Button>
+        <Link
+          href="/register"
+          className="mt-3 block text-center text-sm font-medium text-blue-500 transition-colors hover:underline"
+        >
+          Daftar Akun
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="p-5 sm:p-6 space-y-5">
-      {/* Alert */}
-      <div className="p-3.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-blue-200 text-xs space-y-1">
-        <div className="flex items-center gap-2 font-bold">
-          <AlertCircle className="w-4 h-4 text-blue-400" aria-hidden="true" />
-          <span>Jelajahi ProMaP secara gratis</span>
-        </div>
-        <p className="text-blue-200/70 leading-relaxed text-[11px]">
-          Coba semua fitur dengan data contoh — tanpa perlu akun perusahaan. Sesi demo
-          berlaku selama 2 jam, cukup untuk merasakan alur kerjanya.
-        </p>
-      </div>
+    <div className="space-y-4 p-6">
+      <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        Lihat isi ProMaP dengan data contoh. Sesi berlaku 2 jam, tanpa perlu akun
+        perusahaan.
+      </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
-        <div>
-          <Label htmlFor="guestName" className="text-xs font-semibold text-slate-200 mb-1 block">
-            Nama Lengkap Pemohon
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <div className="space-y-1.5">
+          <Label htmlFor="guestName" className={LABEL}>
+            Nama Lengkap
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <User className="w-4 h-4" aria-hidden="true" />
-            </div>
+            <User
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <Input
               id="guestName"
               type="text"
-              placeholder="Nama lengkap"
+              placeholder="Hendra Gunawan"
               aria-invalid={!!errors.name}
-              className="w-full pl-9 pr-3 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/60 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={`${INPUT} pl-9`}
               {...register('name')}
             />
           </div>
-          {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name.message}</p>}
+          {errors.name && (
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.name.message}</p>
+          )}
         </div>
 
-        <div>
-          <Label htmlFor="guestEmail" className="text-xs font-semibold text-slate-200 mb-1 block">
+        <div className="space-y-1.5">
+          <Label htmlFor="guestEmail" className={LABEL}>
             Email Bisnis
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Mail className="w-4 h-4" aria-hidden="true" />
-            </div>
+            <Mail
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <Input
               id="guestEmail"
               type="email"
               placeholder="nama@perusahaan.co.id"
               aria-invalid={!!errors.email}
-              className="w-full pl-9 pr-3 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/60 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={`${INPUT} pl-9`}
               {...register('email')}
             />
           </div>
-          {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div>
-            <Label htmlFor="guestPhone" className="text-xs font-semibold text-slate-200 mb-1 block">
-              No. Handphone / WA
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="guestPhone" className={LABEL}>
+              Telepon
             </Label>
             <Input
               id="guestPhone"
               type="tel"
               placeholder="0812-3456-7890"
               aria-invalid={!!errors.phone}
-              className="w-full px-3 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/60 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={INPUT}
               {...register('phone')}
             />
-            {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone.message}</p>}
+            {errors.phone && (
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.phone.message}</p>
+            )}
           </div>
-          <div>
-            <Label htmlFor="guestCompany" className="text-xs font-semibold text-slate-200 mb-1 block">
-              Nama Perusahaan
+          <div className="space-y-1.5">
+            <Label htmlFor="guestCompany" className={LABEL}>
+              Perusahaan
             </Label>
             <Input
               id="guestCompany"
               type="text"
-              placeholder="PT Contoh"
+              placeholder="PT Maju Logistik"
               aria-invalid={!!errors.companyName}
-              className="w-full px-3 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500/60 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={INPUT}
               {...register('companyName')}
             />
             {errors.companyName && (
-              <p className="text-xs text-red-400 mt-1">{errors.companyName.message}</p>
+              <p className="text-xs text-red-600 dark:text-red-400">
+                {errors.companyName.message}
+              </p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-3">
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-            Sesi demo berakhir otomatis
-          </span>
-          <span className="text-blue-300 font-medium">Gratis, tanpa kartu kredit</span>
-        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Sesi demo berakhir otomatis setelah 2 jam.
+        </p>
 
         {error && (
-          <p role="alert" aria-live="polite" className="text-xs text-red-300 bg-red-500/10 border border-red-400/20 rounded-lg p-2.5">
+          <p
+            role="alert"
+            aria-live="polite"
+            className="rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
             {error}
           </p>
         )}
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="group w-full h-10 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-sm font-bold rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md hover:shadow-blue-600/30 flex items-center justify-center gap-2 transition-all duration-200"
-        >
-          <span>{loading ? 'Memulai...' : 'Mulai Akses Guest (Trial 2 Jam)'}</span>
-          {!loading && (
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
-          )}
+        <Button type="submit" disabled={loading} className={CTA}>
+          {loading ? 'Memulai...' : 'Mulai Demo'}
         </Button>
       </form>
     </div>

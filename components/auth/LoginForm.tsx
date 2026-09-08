@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import type { z } from 'zod'
 
 import { loginSchema } from '@/lib/validations/auth'
@@ -15,6 +15,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 type LoginValues = z.infer<typeof loginSchema>
+
+const INPUT =
+  'h-9 w-full rounded-md border-slate-300 bg-white pl-9 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-400'
 
 export function LoginForm() {
   const router = useRouter()
@@ -54,77 +57,82 @@ export function LoginForm() {
   }
 
   return (
-    <div className="p-5 sm:p-6">
+    <div className="p-6">
       {isSignedOut && (
-        <div className="flex items-center gap-2 text-[11px] text-amber-300 bg-amber-400/10 border border-amber-400/20 rounded-lg p-3 mb-5">
-          <span>Sesi Anda sudah berakhir, silakan masuk lagi.</span>
-        </div>
+        <p className="mb-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          Sesi Anda sudah berakhir, silakan masuk lagi.
+        </p>
       )}
 
       {isRegistered && (
-        <div className="flex items-center gap-2 text-[11px] text-green-300 bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-5">
-          <span>Akun berhasil dibuat. Silakan masuk.</span>
-        </div>
+        <p className="mb-5 rounded-md border border-green-200 bg-green-50 p-3 text-xs text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-200">
+          Akun berhasil dibuat. Silakan masuk.
+        </p>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        {/* Email */}
-        <div>
-          <Label htmlFor="email" className="text-xs font-semibold text-slate-200 mb-1.5 block">
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="email"
+            className="text-sm font-medium text-slate-700 dark:text-slate-200"
+          >
             Alamat Email
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Mail className="w-4 h-4" aria-hidden="true" />
-            </div>
+            <Mail
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <Input
               id="email"
               type="email"
               autoComplete="email"
               placeholder="nama@perusahaan.co.id"
               aria-invalid={!!errors.email}
-              className="w-full pl-9 pr-3 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={INPUT}
               {...register('email')}
             />
           </div>
           {errors.email && (
-            <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password */}
-        <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <Label htmlFor="password" className="text-xs font-semibold text-slate-200">
-              Kata Sandi
-            </Label>
-            <a href="#reset" className="text-xs font-medium text-blue-400 hover:text-blue-300">
-              Lupa kata sandi?
-            </a>
-          </div>
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="password"
+            className="text-sm font-medium text-slate-700 dark:text-slate-200"
+          >
+            Kata Sandi
+          </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-4 h-4" aria-hidden="true" />
-            </div>
+            <Lock
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               aria-invalid={!!errors.password}
-              className="w-full pl-9 pr-10 h-10 text-sm bg-white/[0.07] border-white/10 rounded-lg text-white placeholder:text-slate-500 focus-visible:ring-blue-500 focus-visible:border-blue-500 focus-visible:bg-white/[0.1] focus-visible:ring-offset-0"
+              className={`${INPUT} pr-10`}
               {...register('password')}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
-              tabIndex={-1}
+              aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+              className="absolute right-0 top-0 flex h-9 w-10 items-center justify-center rounded-md text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:text-slate-200"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Eye className="h-4 w-4" aria-hidden="true" />
+              )}
             </button>
           </div>
           {errors.password && (
-            <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{errors.password.message}</p>
           )}
         </div>
 
@@ -132,43 +140,46 @@ export function LoginForm() {
           <p
             role="alert"
             aria-live="polite"
-            className="text-xs text-red-300 bg-red-500/10 border border-red-400/20 rounded-lg p-2.5"
+            className="rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
           >
             {error}
           </p>
         )}
 
-        {/* Primary CTA */}
         <Button
           type="submit"
           disabled={loading}
-          className="group w-full h-10 px-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white text-sm font-semibold rounded-lg shadow-sm shadow-blue-600/30 hover:shadow-md hover:shadow-blue-500/30 flex items-center justify-center gap-2 transition-all duration-200"
+          className="h-9 w-full rounded-md bg-blue-500 text-sm font-medium text-white transition-colors hover:bg-blue-600"
         >
-          <span>{loading ? 'Memproses...' : 'Masuk ke Workspace ProMaP'}</span>
-          {!loading && (
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          )}
+          {loading ? 'Memproses...' : 'Masuk'}
         </Button>
       </form>
 
       {/* Divider */}
       <div className="relative py-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-white/10" />
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-transparent px-3 text-slate-500 text-[11px] font-medium uppercase">
-            Atau lanjutkan dengan
+          <span className="bg-white px-3 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            Atau
           </span>
         </div>
       </div>
 
-      {/* Google (setup menyusul via env) */}
+      {/*
+        SSO Google — provider belum dikonfigurasi.
+        Cara mengaktifkan: daftarkan GoogleProvider di lib/auth.ts, isi
+        GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET di .env.local, lalu ganti
+        `disabled` di bawah dengan onClick={() => signIn('google')}.
+      */}
       <button
         type="button"
-        className="group w-full h-10 px-3 py-2 bg-white/[0.07] hover:bg-white/[0.12] active:scale-[0.98] border border-white/10 text-slate-200 text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-all duration-200"
+        disabled
+        title="Login Google belum aktif"
+        className="flex h-9 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24">
+        <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="#4285F4"
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -188,6 +199,9 @@ export function LoginForm() {
         </svg>
         <span>Lanjut dengan Google</span>
       </button>
+      <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+        Login Google akan aktif setelah dikonfigurasi.
+      </p>
     </div>
   )
 }

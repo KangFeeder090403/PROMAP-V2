@@ -18,6 +18,12 @@ catatan kecil.txt
 # Artefak review Playwright
 .playwright-mcp/
 
+# Screenshot verifikasi UI — hanya di root, asset produk tetap boleh
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
 # Konfigurasi editor — bisa memuat kredensial MCP
 .vscode/
 
