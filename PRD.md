@@ -219,6 +219,141 @@ Satu dataset, beberapa view. Toolbar konsisten di semua list page:
 
 Empty state **wajib memberikan next action** — bukan sekadar "No data".
 
+### B10. Layout Spec per Screen (referensi Stitch)
+
+> Mockup di `docs/design-reference/` (gitignored). **Yang diambil: struktur section,
+> hierarki info, kelengkapan field, pola interaksi.** Token visual SELALU dari
+> `.claude/skills/promap-design/SKILL.md` — bukan dari Stitch.
+
+**Wajib dibuang dari semua mockup:**
+- Token Material 3, font Manrope/Hanken, Material Symbols, warna apapun dari Stitch
+- Field "Kode Unik Tenant" di login · Google SSO · blok "Quick Fill Akun Demo"
+- Search bar di header (ditunda V3) · Company switcher di header
+- Reports di navigation (baru muncul saat UI-12)
+- SLA badge, cryptographic hash, seat quota, label "Sprint W34" — semua tidak ada di schema
+- Nama status karangan (DRAFT/SCHEDULED/REVISION/BLOCKED/ARCHIVED) → petakan ke 8 status §A4
+
+---
+
+#### UI-2 — Login & Guest (`ui-2-login-guest.png`)
+
+Layout **split 2 kolom**. Auth pages di luar App Shell.
+
+```
+KIRI  (hero, dark)          KANAN (card "Masuk ke Workspace")
+─────────────────────       ──────────────────────────────────
+Badge kecil                 Tabs: Akun Enterprise │ Guest Demo
+Headline 2 baris            ── tab Enterprise ──
+Subcopy Project→Task→AP        Email · Password
+4 kartu role:                  CTA primary "Masuk"
+  SUPER_ADMIN
+  ADMIN_OPERATIONAL         ── tab Guest Demo ──
+  MANAGER                      Nama · Email · Telepon · Perusahaan
+  PIC                          CTA "Mulai Demo" (sesi 2 jam)
+Panel keamanan:             Footer strip: link Daftar Akun
+  bcrypt 12 · JWT httpOnly
+  no localStorage
+  tenant isolation
+```
+
+- **Guest Demo jadi tab di dalam card login**, bukan halaman terpisah.
+  Route `/demo` tetap ada sebagai deep-link, isinya sama.
+- Mobile: hero collapse jadi header ringkas, card full width.
+- Checkbox "Simpan sesi" di mockup **tidak dipakai** — NextAuth di repo ini
+  pakai `maxAge` tetap, kontrol itu tidak akan berefek apa-apa.
+
+---
+
+#### UI-3 — Dashboard (`ui-3-dashboard-manager.png`)
+
+```
+Greeting "Selamat Pagi, {nama}" + subtitle (divisi · periode)
+Chips rentang waktu: Hari Ini │ Minggu Ini │ Bulan Ini │ Kuartal
+
+4 metric card:
+  TOTAL ACTION PLAN   angka + delta vs bulan lalu
+  SELESAI             angka + % rate + progress bar
+  SEDANG BERJALAN     angka + split "n in progress · m in review"
+  OVERDUE             angka + "Perlu Perhatian"
+
+Panel ACTION REQUIRED  (badge jumlah, aksi inline per baris)
+  PENDING_APPROVAL   → Approve │ Review Evidence │ Reject
+  EVIDENCE_REQUIRED  → Ingatkan PIC │ Buka Detail
+  Proposal SUBMITTED → Review Proposal
+
+2 kolom:
+  Distribusi Status        donut + total di tengah + legend per status
+  Beban Tim & Kapasitas    per PIC: stacked bar (Overdue/Ongoing/Done) + badge beban
+
+Tabel bawah: Overdue & Deadline Kritis
+  ID & Nama │ Risiko │ PIC │ Tenggat │ Keterlambatan │ Aksi
+```
+
+Panel Action Required **dirender walau metrik total = 0**.
+
+---
+
+#### UI-4 — My Work (`ui-4-my-work.png`)
+
+```
+Badge "PIC PERSONAL CONSOLE" · title "My Work"
+Filter chips + hitungan: Semua │ Butuh Aksi Saya │ Deadline Minggu Ini │ Selesai
+
+Panel amber "Butuh Aksi Anda Segera"
+  REJECTED          → Perbaiki Sekarang
+  EVIDENCE_REQUIRED → Upload Evidence
+  Proposal draft    → Submit Proposal
+
+KIRI  "Action Plan Saya" — grouping by status pipeline
+        section In Progress (n) · In Review (n) · Complete (n, collapsed)
+        kartu: kode AP · Parent Task · Project · judul ·
+               progress bar % · checklist n/m · chip deadline · kebab menu
+KANAN rail
+        Upcoming Deadlines  strip 7 hari + baris bertanggal
+        Target Mingguan     donut % + tile Target / Disetujui
+```
+
+---
+
+#### UI-5 — Projects List (`ui-5-projects-list.png`)
+
+```
+Title + subtitle              blok statistik kanan (TOTAL · AKTIF)
+Toolbar: [search] [Status ▾] [Divisi ▾] [Sort ▾] [+ Project Baru]
+
+Tabel:
+  NAMA PROJECT   judul + deskripsi terpotong
+  DIVISI         chip
+  PERIODE        rentang tanggal + ikon kalender
+  JUMLAH TASK    "n Task / m Action Plan"
+  PROGRESS       label + bar
+
+Footer: "Menampilkan 1–n dari m project" + pagination
+Empty:  ikon folder · "Belum ada project" · helper · [+ Project Baru]
+```
+
+---
+
+#### UI-6 — Action Plan + Drawer (`ui-6-action-plan-drawer.png`)
+
+```
+Header: title · [search] · [Filter (n)] · [+ Action Plan]
+Baris kartu hitungan per status — klik = filter (state terpilih terlihat)
+Tabel: TITLE & ID │ PROJECT & SCOPE │ PIC │ PRIORITY   + pagination
+
+DRAWER kanan (list tetap terlihat):
+  breadcrumb Projects › {project} › {kode AP}
+  ikon buka-full-page · tutup
+  judul · dropdown STATUS · "Updated {n} lalu"
+  2 kolom: PIC (dengan aksi reassign) │ PRIORITY & DUE
+  box OUTCOME / KPI
+  Tabs: Work & Evidence (n/m) │ Activity & Discussion (n)
+  Checklist milestone — "Dicentang oleh {nama} • {tanggal}"
+  Footer sticky: "Draft tersimpan" · Batal · Simpan
+```
+
+Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
+
 ---
 
 ## BAGIAN C — ROADMAP
@@ -255,6 +390,9 @@ Empty state **wajib memberikan next action** — bukan sekadar "No data".
 ### C2. Frontend (V2.4) — Urutan Pengerjaan
 
 *(hasil audit repo, 2026-09-04 — V2.4 = refactor, bukan bangun dari nol)*
+
+> **Layout tiap layar: §B10.** Screen tanpa entri di B10 = layout belum disepakati,
+> tanya Product Owner sebelum mulai.
 
 **P0 — Wajib (fondasi, tidak bisa di-skip):**
 ```

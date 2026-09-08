@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-
-// Route yang tidak butuh auth
-const PUBLIC_PATHS = ['/login', '/register', '/demo', '/api/auth', '/api/guest']
+import { PUBLIC_PAGES, PUBLIC_PREFIX } from '@/lib/auth-redirect'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Public routes — lewat
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Public pages — exact match
+  if ((PUBLIC_PAGES as readonly string[]).includes(pathname)) {
+    return NextResponse.next()
+  }
+
+  // Public API prefixes — startsWith
+  if (PUBLIC_PREFIX.some((p) => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
