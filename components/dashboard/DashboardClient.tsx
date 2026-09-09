@@ -592,9 +592,9 @@ export function DashboardClient() {
               legendLayout="grid"
             />
           </div>
-          <div className="mt-4 bg-slate-50 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Sudah selesai</span>
-            <span className="font-mono font-semibold text-emerald-600">
+            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
               {metrics.complete} dari {metrics.total} ({Math.round(metrics.completionRate)}%)
             </span>
           </div>

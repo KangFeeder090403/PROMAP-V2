@@ -94,6 +94,7 @@ export async function GET() {
       checklistDone: ap.checklists.filter((c) => c.isDone).length,
       taskTitle: ap.task?.title ?? null,
       projectName: ap.task?.project?.name ?? null,
+      evidenceLink: ap.evidenceLink ?? null,
       reviewerName:
         ap.status === 'PENDING_APPROVAL'
           ? ap.divisionId

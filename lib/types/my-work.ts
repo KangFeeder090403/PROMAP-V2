@@ -14,6 +14,8 @@ export interface MyWorkItem {
   checklistDone: number
   taskTitle?: string | null
   projectName?: string | null
+  /** Tautan bukti kerja audit. */
+  evidenceLink?: string | null
   /** Nama reviewer (Manager divisi) — hanya relevan saat status PENDING_APPROVAL. */
   reviewerName?: string | null
 }
