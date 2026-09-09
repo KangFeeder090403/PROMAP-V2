@@ -1,769 +1,748 @@
-# PRD ProMaP V2.2 — Final Revised
+# PRD ProMaP V2.4
 
-> Sumber: `ProMaP_V2.2_PRD_Final.docx` (September 2026) — dikonversi ke Markdown, isi utuh.
-> Status: Active Development · Sifat: Rahasia / Internal Tim Dev
-> Ringkasan operasional untuk agent ada di `.claude/CLAUDE.md`.
+> SaaS multi-tenant manajemen action plan | Next.js + PostgreSQL + Neon + Prisma + Vercel
+> **V2.4 = V2.2 (business logic) + UX Architecture Refactor**
+> Backend V2.2 dipertahankan. Yang berubah: Information Architecture, App Shell, navigation, interaction pattern.
 
 ---
 
-## BAB 1 — RINGKASAN PRODUK
+## BAGIAN A — FONDASI
 
-ProMaP (Project Management Platform) adalah aplikasi SaaS berbasis web untuk membantu perusahaan mengelola proyek, divisi, tugas, dan action plan seluruh karyawan.
+### A1. Stack
 
-| Layer | Teknologi |
+| Layer | Tech |
 |---|---|
-| Frontend + Backend | Next.js 14+ App Router — satu codebase full-stack |
-| Database | PostgreSQL @ Neon (Serverless) |
-| ORM | Prisma ORM + Prisma Studio |
-| Deployment | Vercel (native Next.js, integrasi langsung ke Neon) |
-| Autentikasi | NextAuth.js, JWT strategy |
+| App | Next.js 14+ App Router (full-stack) |
+| DB | PostgreSQL → Neon Serverless |
+| ORM | Prisma 7.10.0 (adapter pg, generated ke `lib/generated/prisma`) |
+| Auth | NextAuth.js (JWT, httpOnly cookie) |
+| UI | shadcn/ui + Tailwind CSS + Lucide React |
+| Deploy | Vercel + Vercel Cron + Vercel Blob |
 
-### 1.1 Hierarki Work Item
+Import Prisma: `from '@/lib/generated/prisma/client'` — bukan `@prisma/client`.
+
+### A2. Hierarki Kerja
 
 ```
-Project → Objective → Task → Action Plan → Checklist
+Project → Task → Action Plan → Checklist
+                    ↗ Proposal (butuh approval Manager)
+                    ↗ Personal Task (tidak hitung ke progres tim)
 ```
 
-| Work Item | Dibuat Oleh | Deskripsi |
+> **Catatan V2.4:** "Objective" tetap konsep, BUKAN model Prisma. Tidak ada migration baru. Ditunda ke V3.
+
+### A3. Role & RBAC
+
+| Role | Enum | Scope Data |
 |---|---|---|
-| Project | Admin / Manager | Tujuan besar atau inisiatif utama perusahaan/divisi |
-| Objective | Admin / Manager | Sasaran terukur dalam sebuah Project (OKR-style) |
-| Task | Manager | Delegasi resmi pekerjaan dari Manager ke PIC |
-| Action Plan | PIC / Staff | Langkah taktis yang dibuat PIC untuk menyelesaikan Task-nya |
-| Proposal | PIC / Staff | Ide/pekerjaan yang diusulkan Staff ke Manager, butuh approval |
-| Personal Task | PIC / Staff | Pekerjaan pribadi mandiri, tidak menghitung ke progres tim |
-| Checklist | PIC / Staff | Rincian terkecil di dalam Action Plan |
+| Super Admin | `SUPER_ADMIN` | Semua perusahaan |
+| Admin Ops | `ADMIN_OPERATIONAL` | 1 perusahaan, semua divisi |
+| Manager | `MANAGER` | 1 divisi |
+| PIC | `PIC` | Milik sendiri |
+| Guest | `GUEST` | Dummy data only |
 
-### 1.2 Value Proposition
+**Label Jabatan (UserLabel)** — tampilan PIC dinamis per perusahaan (Magang, Karyawan, dll)
+- Super Admin / Admin Ops → buat label, langsung aktif
+- Manager → usul label → `PENDING` → approval Admin Ops
 
-- **Multi-tenant SaaS** — satu codebase melayani banyak perusahaan klien dengan isolasi data ketat
-- **Fleksibilitas budaya kerja** — Top-Down (delegasi murni) dan Bottom-Up (staff buat proposal sendiri)
-- **Evidence & Approval Workflow** — setiap penyelesaian tugas disertai bukti kerja dan disetujui Manager
-- **Comment / Thread per AP** — komunikasi Manager ↔ PIC terpusat di dalam sistem
-- **Label Jabatan Dinamis** — label PIC sesuai budaya perusahaan (Magang, Karyawan, dll)
-- **Guest Demo Mode** — calon klien lihat demo dengan data simulasi sebelum berlangganan
+### A4. Status Flow AP (8 status)
 
----
+```
+NOT_STARTED → IN_PROGRESS → PENDING_APPROVAL
+                                 ↓
+                    EVIDENCE_REQUIRED ←→ APPROVED → COMPLETE
+                                 ↓
+                              REJECTED → kembali IN_PROGRESS
+NOT_STARTED / IN_PROGRESS → OVERDUE (auto Cron 00:01 WIB)
+```
 
-## BAB 2 — USER PERSONA & RBAC
+### A5. Guest Mode
 
-### 2.1 Daftar Role & Cakupan Data
-
-| Role | Enum | Target User | Cakupan Data | Akses Utama |
-|---|---|---|---|---|
-| Super Admin | `SUPER_ADMIN` | Direktur / IT ProMaP | Lintas semua perusahaan | Full access semua fitur & perusahaan, kelola Leads |
-| Admin Operasional | `ADMIN_OPERATIONAL` | HR / Direktur Klien | 1 perusahaan, semua divisi | Kelola divisi, user, label jabatan, project |
-| Manager | `MANAGER` | Kepala Divisi | 1 divisi saja | Assign task, approve AP & evidence, usul label jabatan |
-| PIC / Staff | `PIC` | Karyawan (label dinamis) | Milik sendiri saja | Buat AP, submit evidence, comment, ubah status |
-| Guest | `GUEST` | Calon Klien (Demo) | Data dummy simulasi saja | View-only dashboard/kanban/kalender, CTA trial |
-
-### 2.2 Label Jabatan Dinamis (UserLabel)
-
-Role `PIC` adalah role **teknis sistem** untuk RBAC/permission. Label yang tampil di UI ditentukan Admin/Manager sesuai budaya perusahaan.
-
-| Aktor | Hak Kelola Label | Catatan |
-|---|---|---|
-| Super Admin | Buat/Edit/Hapus — langsung aktif | Akses penuh semua label semua perusahaan |
-| Admin Operasional | Buat/Edit/Hapus — langsung aktif | Hanya untuk perusahaannya sendiri |
-| Manager | Usulkan label baru — status `PENDING` | Butuh approval Admin Ops sebelum aktif di dropdown |
-
-Contoh label: Magang, Karyawan, Staff Senior, Koordinator, Operator, Freelancer.
-
-### 2.3 RBAC Matrix
-
-| Kapabilitas | Super Admin | Admin Ops | Manager | PIC | Guest |
-|---|---|---|---|---|---|
-| Manajemen Perusahaan & Subscription | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Kelola Leads & Data Prospek | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manajemen User (CRUD + Approval) | ✅ Global | ✅ 1 Co. | ❌ | ❌ | ❌ |
-| Kelola Label Jabatan | ✅ Global | ✅ 1 Co. | ⏳ Usul | ❌ | ❌ |
-| Kelola Divisi & Project | ✅ | ✅ | ✅ Div. | ❌ | ❌ |
-| Assign Task ke PIC | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Buat / Edit Action Plan | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Submit Evidence | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Approve / Reject Evidence & AP | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Comment / Thread per AP | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Buat Proposal (Bottom-Up) | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Buat Personal Task | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Kanban Board | ✅ Semua | ✅ Co. | ✅ Div. | ✅ Own | 👁 Demo |
-| Dashboard & Analitik | ✅ Global | ✅ Co. | ✅ Div. | ✅ Own | 👁 Demo |
-| Kalender & Gantt + Download | ✅ | ✅ | ✅ | ✅ | 👁 Demo |
-| Export Laporan | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Notifikasi In-App | ✅ | ✅ | ✅ | ✅ | ❌ |
-
----
-
-## BAB 3 — FITUR UTAMA
-
-### 3.1 Autentikasi & User Management
-
-- Login email + password (NextAuth.js Credentials Provider)
-- Google SSO opsional via NextAuth.js Google Provider
-- JWT disimpan di **httpOnly cookie** (aman dari XSS)
-- User baru status `PENDING` — butuh approval Admin Ops / Super Admin sebelum aktif
-- Atasan langsung: 1 Manager membawahi beberapa PIC, 1 PIC hanya di bawah 1 Manager
-- Setiap PIC punya label jabatan dari dropdown UserLabel perusahaannya
-
-### 3.2 Guest Mode & Demo
-
-**Flow:**
-1. Calon klien klik "Coba Demo Gratis" di halaman login
-2. Isi form: Nama Lengkap + Email + No HP + Nama Perusahaan
-3. Data tersimpan di tabel `Lead` — Super Admin notif "Prospek baru masuk"
-4. Guest masuk environment simulasi, data dummy hardcoded (bukan data real perusahaan manapun)
-5. Setiap klik fitur aktif (buat/edit/export) → popup CTA "Aktivasi Trial 30 Hari"
-6. Jika accept trial: `Lead` diupdate, countdown 30 hari mulai, Super Admin notif "Leads aktivasi trial"
-
-**Batasan Teknis:**
-
-| Parameter | Nilai / Aturan |
+| Parameter | Nilai |
 |---|---|
-| Data yang ditampilkan | Dummy hardcoded — bukan data perusahaan real |
-| Durasi session | Expired otomatis setelah 2 jam |
-| Limit login per hari | Maksimal 3x login Guest dari 1 email yang sama |
-| Fitur yang bisa diakses | Dashboard, Kanban, Kalender (view-only, data simulasi) |
-| Fitur yang diblokir | Buat/Edit/Delete AP, Export, Settings, User Management |
-| CTA Trigger | Popup muncul setiap kali Guest mencoba aksi aktif |
-| Data form disimpan | Nama, Email, No HP, Nama Perusahaan → tabel `Lead` |
-
-### 3.3 Proposal System (Bottom-Up)
-
-- PIC/Staff mengusulkan pekerjaan/ide ke Manager tanpa menunggu ditugaskan
-- Status: `DRAFT` → `SUBMITTED` → `APPROVED` (jadi Task resmi) / `REJECTED`
-- Manager dapat approve proposal jadi Action Plan resmi, atau tolak dengan catatan
-- **Fitur ini dapat dinonaktifkan per perusahaan klien oleh Admin Operasional**
-
-### 3.4 Manajemen Action Plan
-
-Action Plan dibuat PIC/Staff sebagai langkah taktis menyelesaikan Task.
-Wajib diisi: Judul, Outcome/KPI, Prioritas, Start Date, End Date.
-
-**Status Flow (8 status):**
-
-| Status | Aktor | Keterangan |
-|---|---|---|
-| `NOT_STARTED` | Sistem | Status awal saat AP baru dibuat |
-| `IN_PROGRESS` | PIC | PIC mulai mengerjakan AP |
-| `PENDING_APPROVAL` | PIC | PIC selesai & submit untuk review Manager (wajib isi Evaluasi) |
-| `EVIDENCE_REQUIRED` | Manager | Manager request PIC upload bukti kerja tambahan |
-| `APPROVED` | Manager | Manager menyetujui hasil & evidence — AP selesai resmi |
-| `REJECTED` | Manager | Manager menolak — PIC dapat catatan revisi, status kembali `IN_PROGRESS` |
-| `OVERDUE` | Sistem | Auto-update Cron Job jika deadline terlewat & belum Complete |
-| `COMPLETE` | Manager | AP resmi selesai setelah Approved & evidence diterima |
-
-**Evidence & Complete Workflow:**
-- Saat PIC submit `PENDING_APPROVAL`, modal wajib muncul:
-  - Field "Hasil/Evaluasi" — deskripsi hasil kerja (**wajib**)
-  - Field "Link Bukti Kerja" — URL Google Drive / file pendukung (opsional)
-- Manager dapat: Approve · Request Evidence tambahan · Reject dengan catatan revisi
-- Jika Reject: status kembali `IN_PROGRESS`, PIC notif + catatan Manager
-- Jika Reassign: dialihkan ke PIC lain, sistem kirim notif otomatis ke PIC baru
-
-### 3.5 Comment / Thread per Action Plan
-
-- Section Comment di bagian bawah detail AP
-- Semua user terlibat (PIC, Manager, Admin Ops, Super Admin) dapat menulis komentar
-- Tampil kronologis (terbaru di bawah) dengan nama, label jabatan, timestamp
-- Mendukung `@mention` — user yang di-mention dapat notifikasi
-- **Komentar tidak dapat dihapus** (menjaga audit trail diskusi)
-- Manager dapat menulis catatan revisi langsung di thread, tidak hanya via `reviewNote`
-
-### 3.6 Kanban Board
-
-- 5 kolom: Not Started → In Progress → Pending Approval → Overdue → Complete
-- Drag & drop ubah status antar kolom (disertai popup konfirmasi)
-- Multi-select checkbox + "Ubah Status Massal" untuk bulk action
-- Kartu menampilkan: Prioritas badge (warna), nama AP, label jabatan PIC, Deadline
-- Menu ⋮ per kartu: Edit, Reassign, Lihat Comment, Lihat Evidence, Delete
-
-### 3.7 Dashboard & Analitik
-
-- Donut Chart: proporsi status tugas — jumlah unit + persentase + tooltip interaktif
-- Bar Chart: distribusi prioritas (High / Medium / Low)
-- Bar Chart: produktivitas per PIC (completion rate)
-- Footer metrics: Total Tugas, Selesai, In Progress, Overdue, Completion Rate (%)
-- Semua chart difilter otomatis sesuai scope role (Global / Company / Division / Personal)
-
-### 3.8 Kalender & Gantt View
-
-- Tampilan kalender bulanan mirip Google Calendar
-- Task multi-hari dirender sebagai bar horizontal (Gantt-style)
-- Klik bar → popup detail (Nama AP, PIC, Label Jabatan, Status, Project, Divisi, Deadline)
-- Sinkronisasi data real-time mencegah event double/tumpang tindih
-- Navigasi bulan: panah kiri/kanan
-
-**Download Kalender (per bulan):**
-- Format PDF/PNG
-- Layout KIRI — tabel daftar AP (Nama AP, PIC, Start Date, End Date)
-- Layout KANAN — visual kalender Gantt dengan bar berwarna per AP
-- Filter download mengikuti scope role pengguna
-
-### 3.9 Filter & Pencarian
-
-- Quick filter chips: Hari Ini / Minggu Ini / Bulan Ini
-- Custom filter dropdown: Status, PIC, Label Jabatan, Divisi, Project, Priority, Date Range
-- Sort: Terbaru→Terlama (default), Terlama→Terbaru, Deadline Terdekat, Prioritas Tertinggi
-- Filter dapat ditumpuk (kombinasi multiple filter)
-- Tombol Reset Filter
-- Filter otomatis dikunci sesuai scope role — contoh: role PIC hanya bisa mencari AP dan Project Goal miliknya sendiri
-
-### 3.10 Notifikasi In-App
-
-- Ikon lonceng di header dengan badge counter merah (jumlah unread)
-- Panel dropdown toggle — judul, pesan singkat, timestamp per notif
-- Klik notif → navigasi langsung ke halaman/item terkait
-- Tombol "Tandai Semua Dibaca" + klik individual mark as read
-
-| Penerima | Trigger Notifikasi |
-|---|---|
-| PIC / Staff | Task baru di-assign · Task di-reassign ke orang lain · AP di-approve ✅ · AP di-reject / perlu revisi ❌ (beserta catatan) · Manager request evidence tambahan · Di-mention (@) dalam comment AP · Deadline H-1 · Status AP jadi Overdue |
-| Manager | AP bawahan masuk `PENDING_APPROVAL` · PIC submit evidence baru · AP belum di-review >3 hari · Proposal baru dari PIC/Staff · Di-mention (@) · Task PIC jadi Overdue · Usulan label jabatan baru dari Manager lain (jika Admin Ops) |
-| Admin Ops | User baru mendaftar (status Pending) · Manager mengusulkan label jabatan baru · Divisi baru dibuat |
-| Super Admin | Prospek baru masuk (Guest isi form demo) · Guest aktivasi Trial 30 Hari · Perusahaan klien baru didaftarkan · Kapasitas database 70% dan 90% |
-
-### 3.11 Laporan & Evaluasi
-
-- Laporan progres per Project, per Divisi, per PIC
-- Riwayat evidence dan catatan evaluasi per Action Plan
-- Riwayat thread comment per AP tersedia di laporan detail
-- Export ke PDF dan Excel
-- Audit Log: riwayat perubahan status per AP (siapa, kapan, dari status apa ke apa)
-- **Integrasi HRIS**: sistem mengirim data Action Plan per karyawan ke website HRIS perusahaan secara otomatis
+| Form | Nama + Email + No HP + Nama Perusahaan → tabel `Lead` |
+| Data | Dummy hardcoded, bukan data real |
+| Session | Cookie `promap-guest-token`, expired 2 jam |
+| Rate limit | Max 3x login/hari per email, reset 00:00 WIB |
+| CTA | Popup "Aktivasi Trial 30 Hari" tiap klik fitur aktif |
 
 ---
 
-## BAB 4 — PRISMA SCHEMA (PostgreSQL / Neon)
+## BAGIAN B — UX ARCHITECTURE (BARU di V2.4)
 
-Simpan di `prisma/schema.prisma`, jalankan `npx prisma migrate dev`.
+### B1. Prinsip Inti
+
+> **ProMaP = satu workspace kerja, bukan kumpulan halaman fitur.**
+> User tidak berpindah aplikasi saat ganti Table → Board → Calendar. Hanya ganti cara melihat data yang sama.
+
+**5 Prinsip UX:**
+
+1. **One System, Multiple Views** — satu dataset work item, banyak cara lihat. Jangan buat data terpisah hanya karena tampilan berbeda.
+2. **Page, Not Form** — Action Plan adalah objek kerja hidup: buka item → lihat konteks → edit inline → progress → evidence → discussion. Bukan form 12 field lalu submit.
+3. **Context Preservation** — buka detail tanpa kehilangan posisi/filter list. Drawer untuk inspeksi cepat, full page untuk kerja mendalam.
+4. **Progressive Disclosure** — info penting dulu. Info sekunder masuk ke tab, expandable section, atau drawer.
+5. **Role-Aware UX** — UI mengikuti RBAC. PIC tidak melihat kontrol Manager. Manager dapat workflow review. Admin dapat administrative control.
+
+### B2. Navigation (Sidebar)
+
+```
+PROMAP
+────────────────────
+WORKSPACE
+  Home            ← Dashboard adaptif per role
+  My Work         ← Tugas milik user (semua role)
+  Projects        ← List + detail project
+
+EXECUTION
+  Board           ← Kanban 5 kolom (mapping 8 status, lihat §B7)
+  Calendar        ← Monthly + Gantt
+  Proposals       ← Bottom-up work entry
+
+INSIGHTS
+  Reports         ← Laporan & export
+
+────────────────────
+  Settings        ← Company, Division, User, UserLabel, Leads
+────────────────────
+Profile · Notifications · Help
+```
+
+**Aturan navigation:**
+- Sidebar mencerminkan pekerjaan user, bukan struktur API
+- Menu tampil/sembunyi sesuai RBAC (Leads hanya Super Admin, Settings hanya Admin ke atas)
+- Jangan tambah menu untuk setiap fitur backend baru
+
+### B3. App Shell
+
+```
+┌──────────┬────────────────────────────────────┐
+│ Sidebar  │ Header (h-14, sticky)              │
+│ w-64     │ Breadcrumb · Notif · User menu     │
+│ dark     ├────────────────────────────────────┤
+│ #0F172A  │                                    │
+│          │ Main Workspace                     │
+│          │ bg #F8FAFC · p-6                   │
+└──────────┴────────────────────────────────────┘
+```
+
+**Header minimal:** breadcrumb, notification bell (badge counter), user menu.
+
+**Global Create — tombol `+ New`:**
+```
+Project · Task · Action Plan · Personal Task · Proposal
+```
+Visibility mengikuti RBAC.
+
+> **Ditunda ke V3:** Global Search (Cmd+K), Command Menu — butuh endpoint `/api/search` yang belum ada.
+
+### B4. Detail Interaction Pattern
+
+| Konteks | Pola |
+|---|---|
+| Inspeksi cepat dari list | **Drawer** (side panel, list tetap terlihat di belakang) |
+| Kerja mendalam | **Full page** (`/action-plans/[id]`, `/projects/[id]`) |
+| Aksi cepat (ubah status, assign PIC) | **Inline / dropdown** — tanpa buka form |
+| Create item baru | **Modal** ringkas, field minimum wajib saja |
+
+**Aturan:** kembali dari detail tidak boleh menghilangkan filter/scroll position list.
+
+### B5. Dashboard Adaptif per Role
+
+Satu route `/` — konten menyesuaikan role. Bukan halaman terpisah.
+
+| Role | Konten Dashboard |
+|---|---|
+| **Super Admin** | Metrics lintas perusahaan · List company · Leads baru · Kapasitas DB |
+| **Admin Ops** | Metrics per divisi · Perbandingan completion rate antar divisi · User pending · Label pending |
+| **Manager** | Metrics tim · **Action Required** (AP menunggu review, proposal masuk) · **Team Workload** (bar chart beban per PIC) · Overdue alert |
+| **PIC** | My Work · Deadline terdekat · AP yang perlu revisi · Notifikasi |
+
+**Komponen Dashboard wajib:**
+- 4 metric cards: Total, Selesai, In Progress, Overdue
+- Donut chart: distribusi status AP
+- Bar chart: distribusi prioritas
+- **Action Required panel** (Manager & Admin Ops) — semua yang butuh keputusan user
+- **Team Workload** (Manager) — cegah overload sebelum assign task baru
+
+### B6. My Work
+
+Halaman khusus untuk semua role — tugas yang **milik user sendiri**.
+
+Isi:
+- AP yang di-assign ke user (grouped by status)
+- Task yang jadi tanggung jawab user
+- Deadline terdekat (7 hari ke depan)
+- Item yang butuh aksi user (revisi, evidence diminta)
+
+### B7. Board (Kanban) — Mapping 8 Status
+
+Masalah: 8 status bisnis vs board yang readable.
+
+**Solusi — 5 kolom dengan grouping:**
+
+| Kolom Board | Status yang Masuk |
+|---|---|
+| **Not Started** | `NOT_STARTED` |
+| **In Progress** | `IN_PROGRESS` |
+| **Review** | `PENDING_APPROVAL`, `EVIDENCE_REQUIRED` |
+| **Needs Revision** | `REJECTED` |
+| **Done** | `APPROVED`, `COMPLETE` |
+
+`OVERDUE` bukan kolom — tapi **badge merah** di kartu, apapun kolomnya.
+
+Drag & drop hanya untuk transisi yang valid sesuai status flow. Transisi invalid ditolak dengan toast.
+
+### B8. View System
+
+Satu dataset, beberapa view. Toolbar konsisten di semua list page:
+
+```
+[ Judul Halaman ]
+[ Filter ▾ ] [ Sort ▾ ] [ View: Table|Board|Calendar ] [ + New ]
+```
+
+**Filter:** Status, PIC, Divisi, Project, Priority, Date range
+**Quick chips:** Hari Ini · Minggu Ini · Bulan Ini
+**Sort:** Terbaru, Terlama, Deadline Terdekat, Prioritas Tertinggi
+
+> **Ditunda ke V3:** Saved Views, Timeline View — butuh model baru di schema.
+
+### B9. State Wajib Setiap Halaman
+
+| State | Contoh |
+|---|---|
+| Loading | Skeleton, bukan spinner penuh layar |
+| Empty | "Belum ada Action Plan. Buat AP pertama untuk mulai." + tombol aksi |
+| Error | Pesan jelas + tombol retry |
+| Permission denied | "Anda tidak punya akses ke halaman ini" |
+| No search results | "Tidak ada hasil untuk filter ini" + tombol reset filter |
+
+Empty state **wajib memberikan next action** — bukan sekadar "No data".
+
+### B10. Layout Spec per Screen (referensi Stitch)
+
+> Mockup di `docs/design-reference/` (gitignored). **Yang diambil: struktur section,
+> hierarki info, kelengkapan field, pola interaksi.** Token visual SELALU dari
+> `.claude/skills/promap-design/SKILL.md` — bukan dari Stitch.
+
+**Wajib dibuang dari semua mockup:**
+- Token Material 3, font Manrope/Hanken, Material Symbols, warna apapun dari Stitch
+- Field "Kode Unik Tenant" di login · Google SSO · blok "Quick Fill Akun Demo"
+- Search bar di header (ditunda V3) · Company switcher di header
+- Reports di navigation (baru muncul saat UI-12)
+- SLA badge, cryptographic hash, seat quota, label "Sprint W34" — semua tidak ada di schema
+- Nama status karangan (DRAFT/SCHEDULED/REVISION/BLOCKED/ARCHIVED) → petakan ke 8 status §A4
+
+---
+
+#### UI-2 — Login & Guest (`ui-2-login-guest.png`)
+
+Layout **split 2 kolom**. Auth pages di luar App Shell.
+
+```
+KIRI  (hero, dark)          KANAN (card "Masuk ke Workspace")
+─────────────────────       ──────────────────────────────────
+Badge kecil                 Tabs: Akun Enterprise │ Guest Demo
+Headline 2 baris            ── tab Enterprise ──
+Subcopy Project→Task→AP        Email · Password
+4 kartu role:                  CTA primary "Masuk"
+  SUPER_ADMIN
+  ADMIN_OPERATIONAL         ── tab Guest Demo ──
+  MANAGER                      Nama · Email · Telepon · Perusahaan
+  PIC                          CTA "Mulai Demo" (sesi 2 jam)
+Panel keamanan:             Footer strip: link Daftar Akun
+  bcrypt 12 · JWT httpOnly
+  no localStorage
+  tenant isolation
+```
+
+- **Guest Demo jadi tab di dalam card login**, bukan halaman terpisah.
+  Route `/demo` tetap ada sebagai deep-link, isinya sama.
+- Mobile: hero collapse jadi header ringkas, card full width.
+- Checkbox "Simpan sesi" di mockup **tidak dipakai** — NextAuth di repo ini
+  pakai `maxAge` tetap, kontrol itu tidak akan berefek apa-apa.
+
+---
+
+#### UI-3 — Dashboard (`ui-3-dashboard-manager.png`)
+
+```
+Greeting "Selamat Pagi, {nama}" + subtitle (divisi · periode)
+Chips rentang waktu: Hari Ini │ Minggu Ini │ Bulan Ini │ Kuartal
+
+4 metric card:
+  TOTAL ACTION PLAN   angka + delta vs bulan lalu
+  SELESAI             angka + % rate + progress bar
+  SEDANG BERJALAN     angka + split "n in progress · m in review"
+  OVERDUE             angka + "Perlu Perhatian"
+
+Panel ACTION REQUIRED  (badge jumlah, aksi inline per baris)
+  PENDING_APPROVAL   → Approve │ Review Evidence │ Reject
+  EVIDENCE_REQUIRED  → Ingatkan PIC │ Buka Detail
+  Proposal SUBMITTED → Review Proposal
+
+2 kolom:
+  Distribusi Status        donut + total di tengah + legend per status
+  Beban Tim & Kapasitas    per PIC: stacked bar (Overdue/Ongoing/Done) + badge beban
+
+Tabel bawah: Overdue & Deadline Kritis
+  ID & Nama │ Risiko │ PIC │ Tenggat │ Keterlambatan │ Aksi
+```
+
+Panel Action Required **dirender walau metrik total = 0**.
+
+> **Deviasi terpasang (2026-09-09, disetujui Product Owner):**
+> - **Beban Tim & Kapasitas disembunyikan sementara** (flag `SHOW_TEAM_WORKLOAD=false`).
+>   Kode tidak dihapus. Slot kanan diisi **Distribusi Prioritas (High/Medium/Low)**
+>   dari `priorityBreakdown` yang sudah dihitung API.
+> - **Chip rentang +"Semua"** ditambahkan (range `all`) untuk membuka data historis.
+> - **Filter PIC di banner** (dropdown "Semua PIC", sembunyi untuk role PIC) —
+>   memfilter seluruh dashboard ke satu PIC.
+> - **Tabel Overdue**: sortir client-side 4 opsi (terlama/tenggat/prioritas/terbaru);
+>   "Ingatkan PIC" memanggil `POST /api/action-plans/[id]/remind` (rate-limit 24 jam).
+> - **Proposal** dibuka lewat **Drawer geser-kanan** (bukan modal), tanpa tombol
+>   "Buka Halaman Penuh" (route `/proposals?id=` belum ada — ditunda UI-8).
+
+---
+
+#### UI-4 — My Work (`ui-4-my-work.png`)
+
+```
+Badge "PIC PERSONAL CONSOLE" · title "My Work"
+Filter chips + hitungan: Semua │ Butuh Aksi Saya │ Deadline Minggu Ini │ Selesai
+
+Panel amber "Butuh Aksi Anda Segera"
+  REJECTED          → Perbaiki Sekarang
+  EVIDENCE_REQUIRED → Upload Evidence
+  Proposal draft    → Submit Proposal
+
+KIRI  "Action Plan Saya" — grouping by status pipeline
+        section In Progress (n) · In Review (n) · Complete (n, collapsed)
+        kartu: kode AP · Parent Task · Project · judul ·
+               progress bar % · checklist n/m · chip deadline · kebab menu
+KANAN rail
+        Upcoming Deadlines  strip 7 hari + baris bertanggal
+        Target Mingguan     donut % + tile Target / Disetujui
+```
+
+---
+
+#### UI-5 — Projects List (`ui-5-projects-list.png`)
+
+```
+Title + subtitle              blok statistik kanan (TOTAL · AKTIF)
+Toolbar: [search] [Status ▾] [Divisi ▾] [Sort ▾] [+ Project Baru]
+
+Tabel:
+  NAMA PROJECT   judul + deskripsi terpotong
+  DIVISI         chip
+  PERIODE        rentang tanggal + ikon kalender
+  JUMLAH TASK    "n Task / m Action Plan"
+  PROGRESS       label + bar
+
+Footer: "Menampilkan 1–n dari m project" + pagination
+Empty:  ikon folder · "Belum ada project" · helper · [+ Project Baru]
+```
+
+---
+
+#### UI-6 — Action Plan + Drawer (`ui-6-action-plan-drawer.png`)
+
+```
+Header: title · [search] · [Filter (n)] · [+ Action Plan]
+Baris kartu hitungan per status — klik = filter (state terpilih terlihat)
+Tabel: TITLE & ID │ PROJECT & SCOPE │ PIC │ PRIORITY   + pagination
+
+DRAWER kanan (list tetap terlihat):
+  breadcrumb Projects › {project} › {kode AP}
+  ikon buka-full-page · tutup
+  judul · dropdown STATUS · "Updated {n} lalu"
+  2 kolom: PIC (dengan aksi reassign) │ PRIORITY & DUE
+  box OUTCOME / KPI
+  Tabs: Work & Evidence (n/m) │ Activity & Discussion (n)
+  Checklist milestone — "Dicentang oleh {nama} • {tanggal}"
+  Footer sticky: "Draft tersimpan" · Batal · Simpan
+```
+
+Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
+
+---
+
+## BAGIAN C — ROADMAP
+
+> Penanda: `✅` selesai & ACC reviewer · `🔶` ada tapi belum sesuai V2.4 (perlu refactor) · `⬜` belum ada
+
+### C1. Backend — Status
+
+*(hasil audit repo, 2026-09-04)*
+
+```
+✅ 1.  Setup & Auth                 app/api/auth/*
+✅ 2.  Company & Division CRUD      app/api/companies, /divisions
+✅ 3.  User Management + UserLabel  app/api/users, /user-labels
+✅ 4.  Guest Mode & Leads           app/api/guest/*, /leads
+✅ 5.  Project & Task               app/api/projects, /tasks
+✅ 6.  Proposal System              app/api/proposals
+✅ 7.  Action Plan (8 status)       app/api/action-plans
+✅ 8.  Evidence & Approval          .../submit, /review, /start, /reassign
+✅ 9.  Comment / Thread + @mention  .../comments + lib/mentions.ts  (bc93973)
+✅ 10. Dashboard & Analitik         app/api/dashboard + lib/dashboard-aggregate.ts (813c838)
+✅ 11. Notifikasi In-App            app/api/notifications/*  (6d586ac)
+✅ 12. Kanban Board                 pakai /api/action-plans + PUT /tasks/[id] (6d586ac)
+✅ 13. Kalender + Download PDF      app/api/calendar, /calendar/export (e642936)
+🔶 14. Filter & Sort                filter parsial: action-plans/tasks/proposals punya
+                                    searchParams; projects belum. Sort belum ada.
+✅ 15. Cron Job Overdue             app/api/cron/check-overdue  (6d586ac)
+⬜ 16. Laporan & Export             app/api/reports belum ada (hanya folder .gitkeep)
+⬜ 17. Audit Log                    tidak ada satupun prisma.activityLog.create.
+                                    Ada 2 ponytail marker di action-plans/[id]/
+                                    {submit,review}/route.ts
+```
+
+### C2. Frontend (V2.4) — Urutan Pengerjaan
+
+*(hasil audit repo, 2026-09-04 — V2.4 = refactor, bukan bangun dari nol)*
+
+> **Layout tiap layar: §B10.** Screen tanpa entri di B10 = layout belum disepakati,
+> tanya Product Owner sebelum mulai.
+
+**P0 — Wajib (fondasi, tidak bisa di-skip):**
+```
+🔶 UI-1  App Shell     ADA: components/layout/{DashboardShell,Sidebar,Header,
+                       NotifBell,UserMenu,nav-config}.tsx
+                       KURANG: nav flat 8 item, belum ada grup WORKSPACE/EXECUTION/
+                       INSIGHTS · belum ada breadcrumb (Header cuma judul halaman) ·
+                       belum ada tombol + New global · belum ada My Work
+🔶 UI-2  Auth Pages    ADA: app/(auth)/{login,register}/page.tsx — audit visual V2.4
+⬜ UI-3  Dashboard     ADA app/(dashboard)/page.tsx + charts, TAPI belum adaptif per
+                       role, belum ada Action Required, belum ada Team Workload
+⬜ UI-4  My Work       belum ada route sama sekali
+🔶 UI-5  Projects      ADA app/(dashboard)/projects/page.tsx (list saja)
+                       KURANG: detail page /projects/[id] + tabs
+🔶 UI-6  Action Plan   ADA app/(dashboard)/action-plans/page.tsx + ActionPlanDetail
+                       (Dialog, 3 tab) KURANG: harus Drawer, bukan Dialog ·
+                       belum ada full page /action-plans/[id]
+```
+
+**P1 — Penting (setelah P0 stabil):**
+```
+🔶 UI-7  Board         ADA app/(dashboard)/board/page.tsx (route sudah di-rename dari
+                       /kanban) KURANG: cek mapping 5 kolom + badge OVERDUE
+🔶 UI-8  Proposals     ADA app/(dashboard)/proposals/page.tsx — audit V2.4
+🔶 UI-9  Settings      ADA app/(dashboard)/settings/page.tsx (Company, Division, User,
+                       UserLabel) KURANG: Leads belum masuk Settings
+🔶 UI-10 Calendar      ADA app/(dashboard)/calendar/page.tsx + Gantt + export PDF
+⬜ UI-11 Filter & Sort belum ada toolbar konsisten di list page manapun
+```
+
+**P2 — Setelah core stabil:**
+```
+⬜ UI-12 Reports & Export   folder kosong. Percobaan sebelumnya dibuang (lihat catatan)
+⬜ UI-13 Leads              backend /api/leads ada, UI belum
+⬜ UI-14 Guest Demo Page    backend /api/guest/* ada, UI belum
+⬜ UI-15 Audit Log view     bergantung backend #17 yang belum ada
+```
+
+### C3. Ditunda ke V3
+
+Global Search (Cmd+K) · Command Menu · Saved Views · Timeline View · Objective sebagai entitas · ProjectMember · Recurring Task · Template AP · Workload View lanjutan · Task Dependency · PWA/Mobile
+
+---
+
+## BAGIAN D — DESIGN SYSTEM
+
+Detail lengkap: `.claude/skills/promap-design/SKILL.md` — **wajib dibaca sebelum generate UI apapun.**
+
+### D1. Color Tokens
+
+```
+Background     #F8FAFC   slate-50    halaman utama
+Surface        #FFFFFF   white       card, modal, drawer
+Sidebar        #0F172A   slate-900   sidebar dark
+Primary        #1E40AF   blue-800    brand element
+Accent/CTA     #3B82F6   blue-500    SATU warna untuk semua tombol aksi
+Text primary   #0F172A   slate-900
+Text secondary #64748B   slate-500
+Border         #E2E8F0   slate-200
+```
+
+### D2. Status → Color Mapping
+
+| Status | Tailwind Class |
+|---|---|
+| Not Started | `bg-slate-100 text-slate-600` |
+| In Progress | `bg-blue-100 text-blue-700` |
+| Pending Approval | `bg-indigo-100 text-indigo-700` |
+| Evidence Required | `bg-amber-100 text-amber-700` |
+| Approved | `bg-green-100 text-green-700` |
+| Rejected | `bg-red-100 text-red-700` |
+| Overdue | `bg-orange-100 text-orange-700` |
+| Complete | `bg-emerald-100 text-emerald-700` |
+
+### D3. Priority → Color
+
+| Priority | Class | Dot |
+|---|---|---|
+| High | `bg-red-100 text-red-700` | `bg-red-500` |
+| Medium | `bg-amber-100 text-amber-700` | `bg-amber-500` |
+| Low | `bg-slate-100 text-slate-600` | `bg-slate-400` |
+
+### D4. Typography & Spacing
+
+```
+Font          Inter Variable (wajib, tidak boleh diganti)
+Page title    24px semibold slate-900 tracking-tight
+Section H2    18px semibold slate-800
+Card title    15px medium slate-800
+Body          14px normal slate-700
+Label/meta    12px medium slate-500 uppercase tracking-wide
+
+Page padding  p-6      Card padding  p-5
+Section gap   gap-6    Card gap      gap-4
+Input/button  h-9      Radius        rounded-lg (card) / rounded-md (input)
+Shadow        shadow-sm (card) / shadow-md (dropdown, modal)
+```
+
+---
+
+## BAGIAN E — PRISMA SCHEMA (ringkas)
 
 ```prisma
-generator client {
-  provider = "prisma-client-js"
-}
+enum Role              { SUPER_ADMIN ADMIN_OPERATIONAL MANAGER PIC GUEST }
+enum UserStatus        { PENDING ACTIVE INACTIVE }
+enum UserLabelStatus   { PENDING ACTIVE REJECTED }
+enum Priority          { HIGH MEDIUM LOW }
+enum ActionPlanStatus  { NOT_STARTED IN_PROGRESS PENDING_APPROVAL EVIDENCE_REQUIRED APPROVED REJECTED OVERDUE COMPLETE }
+enum ProposalStatus    { DRAFT SUBMITTED APPROVED REJECTED }
+enum LeadStatus        { NEW TRIAL_ACTIVE CONVERTED COLD }
+enum SubscriptionTier  { BASIC PREMIUM ENTERPRISE }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
+model Company    { id name uniqueCode logoUrl? subscription isActive deletedAt? }
+model Division   { id name companyId deletedAt? }
+model UserLabel  { id companyId name status requestedById? approvedById? deletedAt? }
+model User       { id email name phone? password? role status companyId? divisionId? supervisorId? userLabelId? isGuest guestExpiry? deletedAt? }
+model Lead       { id name email phone companyName status trialStartAt? trialEndAt? loginCount lastLoginAt? notes? }
+model Project    { id name description? companyId divisionId? createdById isActive startDate? endDate? deletedAt? }
+model Task       { id title description? projectId divisionId picId createdById priority status startDate? endDate? deletedAt? }
+model ActionPlan { id taskId? picId divisionId companyId title outcomeKpi priority status startDate endDate isPersonal evaluationNote? evidenceLink? reviewNote? deletedAt? }
+model Checklist  { id actionPlanId title isDone }
+model Proposal   { id proposerId title description status reviewNote? }
+model Comment    { id actionPlanId authorId content createdAt }   // tidak bisa dihapus
+model Notification { id userId companyId? title message link? isRead }
+model ActivityLog  { id userId actionPlanId? action oldValue? newValue? }
+```
 
-// ─── ENUMS ───────────────────────────────────────────────────
+> `Task` TIDAK punya `companyId` — pakai `taskScope()` custom via relasi `division.companyId`, bukan `buildWhereClause()` generik.
+> `Project` punya `divisionId` nullable — Manager scope per divisi, Project company-wide boleh `null`.
 
-enum Role {
-  SUPER_ADMIN
-  ADMIN_OPERATIONAL
-  MANAGER
-  PIC
-  GUEST
-}
+---
 
-enum UserStatus {
-  PENDING
-  ACTIVE
-  INACTIVE
-}
+## BAGIAN F — API ROUTES
 
-enum UserLabelStatus {
-  PENDING   // Diusulkan Manager, menunggu approval Admin Ops
-  ACTIVE    // Sudah disetujui, tampil di dropdown
-  REJECTED
-}
+### Auth & Guest
+```
+POST /api/auth/register          POST /api/guest/register
+POST /api/auth/login             POST /api/guest/activate-trial
+GET  /api/auth/profile
+POST /api/auth/logout
+```
 
-enum Priority {
-  HIGH
-  MEDIUM
-  LOW
-}
+### Company, Division, User, Label
+```
+GET|POST      /api/companies              GET|POST  /api/users
+PUT|DELETE    /api/companies/[id]         PUT       /api/users/[id]
+GET|POST      /api/divisions              PUT       /api/users/[id]/approve
+PUT|DELETE    /api/divisions/[id]         DELETE    /api/users/[id]
+GET|POST      /api/user-labels            PUT       /api/user-labels/[id]/approve
+DELETE        /api/user-labels/[id]
+```
 
-enum ActionPlanStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  PENDING_APPROVAL
-  EVIDENCE_REQUIRED
-  APPROVED
-  REJECTED
-  OVERDUE
-  COMPLETE
-}
+### Project, Task, Action Plan, Comment
+```
+GET|POST      /api/projects               GET|POST  /api/action-plans
+PUT|DELETE    /api/projects/[id]          PUT       /api/action-plans/[id]
+GET|POST      /api/tasks                  PUT       /api/action-plans/[id]/submit
+PUT|DELETE    /api/tasks/[id]             PUT       /api/action-plans/[id]/review
+                                          PUT       /api/action-plans/[id]/reassign
+                                          GET|POST  /api/action-plans/[id]/comments
+```
 
-enum ProposalStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-  REJECTED
-}
-
-enum LeadStatus {
-  NEW           // Baru isi form demo
-  TRIAL_ACTIVE  // Sudah aktivasi trial 30 hari
-  CONVERTED     // Sudah jadi klien berbayar
-  COLD          // Tidak ada respon
-}
-
-enum SubscriptionTier {
-  BASIC
-  PREMIUM
-  ENTERPRISE
-}
-
-// ─── MODELS ──────────────────────────────────────────────────
-
-model Company {
-  id           String           @id @default(cuid())
-  name         String
-  uniqueCode   String           @unique
-  logoUrl      String?
-  subscription SubscriptionTier @default(BASIC)
-  isActive     Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  deletedAt    DateTime?
-
-  divisions     Division[]
-  users         User[]
-  projects      Project[]
-  userLabels    UserLabel[]
-  notifications Notification[]
-}
-
-// Label jabatan dinamis per perusahaan (Magang, Karyawan, dll)
-model UserLabel {
-  id            String          @id @default(cuid())
-  companyId     String
-  name          String          // "Magang", "Karyawan", "Koordinator", dll
-  status        UserLabelStatus @default(ACTIVE)
-  requestedById String?         // Jika diusulkan oleh Manager
-  approvedById  String?         // Admin Ops yang approve
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id])
-  users   User[]
-}
-
-model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String
-  phone        String?
-  password     String?
-  role         Role       @default(PIC)
-  status       UserStatus @default(PENDING)
-  companyId    String?
-  divisionId   String?
-  supervisorId String?
-  userLabelId  String?    // Label jabatan (Magang, Karyawan, dll)
-  // Guest fields
-  isGuest      Boolean    @default(false)
-  guestExpiry  DateTime?  // Session expired 2 jam
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
-
-  company       Company?   @relation(fields: [companyId], references: [id])
-  division      Division?  @relation(fields: [divisionId], references: [id])
-  userLabel     UserLabel? @relation(fields: [userLabelId], references: [id])
-  supervisor    User?      @relation("Supervision", fields: [supervisorId], references: [id])
-  subordinates  User[]     @relation("Supervision")
-  assignedTasks Task[]     @relation("TaskPIC")
-  createdTasks  Task[]     @relation("TaskCreator")
-  actionPlans   ActionPlan[]
-  proposals     Proposal[]
-  comments      Comment[]
-  notifications Notification[]
-  activityLogs  ActivityLog[]
-}
-
-// Tabel Leads untuk tracking prospek dari Guest Demo
-model Lead {
-  id           String     @id @default(cuid())
-  name         String
-  email        String
-  phone        String
-  companyName  String
-  status       LeadStatus @default(NEW)
-  trialStartAt DateTime?
-  trialEndAt   DateTime?
-  loginCount   Int        @default(0)   // Track berapa kali login Guest
-  lastLoginAt  DateTime?
-  notes        String?    // Catatan follow-up dari Super Admin
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-}
-
-model Division {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  companyId   String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-
-  company     Company @relation(fields: [companyId], references: [id])
-  users       User[]
-  tasks       Task[]
-  actionPlans ActionPlan[]
-}
-
-model Project {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  companyId   String
-  createdById String
-  isActive    Boolean   @default(true)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-
-  company Company @relation(fields: [companyId], references: [id])
-  tasks   Task[]
-}
-
-model Task {
-  id          String           @id @default(cuid())
-  title       String
-  description String?
-  projectId   String
-  divisionId  String
-  picId       String
-  createdById String
-  priority    Priority         @default(MEDIUM)
-  status      ActionPlanStatus @default(NOT_STARTED)
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  deletedAt   DateTime?
-
-  project     Project  @relation(fields: [projectId], references: [id])
-  division    Division @relation(fields: [divisionId], references: [id])
-  pic         User     @relation("TaskPIC", fields: [picId], references: [id])
-  createdBy   User     @relation("TaskCreator", fields: [createdById], references: [id])
-  actionPlans ActionPlan[]
-}
-
-model ActionPlan {
-  id             String           @id @default(cuid())
-  taskId         String?
-  picId          String
-  divisionId     String
-  companyId      String
-  title          String
-  outcomeKpi     String
-  priority       Priority         @default(MEDIUM)
-  status         ActionPlanStatus @default(NOT_STARTED)
-  startDate      DateTime
-  endDate        DateTime
-  isPersonal     Boolean          @default(false)
-  // Evidence & Approval
-  evaluationNote String?          // Diisi PIC saat submit
-  evidenceLink   String?          // Link bukti kerja
-  reviewNote     String?          // Catatan Manager (approve/reject/revisi)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  deletedAt      DateTime?
-
-  task         Task?    @relation(fields: [taskId], references: [id])
-  pic          User     @relation(fields: [picId], references: [id])
-  division     Division @relation(fields: [divisionId], references: [id])
-  checklists   Checklist[]
-  comments     Comment[]
-  activityLogs ActivityLog[]
-}
-
-// Thread diskusi per Action Plan
-model Comment {
-  id           String   @id @default(cuid())
-  actionPlanId String
-  authorId     String
-  content      String   // Mendukung @mention dengan format @userId
-  createdAt    DateTime @default(now())
-  // Tidak ada updatedAt/deletedAt — komentar tidak bisa dihapus (audit trail)
-
-  actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
-  author     User       @relation(fields: [authorId], references: [id])
-}
-
-model Checklist {
-  id           String   @id @default(cuid())
-  actionPlanId String
-  title        String
-  isDone       Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
-}
-
-model Proposal {
-  id          String         @id @default(cuid())
-  proposerId  String
-  title       String
-  description String
-  status      ProposalStatus @default(DRAFT)
-  reviewNote  String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  proposer User @relation(fields: [proposerId], references: [id])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  companyId String?
-  title     String
-  message   String
-  link      String?  // URL navigasi saat notif diklik
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user    User     @relation(fields: [userId], references: [id])
-  company Company? @relation(fields: [companyId], references: [id])
-}
-
-model ActivityLog {
-  id           String   @id @default(cuid())
-  userId       String
-  actionPlanId String?
-  action       String   // STATUS_CHANGED | EVIDENCE_SUBMITTED | COMMENT_ADDED | REASSIGNED
-  oldValue     String?
-  newValue     String?
-  createdAt    DateTime @default(now())
-
-  user       User        @relation(fields: [userId], references: [id])
-  actionPlan ActionPlan? @relation(fields: [actionPlanId], references: [id])
-}
+### Proposal, Dashboard, Notif, Laporan, Leads
+```
+GET|POST  /api/proposals             GET  /api/notifications
+PUT       /api/proposals/[id]/review PUT  /api/notifications/read-all
+GET       /api/dashboard             GET  /api/reports
+GET       /api/calendar              GET  /api/reports/export
+GET       /api/calendar/export       GET|PUT /api/leads
+POST      /api/cron/check-overdue    (Vercel Cron 00:01 WIB)
 ```
 
 ---
 
-## BAB 5 — API ROUTES (Next.js App Router)
+## BAGIAN G — KONVENSI & LARANGAN
 
-### 5.1 Auth & Guest
+### G1. API Route Pattern Wajib
 
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| POST | `/api/auth/register` | Registrasi user baru (status `PENDING`) |
-| POST | `/api/auth/login` | Login email + password, return JWT |
-| GET | `/api/auth/profile` | Ambil profil user yang sedang login |
-| POST | `/api/auth/logout` | Logout, hapus session/cookie |
-| POST | `/api/guest/register` | Guest isi form demo → simpan ke `Lead`, return session terbatas |
-| POST | `/api/guest/activate-trial` | Guest aktivasi trial 30 hari → update Lead status |
-
-### 5.2 Perusahaan, Divisi, User & Label
-
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/companies` | List perusahaan (Super Admin) |
-| POST | `/api/companies` | Buat perusahaan baru |
-| PUT | `/api/companies/[id]` | Update perusahaan |
-| DELETE | `/api/companies/[id]` | Soft delete perusahaan |
-| GET | `/api/divisions` | List divisi (filter by companyId) |
-| POST | `/api/divisions` | Buat divisi baru |
-| PUT | `/api/divisions/[id]` | Update divisi |
-| GET | `/api/users` | List user (filter by scope) |
-| POST | `/api/users` | Buat user baru |
-| PUT | `/api/users/[id]` | Update user (role, divisi, label, supervisor) |
-| PUT | `/api/users/[id]/approve` | Approve user Pending → Active |
-| GET | `/api/user-labels` | List label jabatan (filter by companyId) |
-| POST | `/api/user-labels` | Buat label baru (Super Admin/Admin Ops: aktif; Manager: pending) |
-| PUT | `/api/user-labels/[id]/approve` | Admin Ops approve/reject usulan label dari Manager |
-| DELETE | `/api/user-labels/[id]` | Hapus label jabatan |
-
-### 5.3 Project, Task, Action Plan & Comment
-
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/projects` | List project (filter by scope) |
-| POST | `/api/projects` | Buat project baru |
-| PUT | `/api/projects/[id]` | Update project |
-| GET | `/api/tasks` | List task (filter by scope) |
-| POST | `/api/tasks` | Buat & assign task ke PIC |
-| PUT | `/api/tasks/[id]` | Update task |
-| GET | `/api/action-plans` | List AP (filter + sort) |
-| POST | `/api/action-plans` | Buat AP baru |
-| PUT | `/api/action-plans/[id]` | Update AP |
-| PUT | `/api/action-plans/[id]/submit` | PIC submit AP + evidence |
-| PUT | `/api/action-plans/[id]/review` | Manager approve/reject/request evidence |
-| PUT | `/api/action-plans/[id]/reassign` | Reassign AP ke PIC lain |
-| GET | `/api/action-plans/[id]/comments` | List comment per AP (kronologis) |
-| POST | `/api/action-plans/[id]/comments` | Tambah comment baru (support @mention) |
-
-### 5.4 Proposal, Dashboard, Kalender, Laporan & Leads
-
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| GET | `/api/proposals` | List proposal |
-| POST | `/api/proposals` | Buat proposal baru |
-| PUT | `/api/proposals/[id]/review` | Approve/reject proposal |
-| GET | `/api/dashboard` | Data statistik (scope by role) |
-| GET | `/api/calendar` | Data kalender Gantt (filter month/scope) |
-| GET | `/api/calendar/export` | Export kalender PDF/PNG per bulan |
-| GET | `/api/notifications` | List notif (unread first) |
-| PUT | `/api/notifications/read-all` | Tandai semua notif dibaca |
-| GET | `/api/reports` | Laporan progres (filter project/divisi/PIC) |
-| GET | `/api/reports/export` | Export laporan PDF/Excel |
-| GET | `/api/leads` | List prospek Guest (Super Admin only) |
-| PUT | `/api/leads/[id]` | Update notes/status lead (follow-up) |
-| POST | `/api/cron/check-overdue` | Cron: auto-update status Overdue + kirim notif |
-
----
-
-## BAB 6 — STRUKTUR FOLDER & DEPLOYMENT
-
-### 6.1 Struktur Folder
-
-```
-promap-v2/
-├── app/
-│   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   ├── register/page.tsx
-│   │   └── demo/page.tsx              ← Guest form demo
-│   ├── (dashboard)/
-│   │   ├── layout.tsx                 ← Sidebar + Header + NotifBell
-│   │   ├── page.tsx                   ← Dashboard utama
-│   │   ├── action-plans/page.tsx
-│   │   ├── kanban/page.tsx
-│   │   ├── calendar/page.tsx
-│   │   ├── proposals/page.tsx
-│   │   ├── projects/page.tsx
-│   │   ├── reports/page.tsx
-│   │   └── settings/
-│   │       ├── page.tsx
-│   │       ├── user-labels/page.tsx   ← Kelola label jabatan
-│   │       └── leads/page.tsx         ← Data prospek Guest (Super Admin)
-│   └── api/
-│       ├── auth/
-│       ├── guest/
-│       │   ├── register/
-│       │   └── activate-trial/
-│       ├── companies/
-│       ├── divisions/
-│       ├── users/
-│       ├── user-labels/
-│       ├── projects/
-│       ├── tasks/
-│       ├── action-plans/
-│       │   └── [id]/
-│       │       ├── submit/
-│       │       ├── review/
-│       │       ├── reassign/
-│       │       └── comments/
-│       ├── proposals/
-│       ├── dashboard/
-│       ├── calendar/
-│       │   └── export/
-│       ├── notifications/
-│       ├── reports/
-│       │   └── export/
-│       ├── leads/
-│       └── cron/
-│           └── check-overdue/
-├── components/
-│   ├── ui/                  ← Button, Modal, Badge, Dropdown
-│   ├── kanban/              ← KanbanBoard, KanbanCard
-│   ├── calendar/            ← CalendarView, EventBar, DownloadModal
-│   ├── charts/              ← DonutChart, BarChart
-│   ├── comments/            ← CommentThread, CommentInput, MentionPicker
-│   ├── notifications/       ← NotifBell, NotifPanel
-│   ├── guest/               ← GuestDemoForm, GuestCTAPopup
-│   └── forms/
-├── lib/
-│   ├── prisma.ts
-│   ├── auth.ts
-│   ├── rbac.ts
-│   ├── notifications.ts
-│   └── mentions.ts          ← Parse & resolve @mention
-├── prisma/
-│   ├── schema.prisma
-│   └── migrations/
-├── middleware.ts
-├── vercel.json
-└── .env.local
+```typescript
+// urutan wajib di setiap route:
+1. getSessionUser()       → cek auth + reject guest/inactive/deleted
+2. requireRole([...])     → cek permission
+3. scope filter           → companyScope / divisionScope / taskScope / projectScope
+4. prisma query           → selalu ada deletedAt: null
+5. ActivityLog            → catat operasi penting
+6. notify()               → trigger notif sesuai tabel
 ```
 
-### 6.2 Environment Variables
+### G2. Helper yang Sudah Ada
 
-| Variable | Sumber / Keterangan |
+```
+lib/rbac.ts          getSessionUser, requireRole, companyScope, divisionScope,
+                     userScope, projectScope, canManageProject, taskScope,
+                     canAssignTask, canManageUsers, canManageUserLabel, canManageLeads
+lib/notifications.ts notify()
+lib/guest-auth.ts    signGuestToken, setGuestCookie, getGuestToken
+lib/prisma.ts        prisma (singleton dengan adapter pg)
+```
+
+### G3. Trigger Notifikasi
+
+| Penerima | Event |
 |---|---|
-| `DATABASE_URL` | Neon → Connection String (pooled, untuk runtime) |
-| `DIRECT_URL` | Neon → Connection String (direct, untuk prisma migrate) |
-| `NEXTAUTH_SECRET` | Generate: `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | `http://localhost:3000` (dev) / URL Vercel (prod) |
-| `GOOGLE_CLIENT_ID` | Google Cloud Console (jika pakai Google SSO) |
-| `GOOGLE_CLIENT_SECRET` | Google Cloud Console (jika pakai Google SSO) |
+| PIC | Task baru, reassign, AP approve/reject, evidence diminta, deadline H-1, overdue, di-mention |
+| Manager | AP pending review, evidence baru, AP belum review >3 hari, proposal baru, di-mention, overdue PIC |
+| Admin Ops | User baru pending, label jabatan diusulkan Manager |
+| Super Admin | Guest baru, guest aktivasi trial, kapasitas DB 70%/90% |
 
-### 6.3 Deployment Stack
-
-| Komponen | Platform | Catatan |
-|---|---|---|
-| Frontend + API | Vercel | Auto-deploy dari GitHub, native Next.js |
-| Database | Neon Serverless | Auto-sleep, scale-to-zero, free tier tersedia |
-| ORM / Migration | Prisma | `npx prisma migrate deploy` saat setiap deploy |
-| Cron Job | Vercel Cron | `vercel.json` — berjalan 00:01 harian |
-| File Storage | Vercel Blob | Attachment evidence/bukti kerja PIC |
-| Calendar Export | Puppeteer / jsPDF | Generate PDF kalender per bulan (server-side) |
-
-**vercel.json:**
-```json
-{
-  "crons": [{ "path": "/api/cron/check-overdue", "schedule": "1 0 * * *" }]
-}
-```
-
----
-
-## BAB 7 — ROADMAP PENGEMBANGAN V2
-
-| # | Modul | Deliverable | Status |
-|---|---|---|---|
-| 1 | Setup & Auth | Next.js + Prisma + Neon, Login, Register, JWT, RBAC middleware | In Progress |
-| 2 | Company & Division | CRUD Perusahaan, CRUD Divisi, Onboarding klien baru | Planned |
-| 3 | User Management | CRUD User, approval Pending→Active, supervisor assignment | Planned |
-| 4 | Label Jabatan | CRUD UserLabel, alur approval Manager→Admin Ops, dropdown dinamis | Planned |
-| 5 | Guest Mode & Leads | Form demo Guest, simpan Leads, session 2 jam, limit 3x/hari, CTA trial | Planned |
-| 6 | Project & Task | CRUD Project, CRUD Task, assign PIC, multi-tenant filter | Planned |
-| 7 | Proposal System | Buat proposal, review Manager, convert ke Task resmi | Planned |
-| 8 | Action Plan | CRUD AP, Outcome/KPI, 8 status flow lengkap | Planned |
-| 9 | Evidence & Approval | Submit evidence modal, review flow Approve/Revisi/Reject, reassign | Planned |
-| 10 | Comment & @Mention | Thread per AP, @mention, notif ke user yang di-mention | Planned |
-| 11 | Dashboard & Chart | Donut chart, bar chart, metrics footer, filter scope per role | Planned |
-| 12 | Notifikasi | In-app notif, bell + badge, semua trigger event, navigasi klik | Planned |
-| 13 | Kanban Board | Drag & drop, multi-select, bulk status, konfirmasi popup | Planned |
-| 14 | Kalender + Download | Monthly view, Gantt bar, popup detail, export PDF per bulan | Planned |
-| 15 | Filter & Sort | Quick chips, multi-filter, sort waktu/deadline/prioritas, reset | Planned |
-| 16 | Cron Job Overdue | Vercel Cron 00:01, auto-update status Overdue + notif PIC & Manager | Planned |
-| 17 | Laporan & Export | Report per project/divisi/PIC + riwayat evidence & comment, PDF/Excel | Planned |
-| 18 | Audit Log | ActivityLog per AP: siapa, kapan, perubahan status apa | Planned |
-
-### Roadmap V3 (Future)
-
-| # | Modul | Deskripsi |
-|---|---|---|
-| 1 | Recurring Task | AP rutin otomatis terbuat ulang sesuai jadwal (harian/mingguan/bulanan) |
-| 2 | Template AP | Manager/Admin buat template AP standar yang bisa dipakai berulang |
-| 3 | Workload View | Tampilan kapasitas beban kerja per PIC sebelum Manager assign task baru |
-| 4 | Task Dependency | AP B tidak bisa dimulai sebelum AP A selesai |
-| 5 | @Mention Advanced | Mention di luar comment (di deskripsi AP, proposal, dll) |
-| 6 | PWA / Mobile | Convert Next.js ke PWA untuk akses mobile yang lebih baik |
-
----
-
-## LARANGAN KERAS
+### G4. Larangan Keras — Backend
 
 ```
-❌ Query Prisma tanpa filter companyId (kecuali Super Admin)
-❌ Password plaintext — wajib bcrypt
+❌ Query Prisma tanpa filter companyId (kecuali SUPER_ADMIN)
+❌ buildWhereClause() untuk Task — pakai taskScope() custom
+❌ Password plaintext — wajib bcrypt cost 12
 ❌ JWT di localStorage — wajib httpOnly cookie
 ❌ Hard delete — wajib soft delete (deletedAt)
-❌ Delete Comment — tidak bisa dihapus (audit trail)
+❌ Hapus Comment — audit trail
 ❌ prisma migrate tanpa review schema dulu
 ❌ Push langsung ke main — wajib PR
 ❌ Main Agent nulis kode sebelum Reviewer ACC
+❌ Referensi Claude/AI di commit message
+```
+
+### G5. Larangan Keras — UI (V2.4)
+
+```
+❌ Buat halaman baru tanpa cek navigation — semua halaman harus punya slot di sidebar
+❌ Random card layout — pakai component pattern di promap-design skill
+❌ Mock data menggantikan API production
+❌ Ubah schema karena UI terasa sulit — lapor ke Product Owner
+❌ Duplicate component tanpa alasan
+❌ Ubah business status (8 status AP fixed)
+❌ UI berbeda-beda antar halaman
+❌ Warna di luar design system
+❌ Font selain Inter Variable
+❌ Gradient di komponen fungsional
+```
+
+---
+
+## BAGIAN H — DEFINITION OF DONE
+
+### H1. Per Screen
+
+**Architecture**
+- [ ] Berada di navigation yang benar (punya slot di sidebar)
+- [ ] Menggunakan App Shell
+- [ ] Pakai reusable component, tidak duplikasi business logic
+
+**UX**
+- [ ] User tahu sedang di mana (breadcrumb benar)
+- [ ] Primary action jelas
+- [ ] Detail mudah dibuka (drawer atau page)
+- [ ] Kembali dari detail tidak hilang konteks list
+- [ ] 5 state tersedia (loading, empty, error, permission denied, no results)
+
+**Data**
+- [ ] Pakai API existing, tidak buat endpoint baru tanpa alasan
+- [ ] RBAC benar — role tidak lihat kontrol yang bukan haknya
+- [ ] Tenant isolation benar
+
+**Visual**
+- [ ] Design token sesuai promap-design skill
+- [ ] Typography & spacing konsisten
+- [ ] Status color mapping benar
+- [ ] Tidak ada warna random
+
+**Quality**
+- [ ] Responsive (sidebar collapse di mobile)
+- [ ] Keyboard accessible
+- [ ] `npx tsc --noEmit` clean
+- [ ] `npm run build` sukses
+
+### H2. Definition of Done — V2.4 Keseluruhan
+
+1. User paham struktur aplikasi tanpa training panjang
+2. Project → Task → Action Plan terasa satu rantai
+3. Pindah Table/Board/Calendar tidak terasa pindah aplikasi
+4. Action Plan jadi pusat execution workflow
+5. Manager bisa review tanpa mencari-cari informasi
+6. PIC melihat pekerjaannya dari My Work
+7. Detail dibuka tanpa kehilangan konteks list
+8. Kanban tidak membingungkan meski ada 8 status bisnis
+9. UI terasa satu product system, bukan kumpulan halaman
+10. Backend existing tetap berfungsi, tidak ada security regression
+
+---
+
+## BAGIAN I — PRINSIP IMPLEMENTASI
+
+> **Do not make ProMaP prettier. Make ProMaP coherent.**
+
+Urutan prioritas:
+
+```
+Mental Model → Information Architecture → Interaction → Components → Visual Polish
+```
+
+Visual polish adalah tahap akhir. Yang paling penting: user paham *di mana dia berada* dan *apa yang harus dilakukan*.
+
+---
+
+## BAGIAN J — ATURAN AI AGENT
+
+```
+1.  Baca PRD.md (dokumen ini)
+2.  Baca .claude/CLAUDE.md
+3.  Baca .claude/skills/promap-design/SKILL.md sebelum generate UI
+4.  Inspect implementasi existing — jangan asumsi
+5.  Identifikasi backend/API/component yang bisa dipakai ulang
+6.  @planner buat rencana
+7.  @reviewer validasi rencana → ACC
+8.  @main implementasi
+9.  Jalankan tsc + build
+10. @reviewer code review
+11. Fix issue
+12. Baru merge
+```
+
+**Aturan tambahan V2.4:**
+- Sebelum buat halaman baru: apakah ini halaman baru, atau cukup view baru dari data yang sudah ada?
+- Sebelum buat component baru: apakah sudah ada component serupa yang bisa di-extend?
+- Kalau UI terasa sulit karena schema, **jangan ubah schema** — lapor ke Product Owner.
+
+---
+
+## Env & Cron
+
+```
+DATABASE_URL         Neon pooled (runtime)
+DIRECT_URL           Neon direct (prisma migrate)
+NEXTAUTH_SECRET      openssl rand -base64 32
+NEXTAUTH_URL         localhost:3000 / URL Vercel
+GOOGLE_CLIENT_ID     opsional SSO
+GOOGLE_CLIENT_SECRET opsional SSO
+```
+
+```json
+// vercel.json
+{ "crons": [{ "path": "/api/cron/check-overdue", "schedule": "1 0 * * *" }] }
 ```
