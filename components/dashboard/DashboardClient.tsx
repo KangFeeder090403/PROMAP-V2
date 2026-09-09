@@ -500,10 +500,14 @@ export function DashboardClient() {
                           {isAP ? 'PIC: ' : 'Pengusul: '}
                           <strong className="font-medium text-slate-700 dark:text-slate-300">{item.picName}</strong>
                         </span>
-                        {item.deadline && (
+                        {item.createdAt && (
                           <span className="font-mono">
-                            {isAP ? `Deadline: ${fmtDate(item.deadline)}` : `Diajukan: ${fmtDate(item.deadline)}`}
+                            {isAP ? 'Dibuat: ' : 'Diajukan: '}
+                            {fmtDate(item.createdAt)}
                           </span>
+                        )}
+                        {isAP && item.deadline && (
+                          <span className="font-mono">Deadline: {fmtDate(item.deadline)}</span>
                         )}
                         {item.evidenceLink && (
                           <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400">
@@ -754,12 +758,13 @@ export function DashboardClient() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[720px]">
+            <table className="w-full text-left min-w-[820px]">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                   <th className="px-4 py-2.5 rounded-l-md font-medium">Rencana Aksi</th>
                   <th className="px-4 py-2.5 font-medium">Prioritas</th>
                   <th className="px-4 py-2.5 font-medium">Penanggung Jawab</th>
+                  <th className="px-4 py-2.5 font-medium">Dibuat</th>
                   <th className="px-4 py-2.5 font-medium">Batas Waktu</th>
                   <th className="px-4 py-2.5 font-medium">Terlambat</th>
                   <th className="px-4 py-2.5 text-right rounded-r-md font-medium">Tindakan</th>
@@ -795,6 +800,7 @@ export function DashboardClient() {
                         <span className="text-slate-700 dark:text-slate-300 font-medium">{row.picName}</span>
                       </span>
                     </td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.createdAt ? fmtDate(row.createdAt) : '—'}</td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-600">{fmtDate(row.deadline)}</td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded">
