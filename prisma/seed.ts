@@ -325,10 +325,81 @@ async function seedApprovalNotifications() {
   console.log(`Notifikasi persetujuan: ${created} baris baru (dari ${aps.length} AP)`)
 }
 
+/**
+ * Checklist demo untuk AP yang belum punya checklist sama sekali (idempoten —
+ * dijalankan tiap seed, skip yang sudah terisi). Kemunculan progress bar di
+ * /my-work butuh data Checklist; seeding tenant tidak bisa melengkapi ini
+ * karena idempoten-skip saat DEMO001 sudah ada.
+ */
+async function seedActionPlanExtras() {
+  // 1) Patch reviewNote AP REJECTED demo (agar banner Butuh Aksi menampilkan catatan reviewer).
+  const rejected = await prisma.actionPlan.findFirst({
+    where: { title: 'Usulan Kebijakan Pulsa Karyawan', deletedAt: null, reviewNote: null },
+    select: { id: true },
+  })
+  if (rejected) {
+    await prisma.actionPlan.update({
+      where: { id: rejected.id },
+      data: {
+        reviewNote:
+          'Cakupan biaya perlu ditinjau ulang — cantumkan estimasi per divisi dan total anggaran yang diusulkan.',
+      },
+    })
+    console.log('Checklist demo: reviewNote REJECTED diisi')
+  }
+
+  // 2) Checklist untuk semua AP yang masih kosong.
+  const CHECKLIST_STEPS_5 = [
+    'Dokumentasi rincian pekerjaan',
+    'Eksekusi langkah kerja utama',
+    'Verifikasi hasil awal',
+    'Dokumentasi bukti pendukung',
+    'Submit untuk review',
+  ]
+  const CHECKLIST_STEPS_6 = [...CHECKLIST_STEPS_5.slice(0, 4), 'Peninjauan akhir oleh rekan kerja', 'Submit untuk review']
+
+  const empty = await prisma.actionPlan.findMany({
+    where: { deletedAt: null, checklists: { none: {} } },
+    select: { id: true, status: true },
+  })
+  if (empty.length === 0) {
+    console.log('Checklist demo: semua action plan sudah punya checklist')
+    return
+  }
+
+  const doneByStatus: Record<ActionPlanStatus, number> = {
+    NOT_STARTED: 0,
+    IN_PROGRESS: 3,
+    PENDING_APPROVAL: 6,
+    EVIDENCE_REQUIRED: 4,
+    APPROVED: 6,
+    REJECTED: 2,
+    OVERDUE: 2,
+    COMPLETE: 6,
+  }
+
+  let created = 0
+  for (const ap of empty) {
+    const titles = ap.status === 'COMPLETE' || ap.status === 'APPROVED' ? CHECKLIST_STEPS_6 : CHECKLIST_STEPS_5
+    const total = titles.length
+    const done = Math.min(doneByStatus[ap.status] ?? 0, total)
+
+    for (let i = 0; i < total; i++) {
+      await prisma.checklist.create({
+        data: { actionPlanId: ap.id, title: titles[i], isDone: i < done },
+      })
+      created += 1
+    }
+  }
+
+  console.log(`Checklist demo: ${created} item untuk ${empty.length} action plan`)
+}
+
 async function main() {
   await upsertSuperAdmin()
   await seedDemoCompanies()
   await seedApprovalNotifications()
+  await seedActionPlanExtras()
 }
 
 main()
