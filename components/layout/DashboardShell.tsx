@@ -28,7 +28,7 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
 
       <div className="md:ml-64">
         <Header onMenuClick={() => setSidebarOpen(true)} user={user} />
-        <main className="min-h-screen bg-slate-50 p-6">{children}</main>
+        <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">{children}</main>
       </div>
     </div>
   )

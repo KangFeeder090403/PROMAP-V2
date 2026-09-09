@@ -29,10 +29,11 @@ export function NotifBell() {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [onlyUnread, setOnlyUnread] = useState(false)
 
-  async function fetchNotifs() {
+  async function fetchNotifs(unread = onlyUnread) {
     try {
-      const res = await fetch('/api/notifications')
+      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`)
       if (!res.ok) return
       const { data, unreadCount } = await res.json()
       setItems(data)
@@ -67,7 +68,7 @@ export function NotifBell() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+        className="relative rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         aria-label="Notifikasi"
       >
         <Bell className="h-5 w-5" />
@@ -81,14 +82,33 @@ export function NotifBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-md">
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Notifikasi</span>
+          <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1 rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
+                {([false, true] as const).map((u) => (
+                  <button
+                    key={String(u)}
+                    type="button"
+                    onClick={() => {
+                      setOnlyUnread(u)
+                      fetchNotifs(u)
+                    }}
+                    aria-pressed={onlyUnread === u}
+                    className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                      onlyUnread === u
+                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {u ? 'Belum dibaca' : 'Semua'}
+                  </button>
+                ))}
+              </div>
               {unreadCount > 0 && (
                 <button
                   type="button"
                   onClick={onReadAll}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   Tandai semua dibaca
                 </button>
@@ -97,18 +117,20 @@ export function NotifBell() {
 
             <div className="max-h-80 overflow-y-auto">
               {items.length === 0 ? (
-                <p className="text-sm text-slate-500 p-4">Belum ada notifikasi</p>
+                <p className="text-sm text-slate-500 p-4">
+                  {onlyUnread ? 'Semua notifikasi sudah dibaca' : 'Belum ada notifikasi'}
+                </p>
               ) : (
                 items.map((n) => (
                   <button
                     key={n.id}
                     type="button"
                     onClick={() => onClickNotif(n)}
-                    className={`block w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 ${
-                      !n.isRead ? 'bg-blue-50/50' : ''
+                    className={`block w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${
+                      !n.isRead ? 'bg-blue-50/50 dark:bg-blue-950/30' : ''
                     }`}
                   >
-                    <p className="text-sm font-medium text-slate-800">{n.title}</p>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{n.title}</p>
                     <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
                     <p className="text-[11px] text-slate-400 mt-1">{relativeTime(n.createdAt)}</p>
                   </button>
