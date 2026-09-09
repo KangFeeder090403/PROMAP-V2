@@ -291,6 +291,18 @@ Tabel bawah: Overdue & Deadline Kritis
 
 Panel Action Required **dirender walau metrik total = 0**.
 
+> **Deviasi terpasang (2026-09-09, disetujui Product Owner):**
+> - **Beban Tim & Kapasitas disembunyikan sementara** (flag `SHOW_TEAM_WORKLOAD=false`).
+>   Kode tidak dihapus. Slot kanan diisi **Distribusi Prioritas (High/Medium/Low)**
+>   dari `priorityBreakdown` yang sudah dihitung API.
+> - **Chip rentang +"Semua"** ditambahkan (range `all`) untuk membuka data historis.
+> - **Filter PIC di banner** (dropdown "Semua PIC", sembunyi untuk role PIC) —
+>   memfilter seluruh dashboard ke satu PIC.
+> - **Tabel Overdue**: sortir client-side 4 opsi (terlama/tenggat/prioritas/terbaru);
+>   "Ingatkan PIC" memanggil `POST /api/action-plans/[id]/remind` (rate-limit 24 jam).
+> - **Proposal** dibuka lewat **Drawer geser-kanan** (bukan modal), tanpa tombol
+>   "Buka Halaman Penuh" (route `/proposals?id=` belum ada — ditunda UI-8).
+
 ---
 
 #### UI-4 — My Work (`ui-4-my-work.png`)
