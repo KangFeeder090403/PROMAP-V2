@@ -199,8 +199,8 @@ export async function POST(req: Request) {
       await notify({
         userIds: [target.id],
         title: 'Action Plan baru',
-        message: `Kamu mendapat Action Plan baru: ${result.title}`,
-        link: `/action-plans/${result.id}`,
+        message: `Ditugaskan oleh ${user.name}: "${result.title}"`,
+        link: `/action-plans?open=${result.id}`,
         companyId
       })
     }

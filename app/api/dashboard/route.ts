@@ -176,6 +176,8 @@ export async function GET(req: NextRequest) {
       ...agg,
       portfolio,
       user: {
+        id: user.id,
+        role: userDetail?.role ?? user.role,
         name: userDetail?.name ?? user.name,
         roleLabel: ROLE_LABEL[userDetail?.role ?? user.role],
         divisionName: userDetail?.division?.name ?? null,

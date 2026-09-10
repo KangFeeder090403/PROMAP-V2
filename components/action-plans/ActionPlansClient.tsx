@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Eye,
   MoreHorizontal,
   X,
 } from 'lucide-react'
@@ -102,10 +101,14 @@ export function ActionPlansClient({
   role,
   userId,
   openCreate,
+  initialOpenId,
+  initialHighlightId,
 }: {
   role: Role
   userId: string
   openCreate?: boolean
+  initialOpenId?: string
+  initialHighlightId?: string
 }) {
   const router = useRouter()
   const [data, setData] = useState<Ledger | null>(null)
@@ -117,10 +120,27 @@ export function ActionPlansClient({
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
+  const [highlightedId, setHighlightedId] = useState<string | null>(
+    initialHighlightId ?? initialOpenId ?? null
+  )
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
+
+  // Buka detail jika diakses lewat deep-link ?open=id
+  useEffect(() => {
+    if (!initialOpenId) return
+    fetch(`/api/action-plans/${initialOpenId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((ap) => {
+        if (ap) {
+          setSelected(ap)
+          setHighlightedId(ap.id)
+        }
+      })
+      .catch(() => {})
+  }, [initialOpenId])
 
   // Debounce pencarian — server-side search.
   useEffect(() => {
@@ -159,7 +179,7 @@ export function ActionPlansClient({
       const ledger: Ledger = await res.json()
       setData(ledger)
       // Refresh isi drawer sekaligus kalau AP yang dibuka ikut ter-filter.
-      setSelected((prev) => (prev ? ledger.items.find((a) => a.id === prev.id) ?? null : prev))
+      setSelected((prev) => (prev ? ledger.items.find((a) => a.id === prev.id) ?? prev : prev))
     } catch {
       setError('Terjadi kesalahan. Coba lagi.')
     } finally {
@@ -236,13 +256,13 @@ export function ActionPlansClient({
         <button
           type="button"
           onClick={() => applyFilter('statusFilter', '')}
-          className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left transition-colors ${
+          className={`flex flex-col justify-between h-[66px] rounded-lg border px-3 py-2 text-left transition-colors ${
             statusFilter === ''
               ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10'
               : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
           }`}
         >
-          <span className={`text-xs font-medium ${statusFilter === '' ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>
+          <span className={`text-xs font-medium truncate w-full ${statusFilter === '' ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>
             Semua
           </span>
           <span className={`text-lg font-semibold leading-none ${statusFilter === '' ? 'text-blue-700 dark:text-blue-300' : 'text-slate-900 dark:text-slate-50'}`}>
@@ -255,20 +275,21 @@ export function ActionPlansClient({
             key={s}
             type="button"
             onClick={() => applyFilter('statusFilter', statusFilter === s ? '' : s)}
-            className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left transition-colors ${
+            className={`flex flex-col justify-between h-[66px] rounded-lg border px-3 py-2 text-left transition-colors ${
               statusFilter === s
                 ? 'border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10'
                 : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 min-w-0 w-full">
               <span
-                className={`h-1.5 w-1.5 rounded-full ${AP_STATUS_DOT[s] ?? 'bg-slate-300'} ${
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${AP_STATUS_DOT[s] ?? 'bg-slate-300'} ${
                   s === 'PENDING_APPROVAL' ? 'animate-pulse' : ''
                 }`}
               />
               <span
-                className={`text-xs font-medium ${
+                title={AP_STATUS_LABEL[s]}
+                className={`text-xs font-medium truncate ${
                   statusFilter === s ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
@@ -416,12 +437,20 @@ export function ActionPlansClient({
                       ? 100
                       : 0
                     : Math.round((ap.checklistDone / ap.checklistTotal) * 100)
+                const isHighlighted = highlightedId === ap.id
                 return (
                   <tr
                     key={ap.id}
-                    onClick={() => setSelected(ap)}
+                    onClick={() => {
+                      setSelected(ap)
+                      setHighlightedId(ap.id)
+                    }}
                     className={`border-b border-slate-100 dark:border-slate-800 last:border-0 cursor-pointer transition-colors ${
-                      selected?.id === ap.id ? 'bg-blue-50/60 dark:bg-blue-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                      isHighlighted
+                        ? 'bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500 ring-inset'
+                        : selected?.id === ap.id
+                          ? 'bg-blue-50/60 dark:bg-blue-500/10'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <td className="px-5 py-3">
@@ -492,18 +521,7 @@ export function ActionPlansClient({
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          title="Buka Detail"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelected(ap)
-                          }}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
+                      <div className="flex items-center justify-end">
                         <button
                           type="button"
                           title="Edit"
@@ -589,7 +607,6 @@ export function ActionPlansClient({
         onOpenChange={(open) => !open && setSelected(null)}
         onChanged={() => {
           fetchData()
-          setSelected(null)
         }}
         onEdit={() => {
           if (!selected) return

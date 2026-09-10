@@ -49,7 +49,7 @@ export async function GET(req: Request) {
           userIds: [ap.picId],
           title: 'Action Plan terlambat',
           message: `"${ap.title}" sudah melewati deadline`,
-          link: `/action-plans/${ap.id}`,
+          link: `/action-plans?open=${ap.id}`,
           companyId: ap.companyId,
         })
         const relatedManagers = managers.filter((m) => m.divisionId === ap.divisionId).map((m) => m.id)
@@ -58,7 +58,7 @@ export async function GET(req: Request) {
             userIds: relatedManagers,
             title: 'Action Plan terlambat',
             message: `"${ap.title}" sudah melewati deadline`,
-            link: `/action-plans/${ap.id}`,
+            link: `/action-plans?open=${ap.id}`,
             companyId: ap.companyId,
           })
         }
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
         where: {
           userId: ap.picId,
           title: 'Deadline besok',
-          link: `/action-plans/${ap.id}`,
+          link: `/action-plans?open=${ap.id}`,
           createdAt: { gte: today },
         },
       })
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
           userIds: managers.map((m) => m.id),
           title: 'AP belum direview >3 hari',
           message: `"${ap.title}" masih menunggu review Anda`,
-          link: `/action-plans/${ap.id}`,
+          link: `/action-plans?open=${ap.id}`,
           companyId: ap.companyId,
         })
       } else {
@@ -131,7 +131,7 @@ export async function GET(req: Request) {
           userIds: admins.map((a) => a.id),
           title: 'AP personal belum direview >3 hari',
           message: `"${ap.title}" masih menunggu review Anda`,
-          link: `/action-plans/${ap.id}`,
+          link: `/action-plans?open=${ap.id}`,
           companyId: ap.companyId,
         })
       }

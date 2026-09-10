@@ -48,15 +48,12 @@ export function KanbanClient({
   useEffect(() => {
     if (!projectId) return
     fetchTasks()
-    // PIC tidak punya akses /api/users — cukup tampilkan "Anda" untuk diri sendiri.
-    if (role !== 'PIC') {
-      fetch('/api/users')
-        .then((r) => (r.ok ? r.json() : []))
-        .then((list: { id: string; name: string }[]) => {
-          setPicNames(Object.fromEntries(list.map((u) => [u.id, u.name])))
-        })
-        .catch(() => {})
-    }
+    fetch('/api/users')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: { id: string; name: string }[]) => {
+        setPicNames(Object.fromEntries(list.map((u) => [u.id, u.name])))
+      })
+      .catch(() => {})
   }, [projectId])
 
   async function fetchTasks() {

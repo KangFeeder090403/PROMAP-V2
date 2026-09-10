@@ -45,9 +45,31 @@ export function NotifBell() {
 
   useEffect(() => {
     fetchNotifs()
-    const interval = setInterval(fetchNotifs, 60000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(fetchNotifs, 15000)
+
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifs()
+      }
+    }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [onlyUnread])
+
+  async function toggleOpen() {
+    const nextState = !open
+    setOpen(nextState)
+    if (nextState) {
+      fetchNotifs()
+    }
+  }
 
   async function onClickNotif(n: Notification) {
     setOpen(false)
@@ -67,7 +89,7 @@ export function NotifBell() {
     <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         className="relative rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         aria-label="Notifikasi"
       >

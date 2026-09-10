@@ -28,14 +28,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // PIC tidak punya akses manajemen user sama sekali.
-    if (user.role === 'PIC') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     let where: Record<string, unknown> = {}
     if (user.role === 'ADMIN_OPERATIONAL') where = { companyId: user.companyId }
-    else if (user.role === 'MANAGER') where = { divisionId: user.divisionId }
+    else if (user.role === 'MANAGER') where = { companyId: user.companyId }
+    else if (user.role === 'PIC') where = { companyId: user.companyId, status: 'ACTIVE' }
     // SUPER_ADMIN: tanpa filter
 
     const data = await prisma.user.findMany({

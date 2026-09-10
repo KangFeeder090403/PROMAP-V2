@@ -32,7 +32,7 @@ export const AP_STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: 'Belum Mulai',
   IN_PROGRESS: 'Dikerjakan',
   PENDING_APPROVAL: 'Menunggu Review',
-  EVIDENCE_REQUIRED: 'Butuh Bukti Tambahan',
+  EVIDENCE_REQUIRED: 'Bukti Tambahan',
   APPROVED: 'Disetujui',
   REJECTED: 'Ditolak',
   OVERDUE: 'Terlambat',

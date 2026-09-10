@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
@@ -53,6 +54,7 @@ export function ActionPlanFormModal({
   const [loading, setLoading] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [createMore, setCreateMore] = useState(false)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [users, setUsers] = useState<PickUser[]>([])
   const [tasks, setTasks] = useState<PickTask[]>([])
   const [projectNames, setProjectNames] = useState<Record<string, string>>({})
@@ -68,8 +70,17 @@ export function ActionPlanFormModal({
 
   // Jangan buang isian tanpa peringatan — berlaku untuk Esc, klik overlay, dan Batal.
   function requestClose(next: boolean) {
-    if (!next && isDirty && !confirm('Ada isian yang belum disimpan. Tutup?')) return
+    if (!next && isDirty) {
+      setShowDiscardConfirm(true)
+      return
+    }
     onOpenChange(next)
+  }
+
+  function handleConfirmDiscard() {
+    setShowDiscardConfirm(false)
+    reset()
+    onOpenChange(false)
   }
 
   const taskId = watch('taskId')
@@ -338,6 +349,17 @@ export function ActionPlanFormModal({
           </div>
         </form>
       </DialogContent>
+
+      <ConfirmDialog
+        open={showDiscardConfirm}
+        onOpenChange={setShowDiscardConfirm}
+        title="Tutup Form?"
+        message="Ada isian yang belum disimpan. Isian yang sudah Anda ketik akan dibuang jika menutup sekarang."
+        confirmText="Buang Isian"
+        cancelText="Lanjut Mengisi"
+        variant="warning"
+        onConfirm={handleConfirmDiscard}
+      />
     </Dialog>
   )
 }

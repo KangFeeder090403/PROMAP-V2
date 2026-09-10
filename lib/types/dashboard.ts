@@ -1,7 +1,9 @@
-import type { ActionPlanStatus, Priority, ProposalStatus } from '@/lib/generated/prisma/client'
+import type { ActionPlanStatus, Priority, ProposalStatus, Role } from '@/lib/generated/prisma/client'
 
 export type DashboardUser = {
+  id: string
   name: string
+  role: Role
   roleLabel: string
   divisionName: string | null
   companyName: string | null
@@ -25,6 +27,8 @@ export type ActionRequiredItem = {
   title: string
   status: ActionPlanStatus | ProposalStatus
   picName: string
+  picId?: string
+  proposerId?: string
   evidenceLink: string | null
   deadline: string | null
   createdAt: string | null

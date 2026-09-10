@@ -10,10 +10,6 @@ export async function GET(req: Request) {
     }
 
     const where = divisionScope(user)
-    if (where.id === '__none__') {
-      return NextResponse.json([])
-    }
-
     const data = await prisma.division.findMany({
       where: { ...where, deletedAt: null },
       orderBy: { createdAt: 'desc' }

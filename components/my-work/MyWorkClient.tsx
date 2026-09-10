@@ -22,7 +22,9 @@ import { MyWorkSkeleton } from '@/components/my-work/MyWorkSkeleton'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_STATUS_LABEL, AP_STATUS_STYLE } from '@/lib/status-labels'
 import type { MyWorkApiResponse, MyWorkItem, MyWorkProposal } from '@/lib/types/my-work'
-import type { ActionPlanStatus, Priority } from '@/lib/generated/prisma/client'
+import type { ActionPlanStatus, Priority, Role } from '@/lib/generated/prisma/client'
+import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 
 type Tab = 'semua' | 'aksi' | 'minggu' | 'selesai'
 
@@ -84,6 +86,7 @@ function dateKey(d: Date) {
 type BannerKind = 'ap' | 'proposal'
 
 interface BannerItem {
+  id: string
   kind: BannerKind
   kindLabel: string
   refCode: string
@@ -94,8 +97,6 @@ interface BannerItem {
   icon: React.ReactNode
 }
 
-const ACTION_HREF = '/action-plans'
-
 function buildAksiItems(rows: MyWorkItem[], proposals: MyWorkProposal[], now: Date): BannerItem[] {
   const items: BannerItem[] = []
 
@@ -103,35 +104,38 @@ function buildAksiItems(rows: MyWorkItem[], proposals: MyWorkProposal[], now: Da
     if (!AKSI_STATUSES.includes(row.status)) continue
     if (row.status === 'REJECTED') {
       items.push({
+        id: row.id,
         kind: 'ap',
         kindLabel: 'Perlu Revisi',
         refCode: row.refCode,
         title: row.title,
         desc: row.reviewNote ? `Catatan reviewer: ${row.reviewNote}` : 'Revisi perbaikan dibutuhkan sebelum disubmit ulang.',
         cta: 'Perbaiki Sekarang',
-        href: ACTION_HREF,
+        href: `/action-plans?open=${row.id}&highlight=${row.id}`,
         icon: <XCircle className="h-4 w-4 shrink-0 text-red-500" />,
       })
     } else if (row.status === 'EVIDENCE_REQUIRED') {
       items.push({
+        id: row.id,
         kind: 'ap',
         kindLabel: 'Bukti Tambahan',
         refCode: row.refCode,
         title: row.title,
         desc: 'Lampirkan bukti kerja tambahan agar bisa diverifikasi reviewer.',
         cta: 'Unggah Bukti',
-        href: ACTION_HREF,
+        href: `/action-plans?open=${row.id}&highlight=${row.id}`,
         icon: <Paperclip className="h-4 w-4 shrink-0 text-amber-500" />,
       })
     } else {
       items.push({
+        id: row.id,
         kind: 'ap',
         kindLabel: 'Terlambat',
         refCode: row.refCode,
         title: row.title,
         desc: `Melewati tenggat. ${deadlineMeta(row.endDate, now).label} — jangan tunggu lebih lama.`,
         cta: 'Kerjakan Sekarang',
-        href: ACTION_HREF,
+        href: `/action-plans?open=${row.id}&highlight=${row.id}`,
         icon: <Clock className="h-4 w-4 shrink-0 text-orange-500" />,
       })
     }
@@ -139,6 +143,7 @@ function buildAksiItems(rows: MyWorkItem[], proposals: MyWorkProposal[], now: Da
 
   for (const p of proposals) {
     items.push({
+      id: p.id,
       kind: 'proposal',
       kindLabel: 'Draft',
       refCode: p.refCode,
@@ -196,9 +201,28 @@ function DeadlineChip({ iso, now }: { iso: string; now: Date }) {
 }
 
 /** Baris Action Plan versi "aktiv" (sedang dikerjakan / deadline / aksi). */
-function ActionRow({ row, now, showStatus }: { row: MyWorkItem; now: Date; showStatus?: boolean }) {
+function ActionRow({
+  row,
+  now,
+  showStatus,
+  highlighted,
+  onSelect,
+}: {
+  row: MyWorkItem
+  now: Date
+  showStatus?: boolean
+  highlighted?: boolean
+  onSelect?: (id: string) => void
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60 p-4 transition-colors hover:bg-slate-50">
+    <div
+      onClick={() => onSelect?.(row.id)}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-4 transition-all cursor-pointer ${
+        highlighted
+          ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40 shadow-sm'
+          : 'border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60 hover:bg-slate-100/80 dark:hover:bg-slate-800'
+      }`}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] font-medium text-slate-500 dark:text-slate-400">
@@ -227,9 +251,26 @@ function ActionRow({ row, now, showStatus }: { row: MyWorkItem; now: Date; showS
 }
 
 /** Baris "menunggu review" — pill reviewer + waktu submit + tombol. */
-function ReviewRow({ row, now }: { row: MyWorkItem; now: Date }) {
+function ReviewRow({
+  row,
+  now,
+  highlighted,
+  onSelect,
+}: {
+  row: MyWorkItem
+  now: Date
+  highlighted?: boolean
+  onSelect?: (id: string) => void
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60 p-4 transition-colors hover:bg-slate-50">
+    <div
+      onClick={() => onSelect?.(row.id)}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-4 transition-all cursor-pointer ${
+        highlighted
+          ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40 shadow-sm'
+          : 'border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60 hover:bg-slate-100/80 dark:hover:bg-slate-800'
+      }`}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 font-mono text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
@@ -248,20 +289,39 @@ function ReviewRow({ row, now }: { row: MyWorkItem; now: Date }) {
           Disubmit {timeAgo(row.updatedAt, now)}
         </p>
       </div>
-      <Link
-        href={ACTION_HREF}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50"
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelect?.(row.id)
+        }}
+        className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 text-center"
       >
         Lihat Pengajuan
         <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-      </Link>
+      </button>
     </div>
   )
 }
 
-function CompleteRow({ row }: { row: MyWorkItem }) {
+function CompleteRow({
+  row,
+  highlighted,
+  onSelect,
+}: {
+  row: MyWorkItem
+  highlighted?: boolean
+  onSelect?: (id: string) => void
+}) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+    <div
+      onClick={() => onSelect?.(row.id)}
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 px-2 rounded-lg transition-all cursor-pointer ${
+        highlighted
+          ? 'ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40'
+          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+      }`}
+    >
       <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -300,9 +360,22 @@ function byUrgency(rows: MyWorkItem[]) {
 }
 
 /** Grup status untuk tab "Semua". */
-function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
+function PipelineGroups({
+  rows,
+  now,
+  highlightedId,
+  onSelect,
+}: {
+  rows: MyWorkItem[]
+  now: Date
+  highlightedId: string | null
+  onSelect: (id: string) => void
+}) {
   const [openComplete, setOpenComplete] = useState(false)
 
+  const needsAction = byUrgency(
+    rows.filter((r) => AKSI_STATUSES.includes(r.status))
+  )
   const inProgress = byUrgency(
     rows.filter((r) => r.status === 'IN_PROGRESS' || r.status === 'NOT_STARTED')
   )
@@ -311,12 +384,37 @@ function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
 
   return (
     <div className="space-y-4 px-4 py-4 sm:px-5">
+      {needsAction.length > 0 && (
+        <div>
+          <GroupHeader icon="action" label="Perlu Tindakan & Revisi" count={needsAction.length} />
+          <div className="mt-2 space-y-2.5">
+            {needsAction.map((r) => (
+              <ActionRow
+                key={r.id}
+                row={r}
+                now={now}
+                showStatus
+                highlighted={highlightedId === r.id}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {inProgress.length > 0 && (
         <div>
           <GroupHeader icon="progress" label="Sedang Dikerjakan" count={inProgress.length} />
           <div className="mt-2 space-y-2.5">
             {inProgress.map((r) => (
-              <ActionRow key={r.id} row={r} now={now} showStatus />
+              <ActionRow
+                key={r.id}
+                row={r}
+                now={now}
+                showStatus
+                highlighted={highlightedId === r.id}
+                onSelect={onSelect}
+              />
             ))}
           </div>
         </div>
@@ -327,7 +425,13 @@ function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
           <GroupHeader icon="review" label="Menunggu Review" count={inReview.length} />
           <div className="mt-2 space-y-2.5">
             {inReview.map((r) => (
-              <ReviewRow key={r.id} row={r} now={now} />
+              <ReviewRow
+                key={r.id}
+                row={r}
+                now={now}
+                highlighted={highlightedId === r.id}
+                onSelect={onSelect}
+              />
             ))}
           </div>
         </div>
@@ -355,7 +459,12 @@ function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
           {openComplete && (
             <div className="mt-2 space-y-2.5">
               {completed.map((r) => (
-                <CompleteRow key={r.id} row={r} />
+                <CompleteRow
+                  key={r.id}
+                  row={r}
+                  highlighted={highlightedId === r.id}
+                  onSelect={onSelect}
+                />
               ))}
             </div>
           )}
@@ -365,12 +474,22 @@ function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
   )
 }
 
-function GroupHeader({ icon, label, count }: { icon: 'progress' | 'review'; label: string; count: number }) {
+function GroupHeader({
+  icon,
+  label,
+  count,
+}: {
+  icon: 'progress' | 'review' | 'action'
+  label: string
+  count: number
+}) {
   const iconNode =
     icon === 'progress' ? (
       <CircleDashed className="h-4 w-4 text-blue-500" aria-hidden="true" />
-    ) : (
+    ) : icon === 'review' ? (
       <Hourglass className="h-4 w-4 text-indigo-500" aria-hidden="true" />
+    ) : (
+      <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden="true" />
     )
   return (
     <div className="flex items-center gap-2 px-2 py-2">
@@ -394,6 +513,20 @@ export function MyWorkClient() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('semua')
   const [now, setNow] = useState(() => new Date())
+  const [selectedAP, setSelectedAP] = useState<ActionPlan | null>(null)
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+
+  const handleOpenDetail = useCallback(async (id: string) => {
+    setHighlightedId(id)
+    try {
+      const res = await fetch(`/api/action-plans/${id}`)
+      if (res.ok) {
+        const ap = await res.json()
+        setSelectedAP(ap)
+      }
+    } catch {}
+  }, [])
 
   // Satu jalur fetch. silent=true → refresh latar (interval) tanpa skeleton;
   // data lama tetap tampil sampai data baru masuk, error diam-diam diabaikan.
@@ -429,17 +562,96 @@ export function MyWorkClient() {
   const proposals = useMemo(() => data?.proposals ?? [], [data])
 
   const counts = useMemo(() => {
-    const today = new Date()
-    const weekEnd = new Date(today.getTime() + 7 * DAY_MS)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const weekEnd = new Date(todayStart.getTime() + 7 * DAY_MS)
     return {
       semua: rows.length,
       aksi: rows.filter((r) => AKSI_STATUSES.includes(r.status)).length + proposals.length,
       minggu: rows.filter(
-        (r) => !DONE_STATUSES.includes(r.status) && new Date(r.endDate).getTime() >= today.getTime() && new Date(r.endDate) <= weekEnd
+        (r) =>
+          !DONE_STATUSES.includes(r.status) &&
+          new Date(r.endDate).getTime() >= todayStart.getTime() &&
+          new Date(r.endDate) <= weekEnd
       ).length,
       selesai: rows.filter((r) => DONE_STATUSES.includes(r.status)).length,
     }
   }, [rows, proposals])
+
+  const todayStart = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [now])
+
+  const aksiItems = useMemo(() => buildAksiItems(rows, proposals, now), [rows, proposals, now])
+
+  const weekStart = useMemo(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  }, [now])
+
+  const stripe = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS)),
+    [weekStart]
+  )
+
+  // Dot menyala kalau dateKey endDate persis salah satu dari 7 kotak strip
+  // (hari ini inklusif s/d +6). Konsisten dengan jumlah kotak yang dirender.
+  const stripKeys = useMemo(() => new Set(stripe.map(dateKey)), [stripe])
+  const deadlineDays = useMemo(
+    () =>
+      new Set(
+        rows
+          .filter((r) => !DONE_STATUSES.includes(r.status) && stripKeys.has(dateKey(new Date(r.endDate))))
+          .map((r) => dateKey(new Date(r.endDate)))
+      ),
+    [rows, stripKeys]
+  )
+
+  const upcoming = useMemo(() => {
+    const active = rows.filter((r) => !DONE_STATUSES.includes(r.status))
+    if (selectedDateKey) {
+      return active
+        .filter((r) => dateKey(new Date(r.endDate)) === selectedDateKey)
+        .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
+    }
+    return active.sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate)).slice(0, 5)
+  }, [rows, selectedDateKey])
+
+  const completeCount = useMemo(() => rows.filter((r) => DONE_STATUSES.includes(r.status)).length, [rows])
+  const inFlight = rows.length - completeCount
+  const pct = rows.length > 0 ? Math.round((completeCount / rows.length) * 100) : 0
+  const R = 40
+  const CIRC = 2 * Math.PI * R
+
+  // Kesiapan Bukti Audit — hanya AP yang buktinya memang masih bisa dilampirkan.
+  const evidenceScope = useMemo(() => rows.filter((r) => EVIDENCE_ELIGIBLE.includes(r.status)), [rows])
+  const withEvidence = useMemo(() => evidenceScope.filter((r) => Boolean(r.evidenceLink)), [evidenceScope])
+  const withoutEvidence = useMemo(() => evidenceScope.filter((r) => !r.evidenceLink), [evidenceScope])
+  const evidenceTotal = evidenceScope.length
+  const evidencePct = evidenceTotal > 0 ? Math.round((withEvidence.length / evidenceTotal) * 100) : 0
+
+  const filteredRows = useMemo(() => {
+    if (tab === 'selesai') {
+      return rows.filter((r) => DONE_STATUSES.includes(r.status))
+    }
+    if (tab === 'minggu') {
+      return rows
+        .filter(
+          (r) =>
+            !DONE_STATUSES.includes(r.status) &&
+            new Date(r.endDate).getTime() >= todayStart.getTime() &&
+            new Date(r.endDate) <= new Date(todayStart.getTime() + 7 * DAY_MS)
+        )
+        .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
+    }
+    if (tab === 'aksi') {
+      return rows.filter((r) => AKSI_STATUSES.includes(r.status))
+    }
+    return rows
+  }, [rows, tab, todayStart])
 
   if (loading) return <MyWorkSkeleton />
 
@@ -460,58 +672,6 @@ export function MyWorkClient() {
       </div>
     )
   }
-
-  const aksiItems = buildAksiItems(rows, proposals, now)
-
-  const weekStart = new Date()
-  weekStart.setHours(0, 0, 0, 0)
-  const stripe = Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * DAY_MS))
-  // Dot menyala kalau dateKey endDate persis salah satu dari 7 kotak strip
-  // (hari ini inklusif s/d +6). Konsisten dengan jumlah kotak yang dirender.
-  const stripKeys = new Set(stripe.map(dateKey))
-  const deadlineDays = new Set(
-    rows
-      .filter((r) => !DONE_STATUSES.includes(r.status) && stripKeys.has(dateKey(new Date(r.endDate))))
-      .map((r) => dateKey(new Date(r.endDate)))
-  )
-
-  const upcoming = rows
-    .filter((r) => !DONE_STATUSES.includes(r.status))
-    .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
-    .slice(0, 5)
-
-  const completeCount = rows.filter((r) => DONE_STATUSES.includes(r.status)).length
-  const inFlight = rows.length - completeCount
-  const pct = rows.length > 0 ? Math.round((completeCount / rows.length) * 100) : 0
-  const R = 40
-  const CIRC = 2 * Math.PI * R
-
-  // Kesiapan Bukti Audit — hanya AP yang buktinya memang masih bisa dilampirkan.
-  const evidenceScope = rows.filter((r) => EVIDENCE_ELIGIBLE.includes(r.status))
-  const withEvidence = evidenceScope.filter((r) => Boolean(r.evidenceLink))
-  const withoutEvidence = evidenceScope.filter((r) => !r.evidenceLink)
-  const evidenceTotal = evidenceScope.length
-  const evidencePct = evidenceTotal > 0 ? Math.round((withEvidence.length / evidenceTotal) * 100) : 0
-
-  // Komputasi inline — bukan hook (setelah early-return loading/error, hook
-  // tidak boleh dipanggil). Ukuran data kecil, memo tidak perlu.
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const filteredRows =
-    tab === 'selesai'
-      ? rows.filter((r) => DONE_STATUSES.includes(r.status))
-      : tab === 'minggu'
-        ? rows
-            .filter(
-              (r) =>
-                !DONE_STATUSES.includes(r.status) &&
-                new Date(r.endDate).getTime() >= now.getTime() &&
-                new Date(r.endDate) <= new Date(todayStart.getTime() + 7 * DAY_MS)
-            )
-            .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
-        : tab === 'aksi'
-          ? rows.filter((r) => AKSI_STATUSES.includes(r.status))
-          : rows
 
   return (
     <div className="space-y-6">
@@ -572,8 +732,8 @@ export function MyWorkClient() {
       <div className="grid gap-6 xl:grid-cols-12">
         {/* KOLOM KIRI */}
         <div className="space-y-6 xl:col-span-8">
-          {/* Action Required */}
-          {tab !== 'selesai' && aksiItems.length > 0 && (
+          {/* Action Required - hanya tampil di tab 'aksi' agar tab 'semua' menampilkan 14 item langsung tanpa tertutup banner */}
+          {tab === 'aksi' && aksiItems.length > 0 && (
             <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-4 sm:p-5">
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
@@ -585,112 +745,139 @@ export function MyWorkClient() {
                 </span>
               </div>
               <div className="mt-3 divide-y divide-amber-200/70">
-                {aksiItems.map((it) => (
-                  <div key={it.refCode} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-amber-200">
-                          {it.icon}
-                        </span>
-                        <span className="font-mono text-[11px] font-medium text-amber-800 dark:text-amber-300">{it.refCode}</span>
-                        <span className="rounded bg-white dark:bg-slate-900 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300 ring-1 ring-amber-200">
-                          {it.kindLabel}
-                        </span>
-                      </div>
-                      <p className="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-50">{it.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{it.desc}</p>
-                    </div>
-                    <Link
-                      href={it.href}
-                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-blue-500 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-600"
-                    >
-                      {it.cta}
-                      <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Action Plan Saya */}
-          <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-            <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-4 sm:px-5">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Action Plan Saya</h2>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                {tab === 'semua' && 'Semua Action Plan sesuai pengelompokan status.'}
-                {tab === 'aksi' && 'Item yang sedang menunggu tindakan Anda.'}
-                {tab === 'minggu' && 'Tenggat dalam 7 hari ke depan.'}
-                {tab === 'selesai' && 'Action Plan yang sudah dituntaskan.'}
-              </p>
-            </div>
-
-            {filteredRows.length === 0 && tab === 'selesai' && (
-              <EmptyCard message="Belum ada Action Plan yang selesai." />
-            )}
-            {filteredRows.length === 0 && tab === 'minggu' && (
-              <EmptyCard message="Tidak ada tenggat dalam 7 hari ke depan." />
-            )}
-            {filteredRows.length === 0 && tab === 'aksi' && (
-              <EmptyCard
-                message={
-                  aksiItems.length > 0
-                    ? 'Tidak ada Action Plan yang butuh aksi — cek proposal draft di banner atas.'
-                    : 'Semua item sudah beres — tidak ada yang butuh aksi Anda.'
-                }
-              />
-            )}
-
-            {tab === 'semua' && <PipelineGroups rows={rows} now={now} />}
-            {tab === 'aksi' && filteredRows.length > 0 && (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 px-4 sm:px-5">
-                {filteredRows.map((r) => {
-                  const wrap = BANNER_ICON[r.status]?.wrap ?? 'bg-slate-100 dark:bg-slate-800'
+                {aksiItems.map((it) => {
+                  const isHighlighted = highlightedId === it.id
                   return (
-                    <div key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
+                    <div
+                      key={it.refCode}
+                      onClick={() => {
+                        if (it.kind === 'ap') handleOpenDetail(it.id)
+                      }}
+                      className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 px-2 rounded-lg transition-all cursor-pointer ${
+                        isHighlighted
+                          ? 'ring-2 ring-blue-500 bg-amber-100/80 dark:bg-amber-900/60 shadow-sm'
+                          : 'hover:bg-amber-100/40 dark:hover:bg-amber-900/20'
+                      }`}
+                    >
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                            {r.refCode}
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-amber-200">
+                            {it.icon}
                           </span>
-                          <span className={`flex h-6 w-6 items-center justify-center rounded-full ${wrap}`}>
-                            {BANNER_ICON[r.status]?.icon}
+                          <span className="font-mono text-[11px] font-medium text-amber-800 dark:text-amber-300">{it.refCode}</span>
+                          <span className="rounded bg-white dark:bg-slate-900 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300 ring-1 ring-amber-200">
+                            {it.kindLabel}
                           </span>
-                          <StatusBadge status={r.status} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
                         </div>
-                        <p className="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-50">{r.title}</p>
-                        <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{r.projectName || r.taskTitle || 'Action Plan Pribadi'}</p>
+                        <p className="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-50">{it.title}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{it.desc}</p>
                       </div>
-                      <div className="flex w-full items-center gap-3 sm:w-auto sm:flex-1">
-                        <Progress done={r.checklistDone} total={r.checklistTotal} />
+                      <div className="flex items-center gap-2 shrink-0">
+                        {it.kind === 'ap' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenDetail(it.id)
+                            }}
+                            className="inline-flex h-8 w-24 shrink-0 items-center justify-center rounded-md border border-amber-300 dark:border-amber-800 bg-white/90 dark:bg-slate-900/90 px-2 text-xs font-medium text-amber-900 dark:text-amber-200 transition-colors hover:bg-white dark:hover:bg-slate-800 text-center"
+                          >
+                            Lihat Detail
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (it.kind === 'ap') {
+                              handleOpenDetail(it.id)
+                            } else {
+                              window.location.href = it.href
+                            }
+                          }}
+                          className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md bg-blue-500 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-600 text-center"
+                        >
+                          {it.cta}
+                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
                       </div>
-                      <DeadlineChip iso={r.endDate} now={now} />
                     </div>
                   )
                 })}
               </div>
-            )}
-            {tab === 'minggu' && filteredRows.length > 0 && (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 px-4 sm:px-5">
-                {filteredRows.map((r) => (
-                  <ActionRow key={r.id} row={r} now={now} showStatus />
-                ))}
-              </div>
-            )}
-            {tab === 'selesai' && filteredRows.length > 0 && (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800 px-4 sm:px-5">
-                {filteredRows.map((r) => (
-                  <CompleteRow key={r.id} row={r} />
-                ))}
-              </div>
-            )}
+            </div>
+          )}
 
-            {rows.length === 0 && proposals.length === 0 && tab === 'semua' && (
-              <Link href="/board" className="block border-t border-slate-200 dark:border-slate-800 px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline sm:px-5">
-                Belum ada pekerjaan — lihat Board untuk memulai
-              </Link>
-            )}
-          </div>
+          {tab === 'aksi' && aksiItems.length === 0 && (
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center shadow-sm">
+              <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+              <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                Semua item sudah beres — tidak ada yang butuh aksi Anda.
+              </p>
+            </div>
+          )}
+
+          {/* Action Plan Saya - tampil di tab selain 'aksi' */}
+          {tab !== 'aksi' && (
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-4 sm:px-5">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Action Plan Saya</h2>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {tab === 'semua' && 'Semua Action Plan sesuai pengelompokan status.'}
+                  {tab === 'minggu' && 'Tenggat dalam 7 hari ke depan.'}
+                  {tab === 'selesai' && 'Action Plan yang sudah dituntaskan.'}
+                </p>
+              </div>
+
+              {filteredRows.length === 0 && tab === 'selesai' && (
+                <EmptyCard message="Belum ada Action Plan yang selesai." />
+              )}
+              {filteredRows.length === 0 && tab === 'minggu' && (
+                <EmptyCard message="Tidak ada tenggat dalam 7 hari ke depan." />
+              )}
+
+              {tab === 'semua' && (
+                <PipelineGroups
+                  rows={rows}
+                  now={now}
+                  highlightedId={highlightedId}
+                  onSelect={handleOpenDetail}
+                />
+              )}
+              {tab === 'minggu' && filteredRows.length > 0 && (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 px-4 sm:px-5">
+                  {filteredRows.map((r) => (
+                    <ActionRow
+                      key={r.id}
+                      row={r}
+                      now={now}
+                      showStatus
+                      highlighted={highlightedId === r.id}
+                      onSelect={handleOpenDetail}
+                    />
+                  ))}
+                </div>
+              )}
+              {tab === 'selesai' && filteredRows.length > 0 && (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800 px-4 sm:px-5">
+                  {filteredRows.map((r) => (
+                    <CompleteRow
+                      key={r.id}
+                      row={r}
+                      highlighted={highlightedId === r.id}
+                      onSelect={handleOpenDetail}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {rows.length === 0 && proposals.length === 0 && tab === 'semua' && (
+                <Link href="/board" className="block border-t border-slate-200 dark:border-slate-800 px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline sm:px-5">
+                  Belum ada pekerjaan — lihat Board untuk memulai
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* KOLOM KANAN */}
@@ -708,48 +895,88 @@ export function MyWorkClient() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Timeline visual distribusi komitmen Anda minggu ini.
+                Pilih tanggal pada strip untuk memfilter Action Plan bertenggat pada hari tersebut.
               </p>
             </div>
             <div className="p-4">
-              {/* Strip 7 hari */}
+              {/* Strip 7 hari interaktif */}
               <div className="grid grid-cols-7 gap-1">
                 {stripe.map((d) => {
                   const key = dateKey(d)
                   const isToday = key === dateKey(new Date())
+                  const isSelected = selectedDateKey === key
                   const hasDeadline = deadlineDays.has(key)
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={key}
-                      className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition-colors ${
-                        isToday
-                          ? 'border-blue-500 bg-blue-500 text-white shadow-sm'
-                          : 'border-slate-100 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300'
+                      onClick={() => setSelectedDateKey((prev) => (prev === key ? null : key))}
+                      aria-pressed={isSelected}
+                      title={`Filter tenggat ${d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`}
+                      className={`flex flex-col items-center gap-1 rounded-lg border px-1 py-2.5 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-md ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-slate-900'
+                          : isToday
+                            ? 'border-blue-500 bg-blue-500 text-white shadow-sm hover:bg-blue-600'
+                            : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-800'
                       }`}
                     >
-                      <span className="text-[10px] font-medium uppercase opacity-70">
+                      <span className="text-[10px] font-medium uppercase opacity-75">
                         {d.toLocaleDateString('id-ID', { weekday: 'short' })}
                       </span>
                       <span className="text-sm font-semibold">{d.getDate()}</span>
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
-                          hasDeadline ? (isToday ? 'bg-white dark:bg-slate-900' : 'bg-blue-500') : 'bg-transparent'
+                          hasDeadline
+                            ? isSelected || isToday
+                              ? 'bg-white dark:bg-slate-900'
+                              : 'bg-blue-500'
+                            : 'bg-transparent'
                         }`}
                       />
-                    </div>
+                    </button>
                   )
                 })}
               </div>
 
-              <div className="mt-4 space-y-2">
+              {/* Status filter tanggal */}
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  {selectedDateKey
+                    ? `Tenggat ${selectedDateKey.split('-').reverse().join('/')}`
+                    : '5 Tenggat Terdekat'}
+                </span>
+                {selectedDateKey && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDateKey(null)}
+                    className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-2.5 space-y-2">
                 {upcoming.length === 0 && (
-                  <p className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">Tidak ada tenggat aktif.</p>
+                  <p className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                    {selectedDateKey ? 'Tidak ada tenggat pada tanggal ini.' : 'Tidak ada tenggat aktif.'}
+                  </p>
                 )}
                 {upcoming.map((r) => {
                   const d = new Date(r.endDate)
                   const isLate = d.getTime() < now.getTime()
+                  const isHighlighted = highlightedId === r.id
                   return (
-                    <div key={r.id} className="flex items-center gap-3">
+                    <div
+                      key={r.id}
+                      onClick={() => handleOpenDetail(r.id)}
+                      className={`flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer ${
+                        isHighlighted
+                          ? 'ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40'
+                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
                       <div
                         className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg ${
                           isLate ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300'
@@ -855,13 +1082,14 @@ export function MyWorkClient() {
                             {r.title}
                           </span>
                         </div>
-                        <Link
-                          href={ACTION_HREF}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(r.id)}
                           className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline"
                         >
                           Unggah
                           <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                        </Link>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -876,6 +1104,29 @@ export function MyWorkClient() {
           </div>
         </div>
       </div>
+
+      {/* Drawer Detail Action Plan */}
+      {selectedAP && (
+        <ActionPlanDetail
+          actionPlan={selectedAP}
+          role={data.user.role as Role}
+          userId={data.user.id}
+          onOpenChange={(open) => {
+            if (!open) setSelectedAP(null)
+          }}
+          onChanged={() => {
+            load({ silent: true })
+            fetch(`/api/action-plans/${selectedAP.id}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((ap) => {
+                if (ap) setSelectedAP(ap)
+              })
+          }}
+          onEdit={() => {
+            window.location.href = `/action-plans?open=${selectedAP.id}&highlight=${selectedAP.id}`
+          }}
+        />
+      )}
     </div>
   )
 }

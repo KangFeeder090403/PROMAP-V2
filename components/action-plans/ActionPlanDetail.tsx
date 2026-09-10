@@ -84,14 +84,20 @@ export function ActionPlanDetail({
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reassignOpen, setReassignOpen] = useState(false)
   const [startLoading, setStartLoading] = useState(false)
+  const [completeLoading, setCompleteLoading] = useState(false)
   const [actionError, setActionError] = useState('')
   const [conflict, setConflict] = useState(false)
   const [presetReview, setPresetReview] = useState<PresetReview>('COMPLETE')
+  const [checklistCounts, setChecklistCounts] = useState<{ id: string; done: number; total: number } | null>(null)
 
   if (!actionPlan) return null
 
   const ap = actionPlan
+  const currentCounts = checklistCounts?.id === ap.id ? checklistCounts : null
+  const doneCount = currentCounts?.done ?? ap.checklistDone
+  const totalCount = currentCounts?.total ?? ap.checklistTotal
   const isOwner = ap.picId === userId
+  const isPersonal = ap.isPersonal || !ap.taskId
   const editableChecklist =
     isOwner && ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
 
@@ -99,7 +105,11 @@ export function ActionPlanDetail({
     isOwner &&
     STATUS_TRANSITIONS[ap.status as keyof typeof STATUS_TRANSITIONS]?.includes('IN_PROGRESS') &&
     ['NOT_STARTED', 'REJECTED', 'OVERDUE'].includes(ap.status)
-  const canSubmit = isOwner && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+  const canSubmit = !isPersonal && isOwner && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+  const canCompleteDirectly =
+    isOwner &&
+    isPersonal &&
+    ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED', 'REJECTED', 'OVERDUE'].includes(ap.status)
   // Logika sama seperti lib/rbac.ts canReviewActionPlan — diinline di sini (bukan diimpor)
   // karena file ini 'use client', dan lib/rbac.ts menarik lib/prisma.ts (driver pg,
   // node-only) yang gagal di-bundle untuk client. Server tetap sumber kebenaran final.
@@ -131,12 +141,28 @@ export function ActionPlanDetail({
     onChanged()
   }
 
+  async function handleCompletePersonal() {
+    setActionError('')
+    setCompleteLoading(true)
+    const res = await fetch(`/api/action-plans/${ap.id}/complete`, { method: 'POST' })
+    setCompleteLoading(false)
+    if (res.status === 409) {
+      setConflict(true)
+      return
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setActionError(data.error || 'Gagal menyelesaikan Action Plan')
+      return
+    }
+    onChanged()
+  }
+
   const breadcrumb = ap.task?.project?.name
     ? ['Projects', ap.task.project.name, ap.code]
     : ['Personal', ap.code]
 
-  const workBadge =
-    ap.checklistTotal > 0 ? `${ap.checklistDone}/${ap.checklistTotal}` : '0'
+  const workBadge = totalCount > 0 ? `${doneCount}/${totalCount}` : '0'
 
   return (
     <DialogPrimitive.Root open={!!actionPlan} onOpenChange={onOpenChange}>
@@ -329,7 +355,13 @@ export function ActionPlanDetail({
                     Execution Milestones
                   </h3>
                   <div className="mt-2">
-                    <ChecklistList actionPlanId={ap.id} editable={editableChecklist} />
+                    <ChecklistList
+                      actionPlanId={ap.id}
+                      editable={editableChecklist}
+                      onCountChange={(d, t) => {
+                        setChecklistCounts({ id: ap.id, done: d, total: t })
+                      }}
+                    />
                   </div>
                 </section>
 
@@ -448,6 +480,16 @@ export function ActionPlanDetail({
                   className="inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
                 >
                   {startLoading ? 'Memproses...' : 'Mulai Kerja'}
+                </button>
+              )}
+              {canCompleteDirectly && (
+                <button
+                  type="button"
+                  onClick={handleCompletePersonal}
+                  disabled={completeLoading}
+                  className="inline-flex h-9 items-center rounded-md bg-emerald-600 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {completeLoading ? 'Memproses...' : 'Tandai Selesai'}
                 </button>
               )}
               {canSubmit && (

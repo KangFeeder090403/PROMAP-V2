@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser, taskScope, canAssignTask } from '@/lib/rbac'
+import { getSessionUser, taskScope, projectScope, canAssignTask } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 
 export async function GET(req: Request) {
@@ -13,8 +13,26 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const projectId = searchParams.get('projectId')
 
-    const where: any = { ...taskScope(user), deletedAt: null }
-    if (projectId) where.projectId = projectId
+    let where: any = { deletedAt: null }
+
+    if (projectId) {
+      // Pastikan user berhak melihat project ini
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, ...projectScope(user), deletedAt: null },
+        select: { id: true, companyId: true },
+      })
+      if (!project) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      where.projectId = projectId
+      // Tenant isolation guard: hanya task di company user
+      if (user.role !== 'SUPER_ADMIN') {
+        where.division = { companyId: user.companyId! }
+      }
+    } else {
+      where = { ...where, ...taskScope(user) }
+    }
 
     const data = await prisma.task.findMany({
       where,
@@ -95,7 +113,7 @@ export async function POST(req: Request) {
       userIds: [body.picId],
       title: 'Task baru',
       message: `Kamu mendapat task baru: ${result.title}`,
-      link: `/tasks/${result.id}`,
+      link: `/projects/${result.projectId}`,
       companyId: project.companyId
     })
 

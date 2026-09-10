@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         userIds: managers.map((m) => m.id),
         title: 'Proposal baru',
         message: `${user.name} mengajukan proposal: ${result.title}`,
-        link: `/proposals/${result.id}`,
+        link: '/proposals',
         companyId: user.companyId ?? undefined
       })
     }
