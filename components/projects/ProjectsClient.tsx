@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
+  Building2,
   Calendar,
   ChevronDown,
   ChevronLeft,
@@ -27,6 +28,7 @@ export interface Project {
   startDate: string | null
   endDate: string | null
   createdAt: string
+  company?: { id: string; name: string } | null
   division: { id: string; name: string } | null
   /** Semua divisi yang terlibat (divisi project + divisi tiap PIC task). */
   divisions?: { id: string; name: string }[]
@@ -373,10 +375,16 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                         onClick={() => router.push(`/projects/${p.id}`)}
                       >
                         <td className="px-5 py-4">
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-0.5">
                             <span className="text-[15px] font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {p.name}
                             </span>
+                            {p.company?.name && (
+                              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span className="font-medium text-slate-600 dark:text-slate-400">{p.company.name}</span>
+                              </div>
+                            )}
                             {p.description && (
                               <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
                                 {p.description}
@@ -397,8 +405,8 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                               ))}
                             </div>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium">
-                              {p.division?.name ?? 'Semua Divisi'}
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                              {p.division?.name ?? 'Semua Divisi (Lintas Divisi)'}
                             </span>
                           )}
                         </td>

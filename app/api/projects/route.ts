@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, projectScope, canManageProject } from '@/lib/rbac'
+import { notify } from '@/lib/notifications'
 
 export async function GET() {
   try {
@@ -11,7 +12,10 @@ export async function GET() {
 
     const projects = await prisma.project.findMany({
       where: { ...projectScope(user), deletedAt: null },
-      orderBy: { createdAt: 'desc' }
+      include: {
+        company: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
     })
 
     const ids = projects.map((p) => p.id)
@@ -223,6 +227,16 @@ export async function POST(req: Request) {
 
       return project
     })
+
+    if (pics.length > 0) {
+      await notify({
+        userIds: pics.map((p) => p.id),
+        title: 'Ditugaskan ke Project Baru',
+        message: `Kamu telah ditugaskan ke project "${result.name}" sebagai PIC.`,
+        link: `/projects/${result.id}`,
+        companyId,
+      })
+    }
 
     return NextResponse.json(result, { status: 201 })
   } catch (error) {
