@@ -11,6 +11,10 @@ export interface SessionUser {
   name: string
   email: string
   role: Role
+  companyId?: string | null
+  companyName?: string | null
+  divisionId?: string | null
+  divisionName?: string | null
   isImpersonating?: boolean
 }
 

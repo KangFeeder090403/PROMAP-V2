@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu } from 'lucide-react'
+import { Menu, Building2 } from 'lucide-react'
 import { Breadcrumb } from '@/components/layout/Breadcrumb'
 import { NewButton } from '@/components/layout/NewButton'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -24,6 +24,18 @@ export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: S
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        {user.companyName && (
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+            <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <span className="font-medium text-slate-800 dark:text-slate-200">{user.companyName}</span>
+            {user.divisionName && (
+              <>
+                <span className="text-slate-400 dark:text-slate-600 font-normal">/</span>
+                <span className="text-slate-600 dark:text-slate-400 font-medium">{user.divisionName}</span>
+              </>
+            )}
+          </div>
+        )}
         <NewButton role={user.role} />
         <ThemeToggle />
         <NotifBell />

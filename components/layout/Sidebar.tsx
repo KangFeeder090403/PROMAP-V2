@@ -49,8 +49,21 @@ export function Sidebar({
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-      <div className="flex h-14 items-center border-b border-slate-800 px-4">
-        <span className="text-sm font-semibold text-white">ProMaP</span>
+      <div className="flex h-16 items-center gap-3 border-b border-slate-800 px-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm shadow-sm">
+          {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-white leading-tight">
+            {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
+          </p>
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <p className="truncate text-[11px] font-medium text-slate-400 leading-none">
+              {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
+            </p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto p-3">
