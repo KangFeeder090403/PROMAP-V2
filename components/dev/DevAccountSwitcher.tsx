@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, RefreshCw, UserRound, X } from 'lucide-react'
+import { Users, RefreshCw, UserRound, X, Building2 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 
 interface Account {
@@ -83,12 +83,26 @@ export function DevAccountSwitcher({
     }
   }
 
-  if (!DEV) return null
+  const companyGroups = useMemo(() => {
+    if (!accounts) return []
+    const map = new Map<string, Account[]>()
+    for (const a of accounts) {
+      const comp = a.companyName || (a.role === 'SUPER_ADMIN' ? 'Sistem Global (Super Admin)' : 'Tanpa Perusahaan')
+      const list = map.get(comp) ?? []
+      list.push(a)
+      map.set(comp, list)
+    }
+    return Array.from(map.entries()).map(([company, items]) => ({
+      company,
+      items: items.sort((a, b) => {
+        const orderA = ROLE_ORDER.indexOf(a.role)
+        const orderB = ROLE_ORDER.indexOf(b.role)
+        return (orderA === -1 ? 99 : orderA) - (orderB === -1 ? 99 : orderB)
+      }),
+    }))
+  }, [accounts])
 
-  const grouped = ROLE_ORDER.map((role) => ({
-    role,
-    items: (accounts ?? []).filter((a) => a.role === role),
-  })).filter((g) => g.items.length > 0)
+  if (!DEV) return null
 
   return (
     <>
@@ -106,11 +120,11 @@ export function DevAccountSwitcher({
       </button>
 
       {open && (
-        <div className="fixed bottom-[5.5rem] right-5 z-50 flex max-h-[70vh] w-[360px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed bottom-[5.5rem] right-5 z-50 flex max-h-[75vh] w-[380px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Switch Akun (Dev)</p>
-              <p className="text-xs text-slate-500">Verifikasi POV tiap role</p>
+              <p className="text-xs text-slate-500">Dikelompokkan berdasarkan Tenant / Perusahaan</p>
             </div>
             <button
               type="button"
@@ -145,20 +159,24 @@ export function DevAccountSwitcher({
               <p className="text-xs text-slate-500">Memuat akun...</p>
             ) : (
               <div className="space-y-4">
-                {grouped.map((g) => (
-                  <div key={g.role}>
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      {ROLE_LABEL[g.role]}
-                    </p>
+                {companyGroups.map((cg) => (
+                  <div key={cg.company} className="rounded-lg border border-slate-200/80 bg-slate-50/50 p-2.5">
+                    <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-slate-200 text-xs font-semibold text-slate-700">
+                      <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">{cg.company}</span>
+                      <span className="ml-auto text-[10px] font-normal text-slate-400">
+                        {cg.items.length} akun
+                      </span>
+                    </div>
                     <div className="space-y-1.5">
-                      {g.items.map((a) => {
+                      {cg.items.map((a) => {
                         const isCurrent = a.id === currentUserId
                         return (
                           <div
                             key={a.id}
-                            className={`flex items-center gap-2 rounded-lg border p-2 ${
+                            className={`flex items-center gap-2 rounded-lg border p-2 bg-white ${
                               isCurrent
-                                ? 'border-blue-200 bg-blue-50'
+                                ? 'border-blue-300 bg-blue-50/60 ring-1 ring-blue-300'
                                 : 'border-slate-200 hover:bg-slate-50'
                             }`}
                           >
@@ -166,11 +184,22 @@ export function DevAccountSwitcher({
                               <UserRound className="h-3.5 w-3.5 text-slate-500" />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-slate-900">
-                                {a.name}
-                                {isCurrent && <span className="ml-1 text-xs text-blue-600">(aktif)</span>}
-                              </p>
-                              <p className="truncate text-xs text-slate-500">{a.email}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="truncate text-xs font-medium text-slate-900">{a.name}</p>
+                                {isCurrent && <span className="text-[10px] font-semibold text-blue-600 shrink-0">(aktif)</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${ROLE_BADGE[a.role] || 'bg-slate-100'}`}>
+                                  {a.role === 'MANAGER' && a.divisionName
+                                    ? `Manager ${a.divisionName}`
+                                    : (ROLE_LABEL[a.role] || a.role)}
+                                </span>
+                                {a.divisionName && a.role !== 'MANAGER' && (
+                                  <span className="truncate text-[10px] text-slate-500 font-medium">
+                                    {a.divisionName}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {!isCurrent && (
                               <button
