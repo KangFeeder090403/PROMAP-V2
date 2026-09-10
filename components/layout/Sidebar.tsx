@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
@@ -24,6 +25,16 @@ export function Sidebar({
   onClose: () => void
 }) {
   const pathname = usePathname()
+
+  // Badge "butuh aksi" di My Work. Di-refresh saat pindah halaman karena
+  // navigasi biasanya terjadi tepat setelah user menyelesaikan sesuatu.
+  const [actionCount, setActionCount] = useState(0)
+  useEffect(() => {
+    fetch('/api/my-work/count')
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => setActionCount(typeof d.count === 'number' ? d.count : 0))
+      .catch(() => setActionCount(0))
+  }, [pathname])
 
   // Urutan wajib: filter item by role DULU, baru buang grup yang jadi kosong.
   // Kalau dibalik, grup tanpa item yang boleh dilihat user tetap kerender.
@@ -55,6 +66,7 @@ export function Sidebar({
             {group.items.map((item) => {
               const Icon = item.icon
               const active = matchesPath(item.href, pathname)
+              const badge = item.href === '/my-work' && actionCount > 0 ? actionCount : 0
               return (
                 <Link
                   key={item.href}
@@ -68,7 +80,15 @@ export function Sidebar({
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  {item.label}
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {badge > 0 && (
+                    <span
+                      className="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold tabular-nums text-white"
+                      aria-label={`${badge} item butuh aksi`}
+                    >
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}

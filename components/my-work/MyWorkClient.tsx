@@ -285,12 +285,28 @@ function CompleteRow({ row }: { row: MyWorkItem }) {
   )
 }
 
+const PRIORITY_RANK: Record<Priority, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+
+/**
+ * Urut prioritas dulu, baru tenggat terdekat. Referensi Linear: yang mendesak
+ * harus di atas, jangan tenggelam di bawah item lama berprioritas rendah.
+ */
+function byUrgency(rows: MyWorkItem[]) {
+  return [...rows].sort(
+    (a, b) =>
+      PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+      new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
+  )
+}
+
 /** Grup status untuk tab "Semua". */
 function PipelineGroups({ rows, now }: { rows: MyWorkItem[]; now: Date }) {
   const [openComplete, setOpenComplete] = useState(false)
 
-  const inProgress = rows.filter((r) => r.status === 'IN_PROGRESS' || r.status === 'NOT_STARTED')
-  const inReview = rows.filter((r) => r.status === 'PENDING_APPROVAL')
+  const inProgress = byUrgency(
+    rows.filter((r) => r.status === 'IN_PROGRESS' || r.status === 'NOT_STARTED')
+  )
+  const inReview = byUrgency(rows.filter((r) => r.status === 'PENDING_APPROVAL'))
   const completed = rows.filter((r) => DONE_STATUSES.includes(r.status))
 
   return (

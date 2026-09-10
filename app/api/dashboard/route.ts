@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser, apScope, proposalScope } from '@/lib/rbac'
+import { getSessionUser, apScope, proposalScope, projectScope } from '@/lib/rbac'
+import { buildPortfolio } from '@/lib/dashboard-portfolio'
 import { aggregateDashboard } from '@/lib/dashboard-aggregate'
 import type { Prisma, ProposalStatus, Role } from '@/lib/generated/prisma/client'
 
@@ -128,6 +129,37 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    // Helicopter view — scope project mengikuti projectScope (Manager = divisinya).
+    const portfolioProjects = await prisma.project.findMany({
+      where: { ...projectScope(user), deletedAt: null, isActive: true },
+      select: { id: true, name: true, endDate: true, divisionId: true },
+      take: 200,
+    })
+    const portfolioTasks = portfolioProjects.length
+      ? await prisma.task.findMany({
+          where: { projectId: { in: portfolioProjects.map((p) => p.id) }, deletedAt: null },
+          select: { projectId: true, divisionId: true, title: true, status: true, endDate: true },
+        })
+      : []
+    const portfolioDivisions = await prisma.division.findMany({
+      where: {
+        id: {
+          in: [
+            ...new Set([
+              ...portfolioProjects.map((p) => p.divisionId),
+              ...portfolioTasks.map((t) => t.divisionId),
+            ].filter(Boolean)),
+          ] as string[],
+        },
+      },
+      select: { id: true, name: true },
+    })
+    const portfolio = buildPortfolio(
+      portfolioProjects,
+      portfolioTasks,
+      new Map(portfolioDivisions.map((d) => [d.id, d.name]))
+    )
+
     const agg = aggregateDashboard(
       actionPlans,
       proposals.map((p) => ({
@@ -142,6 +174,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ...agg,
+      portfolio,
       user: {
         name: userDetail?.name ?? user.name,
         roleLabel: ROLE_LABEL[userDetail?.role ?? user.role],

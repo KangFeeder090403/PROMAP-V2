@@ -67,7 +67,39 @@ export type DashboardResponse = {
   overdueList: OverdueRow[]
 }
 
+export type PortfolioSummary = {
+  healthSummary: { onTrack: number; atRisk: number; delayed: number }
+  projectHealth: {
+    id: string
+    name: string
+    progress: number
+    health: 'ON_TRACK' | 'AT_RISK' | 'DELAYED'
+    taskCount: number
+    overdueTasks: number
+    endDate: string | null
+  }[]
+  divisionProgress: {
+    id: string
+    name: string
+    total: number
+    done: number
+    overdue: number
+    completionRate: number
+    overdueRate: number
+  }[]
+  upcomingMilestones: {
+    title: string
+    projectId: string
+    projectName: string
+    divisionName: string
+    endDate: string
+    daysLeft: number
+    status: string
+  }[]
+}
+
 export type DashboardApiResponse = DashboardResponse & {
   user: DashboardUser
   greeting: string
+  portfolio?: PortfolioSummary
 }

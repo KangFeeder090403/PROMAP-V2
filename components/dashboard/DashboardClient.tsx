@@ -18,6 +18,7 @@ import {
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
+import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,
@@ -715,6 +716,9 @@ export function DashboardClient() {
         </div>
         )}
       </div>
+
+      {/* Helicopter view — kesehatan project, lintas divisi, radar tenggat */}
+      {data.portfolio && <PortfolioSection portfolio={data.portfolio} />}
 
       {/* Overdue & Critical Deadlines */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
