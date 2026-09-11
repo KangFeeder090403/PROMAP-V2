@@ -18,7 +18,8 @@ export async function GET(req: Request) {
 
     const data = await prisma.proposal.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: { proposer: { select: { id: true, name: true } } },
     })
 
     return NextResponse.json(data)
