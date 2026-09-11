@@ -49,8 +49,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       await notify({
         userIds: managers.map((m) => m.id),
         title: 'AP menunggu review',
-        message: `"${ap.title}" menunggu persetujuan Anda`,
-        link: `/action-plans/${id}`,
+        message: `"${ap.title}" diajukan oleh ${user.name} dan menunggu persetujuan Anda`,
+        link: `/action-plans?open=${id}`,
         companyId: ap.companyId,
       })
     } else {
@@ -61,8 +61,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       await notify({
         userIds: admins.map((a) => a.id),
         title: 'AP personal menunggu review',
-        message: `"${ap.title}" menunggu persetujuan Anda`,
-        link: `/action-plans/${id}`,
+        message: `"${ap.title}" diajukan oleh ${user.name} dan menunggu persetujuan Anda`,
+        link: `/action-plans?open=${id}`,
         companyId: ap.companyId,
       })
     }

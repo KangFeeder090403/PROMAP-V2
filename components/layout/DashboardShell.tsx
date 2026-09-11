@@ -4,12 +4,18 @@ import { useState } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
 
 export interface SessionUser {
   id: string
   name: string
   email: string
   role: Role
+  companyId?: string | null
+  companyName?: string | null
+  divisionId?: string | null
+  divisionName?: string | null
+  isImpersonating?: boolean
 }
 
 export function DashboardShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
@@ -18,6 +24,7 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
   return (
     <div className="min-h-screen">
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
 
       {sidebarOpen && (
         <div

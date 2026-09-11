@@ -5,7 +5,7 @@ import { ActionPlansClient } from '@/components/action-plans/ActionPlansClient'
 export default async function ActionPlansPage({
   searchParams,
 }: {
-  searchParams: { new?: string }
+  searchParams: { new?: string; open?: string; id?: string; highlight?: string }
 }) {
   const user = await getSessionUser()
   if (!user) redirect('/login')
@@ -13,6 +13,12 @@ export default async function ActionPlansPage({
   // Semua role non-GUEST boleh create AP (lib/rbac.ts canCreateAP);
   // getSessionUser sudah menolak guest → tidak perlu gating tambahan.
   return (
-    <ActionPlansClient role={user.role} userId={user.id} openCreate={searchParams.new === '1'} />
+    <ActionPlansClient
+      role={user.role}
+      userId={user.id}
+      openCreate={searchParams.new === '1'}
+      initialOpenId={searchParams.open || searchParams.id}
+      initialHighlightId={searchParams.highlight}
+    />
   )
 }

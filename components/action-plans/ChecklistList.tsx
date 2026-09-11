@@ -12,9 +12,11 @@ interface ChecklistItem {
 export function ChecklistList({
   actionPlanId,
   editable,
+  onCountChange,
 }: {
   actionPlanId: string
   editable: boolean
+  onCountChange?: (done: number, total: number) => void
 }) {
   const [items, setItems] = useState<ChecklistItem[] | null>(null)
   const [error, setError] = useState('')
@@ -30,7 +32,10 @@ export function ChecklistList({
       setError('')
       const res = await fetch(`/api/action-plans/${actionPlanId}/checklists`)
       if (!res.ok) throw new Error()
-      setItems(await res.json())
+      const data: ChecklistItem[] = await res.json()
+      setItems(data)
+      const done = data.filter((i) => i.isDone).length
+      onCountChange?.(done, data.length)
     } catch {
       setError('Gagal memuat checklist.')
     }

@@ -97,7 +97,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         userIds: [result.picId],
         title: 'Task di-reassign',
         message: `Kamu ditugaskan ke task: ${result.title}`,
-        link: `/tasks/${id}`,
+        link: `/projects/${result.projectId}`,
         companyId: existing.division.companyId
       })
     }

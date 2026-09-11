@@ -56,11 +56,21 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     await notify({
       userIds: [newPic.id],
-      title: 'Action Plan di-reassign',
-      message: `Kamu ditugaskan ke Action Plan: ${result.title}`,
-      link: `/action-plans/${id}`,
+      title: 'Action Plan dialihkan kepada Anda',
+      message: `Rencana aksi "${result.title}" dialihkan kepada Anda oleh ${user.name}.`,
+      link: `/action-plans?open=${id}`,
       companyId: existing.companyId
     })
+
+    if (existing.picId && existing.picId !== user.id && existing.picId !== newPic.id) {
+      await notify({
+        userIds: [existing.picId],
+        title: 'Action Plan dialihkan',
+        message: `Rencana aksi "${result.title}" telah dialihkan kepada ${newPic.name}.`,
+        link: `/action-plans?open=${id}`,
+        companyId: existing.companyId
+      })
+    }
 
     return NextResponse.json(result)
   } catch (error) {

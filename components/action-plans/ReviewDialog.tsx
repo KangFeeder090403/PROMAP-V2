@@ -19,6 +19,7 @@ export function ReviewDialog({
   onOpenChange,
   actionPlanId,
   title,
+  presetAction,
   onSuccess,
   onConflict,
 }: {
@@ -26,6 +27,7 @@ export function ReviewDialog({
   onOpenChange: (open: boolean) => void
   actionPlanId: string
   title?: string
+  presetAction?: ReviewAction
   onSuccess: () => void
   onConflict: () => void
 }) {
@@ -115,7 +117,9 @@ export function ReviewDialog({
             type="button"
             onClick={() => handleReview('EVIDENCE_REQUIRED')}
             disabled={!!loading}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+              presetAction === 'EVIDENCE_REQUIRED' ? 'ring-2 ring-amber-300 ring-offset-1' : ''
+            }`}
           >
             {loading === 'EVIDENCE_REQUIRED' ? 'Memproses...' : 'Minta Bukti'}
           </button>
@@ -123,7 +127,9 @@ export function ReviewDialog({
             type="button"
             onClick={() => handleReview('REJECTED')}
             disabled={!!loading}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+              presetAction === 'REJECTED' ? 'ring-2 ring-red-300 ring-offset-1' : ''
+            }`}
           >
             {loading === 'REJECTED' ? 'Memproses...' : 'Tolak'}
           </button>
@@ -131,7 +137,9 @@ export function ReviewDialog({
             type="button"
             onClick={() => handleReview('COMPLETE')}
             disabled={!!loading}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            className={`inline-flex items-center gap-2 h-9 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+              presetAction === 'COMPLETE' ? 'ring-2 ring-green-300 ring-offset-1' : ''
+            }`}
           >
             {loading === 'COMPLETE' ? 'Memproses...' : 'Setujui'}
           </button>

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma, ActionPlanStatus, Priority } from '@/lib/generated/prisma/client'
 import { getSessionUser, apScope, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { shortRef } from '@/lib/dashboard-aggregate'
 
 export async function GET(req: Request) {
   try {
@@ -14,18 +16,78 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
     const taskId = searchParams.get('taskId')
+    const search = searchParams.get('search')?.trim()
+    const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
+    const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize') ?? '10') || 10))
 
-    const where: any = { ...apScope(user), deletedAt: null }
-    if (status) where.status = status
-    if (priority) where.priority = priority
+    // Buku besar (scope penuh, tanpa filter baris) — dipakai untuk chips.
+    const baseWhere: Prisma.ActionPlanWhereInput = { ...apScope(user), deletedAt: null }
+
+    const where: Prisma.ActionPlanWhereInput = { ...baseWhere }
+    if (status) where.status = status as ActionPlanStatus
+    if (priority) where.priority = priority as Priority
     if (taskId) where.taskId = taskId
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { id: { contains: search, mode: 'insensitive' } },
+      ]
+    }
 
-    const data = await prisma.actionPlan.findMany({
-      where,
-      orderBy: { createdAt: 'desc' }
+    // Chips workflow state: hitung per status dari seluruh AP in-scope.
+    const statusGroups = await prisma.actionPlan.groupBy({
+      by: ['status'],
+      where: baseWhere,
+      _count: { _all: true },
     })
+    const counts = Object.fromEntries(statusGroups.map((g) => [g.status, g._count._all]))
 
-    return NextResponse.json(data)
+    const [total, items] = await Promise.all([
+      prisma.actionPlan.count({ where }),
+      prisma.actionPlan.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          pic: { select: { id: true, name: true, role: true } },
+          task: {
+            select: {
+              id: true,
+              title: true,
+              project: { select: { id: true, name: true } },
+            },
+          },
+          division: { select: { id: true, name: true } },
+          _count: { select: { comments: true } },
+        },
+      }),
+    ])
+
+    // Progress checklist per AP — satu query agregasi, bukan N+1.
+    const agg = await prisma.checklist.groupBy({
+      by: ['actionPlanId', 'isDone'],
+      where: { actionPlanId: { in: items.map((a) => a.id) } },
+      _count: { _all: true },
+    })
+    const checklistStats: Record<string, { done: number; total: number }> = {}
+    for (const row of agg) {
+      const stat = (checklistStats[row.actionPlanId] ??= { done: 0, total: 0 })
+      stat.total += row._count._all
+      if (row.isDone) stat.done += row._count._all
+    }
+
+    const withMeta = items.map((a) => ({
+      ...a,
+      // shortRef: derivasi dari id, jadi stabil tanpa query urutan seluruh ledger
+      // dan tidak bergeser saat ada AP lama di-soft-delete. Sama dengan dashboard.
+      code: shortRef(a.id, 'AP'),
+      commentCount: a._count.comments,
+      checklistDone: checklistStats[a.id]?.done ?? 0,
+      checklistTotal: checklistStats[a.id]?.total ?? 0,
+    }))
+
+    return NextResponse.json({ items: withMeta, counts, total, page, pageSize })
   } catch (error) {
     console.error('[ACTION_PLANS_GET]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
@@ -137,8 +199,8 @@ export async function POST(req: Request) {
       await notify({
         userIds: [target.id],
         title: 'Action Plan baru',
-        message: `Kamu mendapat Action Plan baru: ${result.title}`,
-        link: `/action-plans/${result.id}`,
+        message: `Ditugaskan oleh ${user.name}: "${result.title}"`,
+        link: `/action-plans?open=${result.id}`,
         companyId
       })
     }

@@ -21,13 +21,24 @@
 
 Import Prisma: `from '@/lib/generated/prisma/client'` — bukan `@prisma/client`.
 
-### A2. Hierarki Kerja
+### A2. Hierarki Kerja & Konsep Inisiatif (Universal untuk Semua Divisi)
 
 ```
-Project → Task → Action Plan → Checklist
-                    ↗ Proposal (butuh approval Manager)
-                    ↗ Personal Task (tidak hitung ke progres tim)
+Project (Inisiatif / Program Kerja) → Task (Paket Kerja) → Action Plan (Eksekusi PIC) → Checklist
+                                                              ↗ Proposal (Usulan Inisiatif/Aksi dari Bawah)
+                                                              ↗ Personal Task (Pribadi, tidak masuk progres tim)
 ```
+
+> **Prinsip Inklusif Divisi (V2.4 Refinement):**
+> - **Project bukan hanya proyek IT/Software**. Project adalah **wadah payung inisiatif / program kerja strategis** yang berlaku untuk seluruh jenis divisi:
+>   * *Marketing & Sales:* Kampanye Peluncuran Produk, Ekspansi Pasar Q3, Optimalisasi SEO.
+>   * *Operasional:* Efisiensi Rantai Pasok, Audit Kepatuhan SOP Gudang, Relokasi Kantor.
+>   * *HR & GA:* Program Rekrutmen Batch 2, Pelatihan Leadership, Pembaruan Fasilitas Kantor.
+>   * *Finance:* Penyusunan Laporan Pajak Tahunan, Otomasi Reimbursement.
+> - **Task:** Paket sasaran/deliverable di bawah inisiatif tersebut yang didelegasikan ke penanggung jawab tertentu.
+> - **Action Plan:** Langkah eksekusi konkret PIC harian/mingguan dengan siklus 8 status dan pembuktian (evidence).
+> - **Peran PIC:** PIC berfokus mengeksekusi Action Plan di **My Work**. Di halaman Projects, PIC dapat melihat konteks inisiatif besar tempat mereka berkontribusi, tanpa harus dibebani tugas administrasi proyek.
+> - **Empty State Ramah Divisi:** Ketika belum ada project, sistem wajib memberikan pesan yang mendidik dan memandu (bukan sekadar teks kosong), mengarahkan peran PIC ke My Work atau memberi panduan bagi Manager untuk memulai program pertama timnya.
 
 > **Catatan V2.4:** "Objective" tetap konsep, BUKAN model Prisma. Tidak ada migration baru. Ditunda ke V3.
 
@@ -327,6 +338,7 @@ KANAN rail
 
 ---
 
+<<<<<<< HEAD
 #### UI-5 — Projects List (`ui-5-projects-list.png`)
 
 ```
@@ -342,6 +354,25 @@ Tabel:
 
 Footer: "Menampilkan 1–n dari m project" + pagination
 Empty:  ikon folder · "Belum ada project" · helper · [+ Project Baru]
+=======
+#### UI-5 — Projects List & Inisiatif (`ui-5-projects-list.png`)
+
+```
+Title: "Inisiatif & Proyek" + subtitle penjelasan konteks program kerja
+Blok statistik kanan: TOTAL INISIATIF · AKTIF
+Toolbar: [search nama/deskripsi] [Status ▾] [Divisi ▾] [Sort ▾] [+ Inisiatif Baru (Manager/Admin)]
+
+Tampilan Grid/Tabel Inisiatif:
+  NAMA INISIATIF judul + deskripsi terpotong
+  DIVISI         badge divisi penanggung jawab
+  PERIODE        rentang tanggal + ikon kalender
+  JUMLAH TASK    "n Task / m Action Plan"
+  PROGRESS       persentase capaian + bar
+
+Empty State Ramah Peran (Role-Aware Empty State):
+  - Admin/Manager: Ikon folder + "Belum ada inisiatif program kerja" + panduan singkat cara membuat program kerja pertama + tombol [+ Inisiatif Baru]
+  - PIC: Ikon inisiatif + "Belum ada inisiatif yang ditugaskan ke divisi Anda" + panduan bahwa tugas harian dapat dilihat langsung di menu "My Work" + tombol [Buka My Work]
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 ```
 
 ---

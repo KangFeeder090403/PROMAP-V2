@@ -18,6 +18,9 @@ declare module 'next-auth' {
       companyId: string | null
       divisionId: string | null
       isGuest: boolean
+      // Dev-only: true kalau sesi sedang impersonasi akun lain (fitur testing
+      // /api/dev/impersonate, NONAKTIF di production).
+      isImpersonating: boolean
     }
   }
 }
@@ -99,15 +102,26 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
+      const claims = token as unknown as {
+        uid?: string | null
+        role?: Role | null
+        status?: UserStatus | null
+        companyId?: string | null
+        divisionId?: string | null
+        isGuest?: boolean | null
+        impersonatorSnapshot?: unknown
+      }
       session.user = {
-        id: token.uid as string,
+        id: (claims.uid as string) ?? '',
         email: session.user?.email ?? '',
         name: session.user?.name ?? '',
-        role: token.role as Role,
-        status: token.status as UserStatus,
-        companyId: (token.companyId as string | null) ?? null,
-        divisionId: (token.divisionId as string | null) ?? null,
-        isGuest: Boolean(token.isGuest),
+        role: (claims.role as Role) ?? 'GUEST',
+        status: (claims.status as UserStatus) ?? 'ACTIVE',
+        companyId: (claims.companyId as string | null) ?? null,
+        divisionId: (claims.divisionId as string | null) ?? null,
+        isGuest: Boolean(claims.isGuest),
+        // Fitur testing dev-only; snapshot terisi saat impersonasi aktif.
+        isImpersonating: Boolean(claims.impersonatorSnapshot),
       }
       return session
     },

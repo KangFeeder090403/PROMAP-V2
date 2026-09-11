@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const ap = await prisma.actionPlan.findFirst({
       where: { id: params.id, deletedAt: null, ...apScope(user) },
-      select: { id: true, companyId: true, title: true },
+      select: { id: true, companyId: true, title: true, picId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -53,14 +53,30 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     })
 
     const mentionIds = extractMentionIds(content)
+    let notifiedUserIds = new Set<string>()
+
     if (mentionIds.length > 0) {
       const mentioned = await resolveMentions(mentionIds, ap.companyId)
       const notifyIds = mentioned.map((m) => m.id).filter((id) => id !== user.id)
+      if (notifyIds.length > 0) {
+        notifyIds.forEach((id) => notifiedUserIds.add(id))
+        await notify({
+          userIds: notifyIds,
+          title: 'Anda di-mention',
+          message: `${user.name} menyebut Anda di komentar "${ap.title}"`,
+          link: `/action-plans?open=${ap.id}`,
+          companyId: ap.companyId,
+        })
+      }
+    }
+
+    // Beritahu PIC jika ada komentar baru (jika bukan PIC sendiri dan belum di-notify via mention)
+    if (ap.picId !== user.id && !notifiedUserIds.has(ap.picId)) {
       await notify({
-        userIds: notifyIds,
-        title: 'Anda di-mention',
-        message: `${user.name} menyebut Anda di komentar "${ap.title}"`,
-        link: `/action-plans/${ap.id}`,
+        userIds: [ap.picId],
+        title: 'Komentar baru pada AP Anda',
+        message: `${user.name} berkomentar pada "${ap.title}": "${content.slice(0, 60)}${content.length > 60 ? '...' : ''}"`,
+        link: `/action-plans?open=${ap.id}`,
         companyId: ap.companyId,
       })
     }

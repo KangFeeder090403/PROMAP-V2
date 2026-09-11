@@ -6,6 +6,10 @@ import {
   AlertTriangle,
   BellRing,
   CheckCircle2,
+<<<<<<< HEAD
+=======
+  ChevronRight,
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
   ClipboardList,
   FileText,
   Gavel,
@@ -18,6 +22,10 @@ import {
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
+<<<<<<< HEAD
+=======
+import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,
@@ -26,6 +34,12 @@ import {
   PROPOSAL_STATUS_LABEL,
 } from '@/lib/status-labels'
 import type { ActionRequiredItem, DashboardApiResponse, OverdueRow } from '@/lib/types/dashboard'
+<<<<<<< HEAD
+=======
+import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 
 type Range = 'today' | 'week' | 'month' | 'quarter' | 'all'
 
@@ -184,6 +198,7 @@ export function DashboardClient() {
   const [overdueSort, setOverdueSort] = useState<OverdueSort>('lateDesc')
   const [preview, setPreview] = useState<ActionRequiredItem | null>(null)
   const [remindState, setRemindState] = useState<RemindState>({})
+<<<<<<< HEAD
   const reqRef = useRef(0)
 
   const fetchData = useCallback(async (r: Range, pic: string, isInitial: boolean) => {
@@ -259,6 +274,98 @@ export function DashboardClient() {
       }
       setRemindState((s) => ({ ...s, [id]: res.ok ? 'sent' : 'error' }))
     } catch {
+=======
+  const [selectedAP, setSelectedAP] = useState<ActionPlan | null>(null)
+  const reqRef = useRef(0)
+
+  const handleOpenAPDetail = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/action-plans/${id}`)
+      if (res.ok) {
+        const ap = await res.json()
+        setSelectedAP(ap)
+      } else {
+        window.location.href = `/action-plans?open=${id}&highlight=${id}`
+      }
+    } catch {
+      window.location.href = `/action-plans?open=${id}&highlight=${id}`
+    }
+  }, [])
+
+  const fetchData = useCallback(async (r: Range, pic: string, isInitial: boolean) => {
+    const reqId = ++reqRef.current
+    if (!isInitial) setSwitching(true)
+    setError(null)
+    try {
+      const qs = new URLSearchParams({ range: r })
+      if (pic) qs.set('pic', pic)
+      const res = await fetch(`/api/dashboard?${qs.toString()}`)
+      if (!res.ok) throw new Error('Gagal memuat data')
+      const json = await res.json()
+      if (reqRef.current === reqId) setData(json)
+    } catch {
+      if (reqRef.current === reqId) {
+        setError(isInitial ? 'Terjadi kesalahan. Coba lagi.' : 'Gagal memuat untuk rentang yang dipilih.')
+      }
+    } finally {
+      if (reqRef.current === reqId) {
+        if (isInitial) setInitialLoading(false)
+        setSwitching(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchData('week', '', true)
+  }, [fetchData])
+
+  // Daftar PIC untuk dropdown. Endpoint sudah ter-scope per role; PIC dapat 403.
+  useEffect(() => {
+    if (!data || data.user.roleLabel === 'PIC') return
+    let alive = true
+    void (async () => {
+      try {
+        const res = await fetch('/api/users')
+        if (!res.ok) return
+        const rows: { id: string; name: string; status: string }[] = await res.json()
+        if (!alive) return
+        setPicOptions(
+          rows
+            .filter((u) => u.status === 'ACTIVE')
+            .map((u) => ({ id: u.id, name: u.name }))
+            .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+        )
+      } catch {
+        // Dropdown opsional — kegagalan tidak boleh merusak dashboard.
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [data])
+
+  const handleRangeChange = (r: Range) => {
+    if (r === range) return
+    setRange(r)
+    void fetchData(r, picFilter, false)
+  }
+
+  const handlePicChange = (pic: string) => {
+    setPicFilter(pic)
+    void fetchData(range, pic, false)
+  }
+
+  const handleRemind = async (id: string) => {
+    setRemindState((s) => ({ ...s, [id]: 'sending' }))
+    try {
+      const res = await fetch(`/api/action-plans/${id}/remind`, { method: 'POST' })
+      if (res.status === 429) {
+        setRemindState((s) => ({ ...s, [id]: 'limited' }))
+        return
+      }
+      setRemindState((s) => ({ ...s, [id]: res.ok ? 'sent' : 'error' }))
+    } catch {
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       setRemindState((s) => ({ ...s, [id]: 'error' }))
     }
   }
@@ -282,7 +389,11 @@ export function DashboardClient() {
   if (!data) return <DashboardSkeleton />
 
   const { user, metrics, statusBreakdown, priorityBreakdown, picWorkload, actionRequired, overdueList } = data
+<<<<<<< HEAD
   const isPic = user.roleLabel === 'PIC'
+=======
+  const isPic = user.role === 'PIC' || user.roleLabel === 'PIC'
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
   const hasPicFilter = picFilter !== ''
   const selectedPicName = picOptions.find((p) => p.id === picFilter)?.name ?? null
 
@@ -404,10 +515,17 @@ export function DashboardClient() {
           icon={PlayCircle}
           iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
           footer={
+<<<<<<< HEAD
             <span className="inline-flex items-center gap-1">
               <span className="font-medium text-blue-600 dark:text-blue-400">{metrics.inReview}</span>
               <span>di antaranya menunggu persetujuan</span>
             </span>
+=======
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{metrics.inReview}</span>{' '}
+              di antaranya menunggu persetujuan
+            </p>
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
           }
         />
         <MetricCard
@@ -458,7 +576,15 @@ export function DashboardClient() {
               return (
                 <div
                   key={`${item.kind}-${item.id}`}
+<<<<<<< HEAD
                   className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3"
+=======
+                  onClick={() => {
+                    if (isAP) handleOpenAPDetail(item.id)
+                    else setPreview(item)
+                  }}
+                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer"
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <span
@@ -519,6 +645,7 @@ export function DashboardClient() {
                     </div>
                   </div>
 
+<<<<<<< HEAD
                   <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                     {isAP && isApproval && (
                       <>
@@ -565,6 +692,69 @@ export function DashboardClient() {
                       >
                         Review Proposal
                       </button>
+=======
+                  <div className="flex items-center justify-end gap-2 flex-shrink-0">
+                    {isAP && isApproval && (
+                      isPic ? (
+                        <span className="flex items-center text-xs text-slate-400 dark:text-slate-500 font-medium group-hover:text-slate-600">
+                          Menunggu Review <ChevronRight className="w-4 h-4 ml-1" />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenAPDetail(item.id)
+                          }}
+                          className={`${btnBase} w-32 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                        >
+                          Review Bukti
+                        </button>
+                      )
+                    )}
+                    {isAP && !isApproval && (
+                      isPic ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenAPDetail(item.id)
+                          }}
+                          className={`${btnBase} w-32 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                        >
+                          {item.status === 'REJECTED' ? 'Perbaiki' : 'Unggah Bukti'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemind(item.id)
+                          }}
+                          className={`${btnBase} w-32 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 text-center`}
+                        >
+                          Ingatkan PIC
+                        </button>
+                      )
+                    )}
+                    {!isAP && (
+                      isPic ? (
+                        <span className="flex items-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+                          Menunggu Approval <ChevronRight className="w-4 h-4 ml-1" />
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreview(item)
+                          }}
+                          className={`${btnBase} w-36 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                        >
+                          Review Proposal
+                        </button>
+                      )
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                     )}
                   </div>
                 </div>
@@ -592,9 +782,15 @@ export function DashboardClient() {
               legendLayout="grid"
             />
           </div>
+<<<<<<< HEAD
           <div className="mt-4 bg-slate-50 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Sudah selesai</span>
             <span className="font-mono font-semibold text-emerald-600">
+=======
+          <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Sudah selesai</span>
+            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
               {metrics.complete} dari {metrics.total} ({Math.round(metrics.completionRate)}%)
             </span>
           </div>
@@ -716,6 +912,12 @@ export function DashboardClient() {
         )}
       </div>
 
+<<<<<<< HEAD
+=======
+      {/* Helicopter view — kesehatan project, lintas divisi, radar tenggat */}
+      {data.portfolio && <PortfolioSection portfolio={data.portfolio} />}
+
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       {/* Overdue & Critical Deadlines */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -810,7 +1012,18 @@ export function DashboardClient() {
                     <td className="px-4 py-3 text-right">
                       <span className="inline-flex items-center gap-1.5">
                         <RemindButton state={remindState[row.id]} onClick={() => void handleRemind(row.id)} />
+<<<<<<< HEAD
                         <Link href="/board" className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm`}>
+=======
+                        <Link
+                          href={`/action-plans?open=${row.id}&highlight=${row.id}`}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleOpenAPDetail(row.id)
+                          }}
+                          className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm`}
+                        >
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                           Buka Detail
                         </Link>
                       </span>
@@ -823,6 +1036,7 @@ export function DashboardClient() {
         )}
       </div>
 
+<<<<<<< HEAD
       {/* Drawer preview proposal — geser dari kanan, list tetap terlihat (keputusan PO). */}
       {preview && (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Ringkasan proposal">
@@ -867,6 +1081,116 @@ export function DashboardClient() {
             </div>
           </div>
         </div>
+=======
+      {/* Drawer preview proposal — Radix Portal agar tidak tertabrak sticky header */}
+      <DialogPrimitive.Root open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[1px]" />
+          <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[500px] flex-col border-l border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right">
+            {preview && (
+              <>
+                {/* Header */}
+                <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400">
+                      #{preview.refCode}
+                    </span>
+                    <DialogPrimitive.Close
+                      aria-label="Tutup"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </DialogPrimitive.Close>
+                  </div>
+                  <div className="mt-2 flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-base font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                        {preview.title}
+                      </h2>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <StatusBadge
+                          status={preview.status}
+                          styleMap={PROPOSAL_STATUS_STYLE}
+                          labelMap={PROPOSAL_STATUS_LABEL}
+                        />
+                        {preview.createdAt && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Diajukan {fmtDate(preview.createdAt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                  {/* Pengusul info card */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/40">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Pengusul Inisiatif
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {preview.picName}
+                    </p>
+                  </div>
+
+                  {/* Deskripsi */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Deskripsi Proposal
+                    </h3>
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
+                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                        {preview.description?.trim() || 'Tidak ada deskripsi rinci.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 px-6 py-4">
+                  <DialogPrimitive.Close
+                    className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    Tutup
+                  </DialogPrimitive.Close>
+                  <Link
+                    href="/proposals"
+                    onClick={() => setPreview(null)}
+                    className="inline-flex h-9 items-center rounded-md bg-blue-500 hover:bg-blue-600 px-4 text-sm font-semibold text-white transition-colors shadow-sm"
+                  >
+                    Buka Halaman Proposal
+                  </Link>
+                </div>
+              </>
+            )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* Drawer Detail Action Plan */}
+      {selectedAP && (
+        <ActionPlanDetail
+          actionPlan={selectedAP}
+          role={data.user.role}
+          userId={data.user.id}
+          onOpenChange={(open) => {
+            if (!open) setSelectedAP(null)
+          }}
+          onChanged={() => {
+            void fetchData(range, picFilter, false)
+            fetch(`/api/action-plans/${selectedAP.id}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((ap) => {
+                if (ap) setSelectedAP(ap)
+              })
+          }}
+          onEdit={() => {
+            window.location.href = `/action-plans?open=${selectedAP.id}&highlight=${selectedAP.id}`
+          }}
+        />
+>>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       )}
     </div>
   )

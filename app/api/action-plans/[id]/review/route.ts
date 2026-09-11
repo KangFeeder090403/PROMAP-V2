@@ -59,11 +59,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       REJECTED: 'AP ditolak',
       EVIDENCE_REQUIRED: 'AP butuh bukti tambahan',
     }
+    const notePreview = body.reviewNote?.trim() ? ` Catatan: "${body.reviewNote.trim()}"` : ''
     await notify({
       userIds: [ap.picId],
       title: titleMap[action],
-      message: `"${ap.title}" — ${titleMap[action]}`,
-      link: `/action-plans/${params.id}`,
+      message: `"${ap.title}" — ${titleMap[action]}.${notePreview}`,
+      link: `/action-plans?open=${params.id}`,
       companyId: ap.companyId,
     })
 

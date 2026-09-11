@@ -55,7 +55,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       userIds: [proposal.proposerId],
       title: newStatus === 'APPROVED' ? 'Proposal disetujui' : 'Proposal ditolak',
       message: `Proposal "${proposal.title}" telah di${newStatus === 'APPROVED' ? 'setujui' : 'tolak'}`,
-      link: `/proposals/${id}`,
+      link: '/proposals',
       companyId: proposal.proposer.companyId ?? undefined
     })
 

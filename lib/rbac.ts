@@ -54,14 +54,10 @@ export function companyScope(user: User) {
   return { id: user.companyId! }
 }
 
-/** Scope untuk query model Division */
+/** Scope untuk query model Division (Tenant-scoped: semua role di company boleh melihat daftar divisi perusahaannya) */
 export function divisionScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
-  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  // MANAGER + PIC boleh lihat divisi sendiri saja
-  if (user.divisionId) return { id: user.divisionId }
-  // divisionId null → kembalikan empty result (bukan error)
-  return { id: '__none__' }
+  return { companyId: user.companyId! }
 }
 
 /** Scope generik PRD (untuk model dengan picId + divisionId + companyId) */
@@ -73,11 +69,36 @@ export function buildWhereClause(user: User) {
 }
 
 /** Scope untuk query model Project */
-export function projectScope(user: User) {
+export function projectScope(user: User): Record<string, unknown> {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  // MANAGER + PIC: read-only, terbatas divisi sendiri
-  return { companyId: user.companyId!, divisionId: user.divisionId }
+
+  if (user.role === 'MANAGER') {
+    const conditions: Record<string, unknown>[] = [
+      { divisionId: null },
+      { tasks: { some: { divisionId: user.divisionId, deletedAt: null } } },
+    ]
+    if (user.divisionId) {
+      conditions.unshift({ divisionId: user.divisionId })
+    }
+    return {
+      companyId: user.companyId!,
+      OR: conditions,
+    }
+  }
+
+  // PIC: project yang menugaskan PIC via task, project divisinya, atau project umum lintas divisi
+  const conditions: Record<string, unknown>[] = [
+    { tasks: { some: { picId: user.id, deletedAt: null } } },
+    { divisionId: null },
+  ]
+  if (user.divisionId) {
+    conditions.push({ divisionId: user.divisionId })
+  }
+  return {
+    companyId: user.companyId!,
+    OR: conditions,
+  }
 }
 
 /** Siapa boleh create/edit/delete Project. MANAGER hanya utk divisi sendiri. */
