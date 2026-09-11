@@ -1,145 +1,167 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { Search } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { KanbanColumn } from '@/components/kanban/KanbanColumn'
-import type { KanbanTask } from '@/components/kanban/KanbanCard'
+import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
+import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+import {
+  KANBAN_COLUMNS,
+  columnForStatus,
+  resolveKanbanDrop,
+  canDragKanbanCard,
+  type KanbanColumnKey,
+} from '@/lib/action-plan-status'
 
-const COLUMNS = [
-  { status: 'NOT_STARTED', title: 'Belum Mulai' },
-  { status: 'IN_PROGRESS', title: 'Dikerjakan' },
-  { status: 'COMPLETE', title: 'Selesai' },
-] as const
+const PAGE_SIZE = 50
+// Batas realistis satu company, sama semangatnya dengan AP_QUERY_CAP di dashboard route.
+const FETCH_CAP = 2000
 
-interface Project {
-  id: string
-  name: string
+async function fetchAllActionPlans(): Promise<ActionPlan[]> {
+  const all: ActionPlan[] = []
+  let page = 1
+  for (;;) {
+    const res = await fetch(`/api/action-plans?page=${page}&pageSize=${PAGE_SIZE}`)
+    if (!res.ok) throw new Error('Gagal memuat data')
+    const json: { items: ActionPlan[]; total: number } = await res.json()
+    all.push(...json.items)
+    if (json.items.length === 0 || all.length >= json.total || all.length >= FETCH_CAP) break
+    page++
+  }
+  return all
 }
 
-export function KanbanClient({
-  role,
-  userId,
-  projectId,
-}: {
-  role: Role
-  userId: string
-  projectId: string
-}) {
-  const router = useRouter()
-
-  // Project picker state (dipakai kalau projectId kosong)
-  const [projects, setProjects] = useState<Project[] | null>(null)
-
-  const [tasks, setTasks] = useState<KanbanTask[] | null>(null)
+export function KanbanClient({ role, userId, projectId }: { role: Role; userId: string; projectId: string }) {
+  const [items, setItems] = useState<ActionPlan[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [picNames, setPicNames] = useState<Record<string, string>>({})
-  const draggedTaskId = useRef<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<ActionPlan | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const draggedId = useRef<string | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    if (projectId) return
-    fetch('/api/projects')
-      .then((r) => r.json())
-      .then(setProjects)
-      .catch(() => setProjects([]))
-  }, [projectId])
-
-  useEffect(() => {
-    if (!projectId) return
-    fetchTasks()
-    fetch('/api/users')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list: { id: string; name: string }[]) => {
-        setPicNames(Object.fromEntries(list.map((u) => [u.id, u.name])))
-      })
-      .catch(() => {})
-  }, [projectId])
-
-  async function fetchTasks() {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const res = await fetch(`/api/tasks?projectId=${projectId}`)
-      if (!res.ok) throw new Error('Gagal memuat data')
-      setTasks(await res.json())
+      setItems(await fetchAllActionPlans())
     } catch {
       setError('Terjadi kesalahan. Coba lagi.')
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    void fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+    }
+  }, [])
+
+  function showToast(message: string) {
+    setToast(message)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 3500)
   }
 
-  function picNameOf(picId: string) {
-    if (picId === userId) return 'Anda'
-    return picNames[picId] ?? picId
+  const projectLabel = useMemo(() => {
+    if (!projectId || !items) return null
+    return items.find((ap) => ap.task?.project?.id === projectId)?.task?.project?.name ?? 'project ini'
+  }, [items, projectId])
+
+  const scoped = useMemo(() => {
+    if (!items) return []
+    let rows = items
+    if (projectId) rows = rows.filter((ap) => ap.task?.project?.id === projectId)
+    const q = search.trim().toLowerCase()
+    if (q) rows = rows.filter((ap) => ap.title.toLowerCase().includes(q) || ap.code.toLowerCase().includes(q))
+    return rows
+  }, [items, projectId, search])
+
+  const columns = useMemo(() => {
+    const map = new Map<KanbanColumnKey, ActionPlan[]>(KANBAN_COLUMNS.map((c) => [c.key, [] as ActionPlan[]]))
+    for (const ap of scoped) {
+      map.get(columnForStatus(ap.status))!.push(ap)
+    }
+    return map
+  }, [scoped])
+
+  function canDrag(ap: ActionPlan) {
+    return canDragKanbanCard(ap, { id: userId, role })
   }
 
-  function onDragStart(e: React.DragEvent, taskId: string) {
-    draggedTaskId.current = taskId
+  function onDragStart(e: React.DragEvent, id: string) {
+    draggedId.current = id
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  async function onDrop(newStatus: string) {
-    const taskId = draggedTaskId.current
-    draggedTaskId.current = null
-    if (!taskId || !tasks) return
+  async function onDrop(targetColumn: KanbanColumnKey) {
+    const id = draggedId.current
+    draggedId.current = null
+    if (!id || !items) return
 
-    const task = tasks.find((t) => t.id === taskId)
-    if (!task || task.status === newStatus) return
+    const ap = items.find((a) => a.id === id)
+    if (!ap) return
+    if (columnForStatus(ap.status) === targetColumn) return
 
-    const prevTasks = tasks
-    setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)))
+    const action = resolveKanbanDrop(ap, targetColumn, { id: userId, role })
+    if (!action) {
+      showToast('Transisi tidak diizinkan untuk status atau peran Anda saat ini.')
+      return
+    }
+    if (action.kind === 'needs-note') {
+      showToast('Transisi ini butuh catatan — lengkapi lewat detail Action Plan yang baru dibuka.')
+      setSelected(ap)
+      return
+    }
 
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
+    const config = {
+      start: { url: `/api/action-plans/${id}/start`, status: 'IN_PROGRESS' },
+      complete: { url: `/api/action-plans/${id}/complete`, status: 'COMPLETE' },
+      'review-complete': { url: `/api/action-plans/${id}/review`, status: 'COMPLETE' },
+    }[action.kind]
+
+    const prevItems = items
+    setItems(items.map((a) => (a.id === id ? { ...a, status: config.status } : a)))
+
+    const res = await fetch(config.url, {
+      method: 'POST',
+      ...(action.kind === 'review-complete'
+        ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'COMPLETE' }) }
+        : {}),
     })
 
     if (!res.ok) {
-      setTasks(prevTasks)
-      setError('Gagal memindahkan task, coba lagi.')
-      setTimeout(() => setError(null), 3000)
+      setItems(prevItems)
+      const data = await res.json().catch(() => ({}))
+      showToast(data.error || 'Gagal memindahkan Action Plan, coba lagi.')
     }
   }
 
-  // Project picker — belum ada projectId di URL
-  if (!projectId) {
-    if (!projects) return <div className="text-sm text-slate-500">Memuat...</div>
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-slate-500">Pilih project untuk melihat papan Kanban</p>
-        {projects.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-            <p className="text-sm text-slate-500">Belum ada project</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => router.push(`/board?projectId=${p.id}`)}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm p-5 text-left hover:border-blue-300 hover:shadow-md transition-all"
-              >
-                <p className="text-[15px] font-medium text-slate-800">{p.name}</p>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    )
+  function refreshSelected(ap: ActionPlan) {
+    void fetchData()
+    fetch(`/api/action-plans/${ap.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((updated) => {
+        if (updated) setSelected(updated)
+      })
   }
 
-  if (loading && !tasks) return <div className="text-sm text-slate-500">Memuat...</div>
+  if (loading && !items) return <div className="text-sm text-slate-500 dark:text-slate-400">Memuat...</div>
 
-  if (error && !tasks) {
+  if (error && !items) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-        <p className="text-sm text-slate-700">{error}</p>
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+        <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
         <button
-          onClick={fetchTasks}
+          onClick={() => void fetchData()}
           className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
         >
           Coba lagi
@@ -148,33 +170,63 @@ export function KanbanClient({
     )
   }
 
-  if (!tasks) return null
-
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => router.push('/board')}
-        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-      >
-        &larr; Ganti project
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari judul atau kode AP..."
+            className="w-full h-9 pl-8 pr-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        {projectId && (
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Difilter untuk <span className="font-medium text-slate-700 dark:text-slate-300">{projectLabel}</span>
+            {' · '}
+            <Link href="/board" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+              Lihat semua Action Plan
+            </Link>
+          </div>
+        )}
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {COLUMNS.map((col) => (
+        {KANBAN_COLUMNS.map((col) => (
           <KanbanColumn
-            key={col.status}
+            key={col.key}
             title={col.title}
-            status={col.status}
-            tasks={tasks.filter((t) => t.status === col.status)}
-            picNameOf={picNameOf}
+            columnKey={col.key}
+            items={columns.get(col.key) ?? []}
+            canDrag={canDrag}
             onDragStart={onDragStart}
             onDrop={onDrop}
+            onCardClick={setSelected}
           />
         ))}
       </div>
+
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] max-w-md rounded-md bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-medium px-4 py-2.5 shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      <ActionPlanDetail
+        actionPlan={selected}
+        role={role}
+        userId={userId}
+        onOpenChange={(open) => !open && setSelected(null)}
+        onChanged={() => selected && refreshSelected(selected)}
+        onEdit={() => {
+          if (!selected) return
+          window.location.href = `/action-plans?open=${selected.id}&highlight=${selected.id}`
+        }}
+      />
     </div>
   )
 }

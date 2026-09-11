@@ -18,6 +18,7 @@ export interface Proposal {
   reviewNote: string | null
   createdAt: string
   updatedAt: string
+  proposer: { id: string; name: string } | null
 }
 
 const STATUS_FILTERS = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'] as const
@@ -106,12 +107,12 @@ export function ProposalsClient({
     }
   }
 
-  if (loading) return <div className="text-sm text-slate-500">Memuat...</div>
+  if (loading) return <div className="text-sm text-slate-500 dark:text-slate-400">Memuat...</div>
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
-        <p className="text-sm text-slate-700">{error}</p>
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+        <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
         <button
           onClick={fetchData}
           className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
@@ -130,7 +131,7 @@ export function ProposalsClient({
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="h-9 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="">Semua Status</option>
           {STATUS_FILTERS.map((s) => (
@@ -152,13 +153,13 @@ export function ProposalsClient({
         </button>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {data.length === 0 ? (
-          <p className="text-sm text-slate-500 p-5">Belum ada proposal</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 p-5">Belum ada proposal</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 <th className="px-5 py-3">Judul</th>
                 <th className="px-5 py-3">Pengaju</th>
                 <th className="px-5 py-3">Status</th>
@@ -170,9 +171,11 @@ export function ProposalsClient({
               {data.map((p) => {
                 const isOwner = p.proposerId === userId
                 return (
-                  <tr key={p.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-5 py-3 text-slate-800">{p.title}</td>
-                    <td className="px-5 py-3 text-slate-600">{isOwner ? 'Anda' : p.proposerId}</td>
+                  <tr key={p.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
+                    <td className="px-5 py-3 text-slate-800 dark:text-slate-100">{p.title}</td>
+                    <td className="px-5 py-3 text-slate-600 dark:text-slate-300">
+                      {isOwner ? 'Anda' : p.proposer?.name ?? '—'}
+                    </td>
                     <td className="px-5 py-3">
                       <StatusBadge
                         status={p.status}
@@ -180,7 +183,7 @@ export function ProposalsClient({
                         labelMap={PROPOSAL_STATUS_LABEL}
                       />
                     </td>
-                    <td className="px-5 py-3 text-slate-500">
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">
                       {new Date(p.createdAt).toLocaleDateString('id-ID')}
                     </td>
                     <td className="px-5 py-3">
@@ -193,7 +196,7 @@ export function ProposalsClient({
                                 setEditing(p)
                                 setFormOpen(true)
                               }}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                             >
                               Edit
                             </button>
@@ -201,14 +204,14 @@ export function ProposalsClient({
                               type="button"
                               onClick={() => handleSubmit(p)}
                               disabled={submittingId === p.id}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
                             >
                               {submittingId === p.id ? 'Mengirim...' : 'Submit'}
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeleting(p)}
-                              className="text-sm font-medium text-red-600 hover:text-red-700"
+                              className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                             >
                               Hapus
                             </button>
@@ -218,7 +221,7 @@ export function ProposalsClient({
                           <button
                             type="button"
                             onClick={() => setReviewing(p)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           >
                             Review
                           </button>

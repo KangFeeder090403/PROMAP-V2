@@ -1,40 +1,42 @@
 'use client'
 
-import { KanbanCard, type KanbanTask } from '@/components/kanban/KanbanCard'
+import { KanbanCard } from '@/components/kanban/KanbanCard'
+import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+import type { KanbanColumnKey } from '@/lib/action-plan-status'
 
 export function KanbanColumn({
   title,
-  status,
-  tasks,
-  picNameOf,
+  columnKey,
+  items,
+  canDrag,
   onDragStart,
   onDrop,
+  onCardClick,
 }: {
   title: string
-  status: string
-  tasks: KanbanTask[]
-  picNameOf: (picId: string) => string
-  onDragStart: (e: React.DragEvent, taskId: string) => void
-  onDrop: (status: string) => void
+  columnKey: KanbanColumnKey
+  items: ActionPlan[]
+  canDrag: (ap: ActionPlan) => boolean
+  onDragStart: (e: React.DragEvent, id: string) => void
+  onDrop: (columnKey: KanbanColumnKey) => void
+  onCardClick: (ap: ActionPlan) => void
 }) {
   return (
     <div
       onDragOver={(e) => e.preventDefault()}
-      onDrop={() => onDrop(status)}
-      className="flex-1 min-w-[260px] bg-slate-50 rounded-lg border border-slate-200 p-3"
+      onDrop={() => onDrop(columnKey)}
+      className="flex-1 min-w-[270px] bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-800 p-3"
     >
       <div className="flex items-center justify-between px-1 pb-3">
-        <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</h3>
-        <span className="text-xs text-slate-400">{tasks.length}</span>
+        <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{title}</h3>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{items.length}</span>
       </div>
 
       <div className="space-y-2.5 min-h-[80px]">
-        {tasks.map((t) => (
-          <KanbanCard key={t.id} task={t} picName={picNameOf(t.picId)} onDragStart={onDragStart} />
+        {items.map((ap) => (
+          <KanbanCard key={ap.id} ap={ap} draggable={canDrag(ap)} onDragStart={onDragStart} onClick={() => onCardClick(ap)} />
         ))}
-        {tasks.length === 0 && (
-          <p className="text-xs text-slate-400 text-center py-4">Kosong</p>
-        )}
+        {items.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">Kosong</p>}
       </div>
     </div>
   )

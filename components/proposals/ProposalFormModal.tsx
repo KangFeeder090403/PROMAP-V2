@@ -88,34 +88,34 @@ export function ProposalFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-slate-900">
+          <DialogTitle className="text-slate-900 dark:text-slate-100">
             {mode === 'create' ? 'Proposal Baru' : 'Edit Proposal'}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="title" className="text-slate-700">
+            <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">
               Judul
             </Label>
             <Input id="title" aria-invalid={!!errors.title} {...register('title')} />
-            {errors.title && <p className="text-sm text-red-600">{errors.title.message}</p>}
+            {errors.title && <p className="text-sm text-red-600 dark:text-red-400">{errors.title.message}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description" className="text-slate-700">
+            <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">
               Deskripsi
             </Label>
             <textarea
               id="description"
               rows={4}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               {...register('description')}
             />
             {errors.description && (
-              <p className="text-sm text-red-600">{errors.description.message}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
             )}
           </div>
 
@@ -124,22 +124,22 @@ export function ProposalFormModal({
               <input
                 id="submitNow"
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-blue-500 focus:ring-blue-500"
                 {...register('submitNow')}
               />
-              <Label htmlFor="submitNow" className="text-slate-700">
+              <Label htmlFor="submitNow" className="text-slate-700 dark:text-slate-300">
                 Langsung submit untuk approval
               </Label>
             </div>
           )}
 
-          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+          {submitError && <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
             >
               Batal
             </button>
