@@ -439,14 +439,64 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 
 **P1 — Penting (setelah P0 stabil):**
 ```
-🔶 UI-7  Board         ADA app/(dashboard)/board/page.tsx (route sudah di-rename dari
-                       /kanban) KURANG: cek mapping 5 kolom + badge OVERDUE
-🔶 UI-8  Proposals     ADA app/(dashboard)/proposals/page.tsx — audit V2.4
+✅ UI-7  Board         SELESAI: Papan 5 kolom (PRD §B7), badge OVERDUE di kartu,
+                       proteksi drag & drop RBAC/catatan wajib, integrasi Drawer
+                       ActionPlanDetail, dark mode & filter pencarian judul/kode.
+✅ UI-8  Proposals     SELESAI: Tabel proposal dengan nama pengaju (proposer.name),
+                       modal buat/edit draft, review dialog dengan catatan wajib saat tolak,
+                       modal inspeksi detail proposal, RBAC Super Admin/Admin Ops/Manager.
 🔶 UI-9  Settings      ADA app/(dashboard)/settings/page.tsx (Company, Division, User,
-                       UserLabel) KURANG: Leads belum masuk Settings
+                       UserLabel aktif). GAP: Modul Leads belum diintegrasikan ke Settings.
 🔶 UI-10 Calendar      ADA app/(dashboard)/calendar/page.tsx + Gantt + export PDF
 ⬜ UI-11 Filter & Sort belum ada toolbar konsisten di list page manapun
 ```
+
+### C2.1 Laporan Implementasi & Verifikasi UI-7, UI-8, UI-9 (Audit September 2026)
+
+#### 1. UI-7 — Board / Kanban (`/board`)
+- **Status:** `✅ SELESAI & TERVERIFIKASI`
+- **Komponen:** `components/kanban/KanbanClient.tsx`, `KanbanCard.tsx`, `KanbanColumn.tsx`, `lib/action-plan-status.ts`.
+- **Fitur Utama:**
+  - **5 Kolom Kanban (PRD §B7):**
+    1. *Belum Mulai* (`NOT_STARTED`)
+    2. *Dikerjakan* (`IN_PROGRESS` + `OVERDUE`)
+    3. *Review* (`PENDING_APPROVAL` + `EVIDENCE_REQUIRED`)
+    4. *Perlu Revisi* (`REJECTED`)
+    5. *Selesai* (`APPROVED` + `COMPLETE`)
+  - **Status OVERDUE:** Bukan kolom terpisah, melainkan badge penanda merah/oranye di dalam kartu kolom "Dikerjakan".
+  - **Proteksi Drag & Drop:** Fungsi `resolveKanbanDrop()` membatasi pergerakan kartu sesuai RBAC, kepemilikan PIC, dan divisi manager. Transisi yang membutuhkan catatan wajib (seperti submit progress ke Review atau tolak ke Needs Revision) dicegat dan otomatis membuka drawer `ActionPlanDetail` untuk pengisian catatan resmi.
+  - **Aksi Transisi Otomatis:** Kartu personal dapat diselesaikan langsung (`/complete`), kartu review diselesaikan reviewer (`/review COMPLETE`), kartu mulai pengerjaan (`/start`).
+  - **Inspeksi:** Klik kartu membuka `ActionPlanDetail` drawer tanpa meninggalkan konteks papan.
+  - **Visual:** Dukungan penuh Dark Mode (`dark:bg-slate-900`, `dark:border-slate-800`), progress bar checklist, chip prioritas, dan input pencarian live.
+
+#### 2. UI-8 — Proposals (`/proposals`)
+- **Status:** `✅ SELESAI & TERVERIFIKASI`
+- **Komponen:** `app/api/proposals/route.ts`, `app/api/proposals/[id]/review/route.ts`, `components/proposals/ProposalsClient.tsx`, `ProposalFormModal.tsx`, `ProposalReviewDialog.tsx`.
+- **Fitur Utama:**
+  - **Tampilan Pengaju:** Menampilkan `proposer.name` (atau label "Anda") menggantikan raw ID/UUID.
+  - **Siklus Hidup:** Draft proposal dapat diedit dan dihapus oleh pengaju. Tombol "Submit" mengirimkan proposal untuk review.
+  - **Review Proposal:** Manager divisi, Admin Operasional, dan Super Admin dapat menyetujui (`APPROVED`) atau menolak (`REJECTED`).
+  - **Validasi Penolakan:** Catatan review (`reviewNote`) wajib diisi saat menolak usulan, divalidasi pada client dan backend API (HTTP 400).
+  - **Modal Detail:** Tersedia modal inspeksi detail untuk membaca seluruh deskripsi usulan dan catatan review hasil telaah atasan.
+  - **RBAC & Isolasi:** Menggunakan `proposalScope(user)` yang menjaga batasan tenant dan divisi.
+
+#### 3. UI-9 — Settings (`/settings`)
+- **Status:** `🔶 AKTIF SEBAGIAN (GAP: LEADS BELUM MASUK SETTINGS)`
+- **Komponen:** `components/settings/SettingsClient.tsx`, `CompanySection.tsx`, `DivisionSection.tsx`, `UserSection.tsx`, `UserLabelSection.tsx`.
+- **Cakupan Aktif:**
+  - Tab Perusahaan (Super Admin / Admin Ops)
+  - Tab Divisi (Super Admin / Admin Ops)
+  - Tab Pengguna & Manajemen Akses (Super Admin / Admin Ops / Manager)
+  - Tab Label Jabatan (Manager mengusulkan, Admin Ops menyetujui)
+- **Gap yang Tersisa:**
+  - Integrasi tab "Leads" untuk Super Admin mengelola prospek pendaftaran demo belum masuk ke Settings (PRD §C2: `UI-13 Leads`).
+  - Dark mode styling pada header Settings perlu penyesuaian kelas tema gelap.
+
+#### 4. Perbaikan Logika Bisnis & Cron Terkait
+- **Cron Overdue (`/api/cron/check-overdue`):** Diperbaiki agar hanya Action Plan dengan status `NOT_STARTED` dan `IN_PROGRESS` yang dapat bertransisi ke `OVERDUE` saat melewati tenggat waktu (sesuai PRD §A4). Status `PENDING_APPROVAL` dan `EVIDENCE_REQUIRED` tidak lagi tertimpa secara keliru.
+- **Otorisasi Review:** Diperluas agar Super Admin dan Admin Operasional dapat mereview proposal selain Manager divisi.
+- **Validasi Divisi Board:** `resolveKanbanDrop` sekarang memvalidasi `divisionId` manager secara ketat untuk mencegah drag antar-divisi yang tidak sah.
+
 
 **P2 — Setelah core stabil:**
 ```

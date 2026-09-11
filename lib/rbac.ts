@@ -146,20 +146,26 @@ export function canManageUsers(user: User) {
 export function proposalScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { proposer: { companyId: user.companyId! } }
-  if (user.role === 'MANAGER') return { proposer: { divisionId: user.divisionId } }
+  if (user.role === 'MANAGER') {
+    if (!user.divisionId) return { proposerId: user.id }
+    return { proposer: { divisionId: user.divisionId } }
+  }
   return { proposerId: user.id }
 }
 
-/** Manager boleh review proposal divisi sendiri, kecuali proposal miliknya sendiri. */
+/** Manager boleh review proposal divisi sendiri, Admin Ops & Super Admin boleh review semua (kecuali milik sendiri). */
 export function canReviewProposal(
   user: User,
   proposal: { proposerId: string },
   proposerDivisionId: string | null
 ) {
-  if (user.role !== 'MANAGER') return false
-  if (user.divisionId !== proposerDivisionId) return false
   if (proposal.proposerId === user.id) return false
-  return true
+  if (user.role === 'SUPER_ADMIN') return true
+  if (user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') {
+    return user.divisionId !== null && user.divisionId !== undefined && user.divisionId === proposerDivisionId
+  }
+  return false
 }
 
 /** Hanya proposer sendiri, dan hanya selagi status DRAFT. */

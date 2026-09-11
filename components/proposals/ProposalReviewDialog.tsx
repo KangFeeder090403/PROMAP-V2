@@ -71,10 +71,21 @@ export function ProposalReviewDialog({
       <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-800">
         <DialogHeader>
           <DialogTitle className="text-slate-900 dark:text-slate-100">Review Proposal</DialogTitle>
-          <DialogDescription>{proposal?.title}</DialogDescription>
+          <DialogDescription className="font-semibold text-slate-800 dark:text-slate-200">{proposal?.title}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {proposal?.description && (
+            <div className="rounded-md bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
+                Deskripsi Usulan
+              </p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                {proposal.description}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="reviewNote" className="text-slate-700 dark:text-slate-300">
               Catatan Review

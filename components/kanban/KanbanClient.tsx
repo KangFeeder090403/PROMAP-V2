@@ -34,7 +34,17 @@ async function fetchAllActionPlans(): Promise<ActionPlan[]> {
   return all
 }
 
-export function KanbanClient({ role, userId, projectId }: { role: Role; userId: string; projectId: string }) {
+export function KanbanClient({
+  role,
+  userId,
+  divisionId,
+  projectId,
+}: {
+  role: Role
+  userId: string
+  divisionId?: string | null
+  projectId: string
+}) {
   const router = useRouter()
   const [items, setItems] = useState<ActionPlan[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -96,7 +106,7 @@ export function KanbanClient({ role, userId, projectId }: { role: Role; userId: 
   }, [scoped])
 
   function canDrag(ap: ActionPlan) {
-    return canDragKanbanCard(ap, { id: userId, role })
+    return canDragKanbanCard(ap, { id: userId, role, divisionId })
   }
 
   function onDragStart(e: React.DragEvent, id: string) {
@@ -113,7 +123,7 @@ export function KanbanClient({ role, userId, projectId }: { role: Role; userId: 
     if (!ap) return
     if (columnForStatus(ap.status) === targetColumn) return
 
-    const action = resolveKanbanDrop(ap, targetColumn, { id: userId, role })
+    const action = resolveKanbanDrop(ap, targetColumn, { id: userId, role, divisionId })
     if (!action) {
       showToast('Transisi tidak diizinkan untuk status atau peran Anda saat ini.')
       return

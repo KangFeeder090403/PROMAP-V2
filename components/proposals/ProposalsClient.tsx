@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { PROPOSAL_STATUS_STYLE, PROPOSAL_STATUS_LABEL } from '@/lib/status-labels'
 import { ProposalFormModal } from '@/components/proposals/ProposalFormModal'
 import { ProposalReviewDialog } from '@/components/proposals/ProposalReviewDialog'
@@ -44,6 +51,7 @@ export function ProposalsClient({
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [submittingId, setSubmittingId] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState<Proposal | null>(null)
+  const [detailProposal, setDetailProposal] = useState<Proposal | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -188,6 +196,13 @@ export function ProposalsClient({
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setDetailProposal(p)}
+                          className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          Detail
+                        </button>
                         {isOwner && p.status === 'DRAFT' && (
                           <>
                             <button
@@ -217,15 +232,17 @@ export function ProposalsClient({
                             </button>
                           </>
                         )}
-                        {role === 'MANAGER' && p.status === 'SUBMITTED' && !isOwner && (
-                          <button
-                            type="button"
-                            onClick={() => setReviewing(p)}
-                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                          >
-                            Review
-                          </button>
-                        )}
+                        {(role === 'MANAGER' || role === 'ADMIN_OPERATIONAL' || role === 'SUPER_ADMIN') &&
+                          p.status === 'SUBMITTED' &&
+                          !isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => setReviewing(p)}
+                              className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            >
+                              Review
+                            </button>
+                          )}
                       </div>
                     </td>
                   </tr>
@@ -264,6 +281,65 @@ export function ProposalsClient({
         onConfirm={handleDelete}
         loading={deleteLoading}
       />
+
+      {detailProposal && (
+        <Dialog open={!!detailProposal} onOpenChange={(open) => !open && setDetailProposal(null)}>
+          <DialogContent className="sm:max-w-lg dark:bg-slate-900 dark:border-slate-800">
+            <DialogHeader>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <StatusBadge
+                  status={detailProposal.status}
+                  styleMap={PROPOSAL_STATUS_STYLE}
+                  labelMap={PROPOSAL_STATUS_LABEL}
+                />
+                <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                  {new Date(detailProposal.createdAt).toLocaleDateString('id-ID')}
+                </span>
+              </div>
+              <DialogTitle className="text-slate-900 dark:text-slate-100 text-base font-semibold">
+                {detailProposal.title}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                Diajukan oleh: <span className="font-medium text-slate-700 dark:text-slate-300">{detailProposal.proposer?.name ?? '—'}</span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3.5 my-2">
+              <div className="rounded-lg bg-slate-50 dark:bg-slate-950/60 p-3.5 border border-slate-200 dark:border-slate-800">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                  Deskripsi Proposal
+                </p>
+                <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  {detailProposal.description || 'Tidak ada deskripsi.'}
+                </p>
+              </div>
+
+              {detailProposal.reviewNote && (
+                <div className={`rounded-lg p-3.5 border ${
+                  detailProposal.status === 'REJECTED'
+                    ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900 text-red-800 dark:text-red-300'
+                    : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300'
+                }`}>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-1">
+                    Catatan Review ({detailProposal.status === 'REJECTED' ? 'Ditolak' : 'Disetujui'})
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{detailProposal.reviewNote}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDetailProposal(null)}
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
