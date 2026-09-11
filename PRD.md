@@ -338,23 +338,6 @@ KANAN rail
 
 ---
 
-<<<<<<< HEAD
-#### UI-5 — Projects List (`ui-5-projects-list.png`)
-
-```
-Title + subtitle              blok statistik kanan (TOTAL · AKTIF)
-Toolbar: [search] [Status ▾] [Divisi ▾] [Sort ▾] [+ Project Baru]
-
-Tabel:
-  NAMA PROJECT   judul + deskripsi terpotong
-  DIVISI         chip
-  PERIODE        rentang tanggal + ikon kalender
-  JUMLAH TASK    "n Task / m Action Plan"
-  PROGRESS       label + bar
-
-Footer: "Menampilkan 1–n dari m project" + pagination
-Empty:  ikon folder · "Belum ada project" · helper · [+ Project Baru]
-=======
 #### UI-5 — Projects List & Inisiatif (`ui-5-projects-list.png`)
 
 ```
@@ -372,7 +355,6 @@ Tampilan Grid/Tabel Inisiatif:
 Empty State Ramah Peran (Role-Aware Empty State):
   - Admin/Manager: Ikon folder + "Belum ada inisiatif program kerja" + panduan singkat cara membuat program kerja pertama + tombol [+ Inisiatif Baru]
   - PIC: Ikon inisiatif + "Belum ada inisiatif yang ditugaskan ke divisi Anda" + panduan bahwa tugas harian dapat dilihat langsung di menu "My Work" + tombol [Buka My Work]
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 ```
 
 ---

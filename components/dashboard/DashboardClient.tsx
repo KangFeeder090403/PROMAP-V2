@@ -6,10 +6,7 @@ import {
   AlertTriangle,
   BellRing,
   CheckCircle2,
-<<<<<<< HEAD
-=======
   ChevronRight,
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
   ClipboardList,
   FileText,
   Gavel,
@@ -22,10 +19,7 @@ import {
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
-<<<<<<< HEAD
-=======
 import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,
@@ -34,12 +28,9 @@ import {
   PROPOSAL_STATUS_LABEL,
 } from '@/lib/status-labels'
 import type { ActionRequiredItem, DashboardApiResponse, OverdueRow } from '@/lib/types/dashboard'
-<<<<<<< HEAD
-=======
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 
 type Range = 'today' | 'week' | 'month' | 'quarter' | 'all'
 
@@ -198,83 +189,6 @@ export function DashboardClient() {
   const [overdueSort, setOverdueSort] = useState<OverdueSort>('lateDesc')
   const [preview, setPreview] = useState<ActionRequiredItem | null>(null)
   const [remindState, setRemindState] = useState<RemindState>({})
-<<<<<<< HEAD
-  const reqRef = useRef(0)
-
-  const fetchData = useCallback(async (r: Range, pic: string, isInitial: boolean) => {
-    const reqId = ++reqRef.current
-    if (!isInitial) setSwitching(true)
-    setError(null)
-    try {
-      const qs = new URLSearchParams({ range: r })
-      if (pic) qs.set('pic', pic)
-      const res = await fetch(`/api/dashboard?${qs.toString()}`)
-      if (!res.ok) throw new Error('Gagal memuat data')
-      const json = await res.json()
-      if (reqRef.current === reqId) setData(json)
-    } catch {
-      if (reqRef.current === reqId) {
-        setError(isInitial ? 'Terjadi kesalahan. Coba lagi.' : 'Gagal memuat untuk rentang yang dipilih.')
-      }
-    } finally {
-      if (reqRef.current === reqId) {
-        if (isInitial) setInitialLoading(false)
-        setSwitching(false)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchData('week', '', true)
-  }, [fetchData])
-
-  // Daftar PIC untuk dropdown. Endpoint sudah ter-scope per role; PIC dapat 403.
-  useEffect(() => {
-    if (!data || data.user.roleLabel === 'PIC') return
-    let alive = true
-    void (async () => {
-      try {
-        const res = await fetch('/api/users')
-        if (!res.ok) return
-        const rows: { id: string; name: string; status: string }[] = await res.json()
-        if (!alive) return
-        setPicOptions(
-          rows
-            .filter((u) => u.status === 'ACTIVE')
-            .map((u) => ({ id: u.id, name: u.name }))
-            .sort((a, b) => a.name.localeCompare(b.name, 'id'))
-        )
-      } catch {
-        // Dropdown opsional — kegagalan tidak boleh merusak dashboard.
-      }
-    })()
-    return () => {
-      alive = false
-    }
-  }, [data])
-
-  const handleRangeChange = (r: Range) => {
-    if (r === range) return
-    setRange(r)
-    void fetchData(r, picFilter, false)
-  }
-
-  const handlePicChange = (pic: string) => {
-    setPicFilter(pic)
-    void fetchData(range, pic, false)
-  }
-
-  const handleRemind = async (id: string) => {
-    setRemindState((s) => ({ ...s, [id]: 'sending' }))
-    try {
-      const res = await fetch(`/api/action-plans/${id}/remind`, { method: 'POST' })
-      if (res.status === 429) {
-        setRemindState((s) => ({ ...s, [id]: 'limited' }))
-        return
-      }
-      setRemindState((s) => ({ ...s, [id]: res.ok ? 'sent' : 'error' }))
-    } catch {
-=======
   const [selectedAP, setSelectedAP] = useState<ActionPlan | null>(null)
   const reqRef = useRef(0)
 
@@ -365,7 +279,6 @@ export function DashboardClient() {
       }
       setRemindState((s) => ({ ...s, [id]: res.ok ? 'sent' : 'error' }))
     } catch {
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       setRemindState((s) => ({ ...s, [id]: 'error' }))
     }
   }
@@ -389,11 +302,7 @@ export function DashboardClient() {
   if (!data) return <DashboardSkeleton />
 
   const { user, metrics, statusBreakdown, priorityBreakdown, picWorkload, actionRequired, overdueList } = data
-<<<<<<< HEAD
-  const isPic = user.roleLabel === 'PIC'
-=======
   const isPic = user.role === 'PIC' || user.roleLabel === 'PIC'
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
   const hasPicFilter = picFilter !== ''
   const selectedPicName = picOptions.find((p) => p.id === picFilter)?.name ?? null
 
@@ -515,17 +424,10 @@ export function DashboardClient() {
           icon={PlayCircle}
           iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
           footer={
-<<<<<<< HEAD
-            <span className="inline-flex items-center gap-1">
-              <span className="font-medium text-blue-600 dark:text-blue-400">{metrics.inReview}</span>
-              <span>di antaranya menunggu persetujuan</span>
-            </span>
-=======
             <p className="text-xs text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-blue-600 dark:text-blue-400">{metrics.inReview}</span>{' '}
               di antaranya menunggu persetujuan
             </p>
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
           }
         />
         <MetricCard
@@ -576,15 +478,11 @@ export function DashboardClient() {
               return (
                 <div
                   key={`${item.kind}-${item.id}`}
-<<<<<<< HEAD
-                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3"
-=======
                   onClick={() => {
                     if (isAP) handleOpenAPDetail(item.id)
                     else setPreview(item)
                   }}
                   className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer"
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <span
@@ -645,54 +543,6 @@ export function DashboardClient() {
                     </div>
                   </div>
 
-<<<<<<< HEAD
-                  <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                    {isAP && isApproval && (
-                      <>
-                        <Link
-                          href="/board"
-                          className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold`}
-                        >
-                          Quick Approve
-                        </Link>
-                        <Link
-                          href="/board"
-                          className={`${btnBase} bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700`}
-                        >
-                          Review Bukti
-                        </Link>
-                        <Link
-                          href="/board"
-                          className={`${btnBase} bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/70`}
-                        >
-                          Tolak
-                        </Link>
-                      </>
-                    )}
-                    {isAP && !isApproval && (
-                      <>
-                        <Link
-                          href="/board"
-                          className={`${btnBase} bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700`}
-                        >
-                          Ingatkan PIC
-                        </Link>
-                        <Link
-                          href="/board"
-                          className={`${btnBase} bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700`}
-                        >
-                          Buka Detail
-                        </Link>
-                      </>
-                    )}
-                    {!isAP && (
-                      <button
-                        onClick={() => setPreview(item)}
-                        className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold`}
-                      >
-                        Review Proposal
-                      </button>
-=======
                   <div className="flex items-center justify-end gap-2 flex-shrink-0">
                     {isAP && isApproval && (
                       isPic ? (
@@ -754,7 +604,6 @@ export function DashboardClient() {
                           Review Proposal
                         </button>
                       )
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                     )}
                   </div>
                 </div>
@@ -782,15 +631,9 @@ export function DashboardClient() {
               legendLayout="grid"
             />
           </div>
-<<<<<<< HEAD
-          <div className="mt-4 bg-slate-50 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Sudah selesai</span>
-            <span className="font-mono font-semibold text-emerald-600">
-=======
           <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Sudah selesai</span>
             <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
               {metrics.complete} dari {metrics.total} ({Math.round(metrics.completionRate)}%)
             </span>
           </div>
@@ -912,12 +755,9 @@ export function DashboardClient() {
         )}
       </div>
 
-<<<<<<< HEAD
-=======
       {/* Helicopter view — kesehatan project, lintas divisi, radar tenggat */}
       {data.portfolio && <PortfolioSection portfolio={data.portfolio} />}
 
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       {/* Overdue & Critical Deadlines */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -1012,9 +852,6 @@ export function DashboardClient() {
                     <td className="px-4 py-3 text-right">
                       <span className="inline-flex items-center gap-1.5">
                         <RemindButton state={remindState[row.id]} onClick={() => void handleRemind(row.id)} />
-<<<<<<< HEAD
-                        <Link href="/board" className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm`}>
-=======
                         <Link
                           href={`/action-plans?open=${row.id}&highlight=${row.id}`}
                           onClick={(e) => {
@@ -1023,7 +860,6 @@ export function DashboardClient() {
                           }}
                           className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm`}
                         >
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
                           Buka Detail
                         </Link>
                       </span>
@@ -1036,52 +872,6 @@ export function DashboardClient() {
         )}
       </div>
 
-<<<<<<< HEAD
-      {/* Drawer preview proposal — geser dari kanan, list tetap terlihat (keputusan PO). */}
-      {preview && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Ringkasan proposal">
-          <div
-            className="absolute inset-0 bg-slate-900/40"
-            onClick={() => setPreview(null)}
-            aria-hidden="true"
-          />
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-xl border-l border-slate-200 dark:border-slate-800 flex flex-col">
-            <div className="flex items-start justify-between gap-3 p-5 border-b border-slate-200 dark:border-slate-800">
-              <div className="min-w-0 space-y-1">
-                <span className="font-mono text-xs font-semibold text-blue-700">#{preview.refCode}</span>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">{preview.title}</h2>
-              </div>
-              <button
-                onClick={() => setPreview(null)}
-                aria-label="Tutup"
-                className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-4 h-4" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4 overflow-y-auto">
-              <dl className="grid grid-cols-3 gap-2 text-sm">
-                <dt className="text-slate-500 dark:text-slate-400">Pengusul</dt>
-                <dd className="col-span-2 font-medium text-slate-800 dark:text-slate-200">{preview.picName}</dd>
-                {preview.createdAt && (
-                  <>
-                    <dt className="text-slate-500 dark:text-slate-400">Diajukan</dt>
-                    <dd className="col-span-2 font-mono text-slate-700 dark:text-slate-300">{fmtDate(preview.createdAt)}</dd>
-                  </>
-                )}
-              </dl>
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
-                  Deskripsi
-                </h3>
-                <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                  {preview.description?.trim() || 'Tidak ada deskripsi.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-=======
       {/* Drawer preview proposal — Radix Portal agar tidak tertabrak sticky header */}
       <DialogPrimitive.Root open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
         <DialogPrimitive.Portal>
@@ -1190,7 +980,6 @@ export function DashboardClient() {
             window.location.href = `/action-plans?open=${selectedAP.id}&highlight=${selectedAP.id}`
           }}
         />
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
       )}
     </div>
   )

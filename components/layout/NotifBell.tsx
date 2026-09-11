@@ -89,11 +89,7 @@ export function NotifBell() {
     <div className="relative">
       <button
         type="button"
-<<<<<<< HEAD
-        onClick={() => setOpen((v) => !v)}
-=======
         onClick={toggleOpen}
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
         className="relative rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         aria-label="Notifikasi"
       >

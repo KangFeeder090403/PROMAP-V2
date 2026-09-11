@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-<<<<<<< HEAD
-import { getSessionUser, apScope, proposalScope } from '@/lib/rbac'
-=======
 import { getSessionUser, apScope, proposalScope, projectScope } from '@/lib/rbac'
 import { buildPortfolio } from '@/lib/dashboard-portfolio'
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 import { aggregateDashboard } from '@/lib/dashboard-aggregate'
 import type { Prisma, ProposalStatus, Role } from '@/lib/generated/prisma/client'
 
@@ -133,8 +129,6 @@ export async function GET(req: NextRequest) {
       },
     })
 
-<<<<<<< HEAD
-=======
     // Helicopter view — scope project mengikuti projectScope (Manager = divisinya).
     const portfolioProjects = await prisma.project.findMany({
       where: { ...projectScope(user), deletedAt: null, isActive: true },
@@ -166,7 +160,6 @@ export async function GET(req: NextRequest) {
       new Map(portfolioDivisions.map((d) => [d.id, d.name]))
     )
 
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
     const agg = aggregateDashboard(
       actionPlans,
       proposals.map((p) => ({
@@ -181,14 +174,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ...agg,
-<<<<<<< HEAD
-      user: {
-=======
       portfolio,
       user: {
         id: user.id,
         role: userDetail?.role ?? user.role,
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
         name: userDetail?.name ?? user.name,
         roleLabel: ROLE_LABEL[userDetail?.role ?? user.role],
         divisionName: userDetail?.division?.name ?? null,

@@ -7,8 +7,6 @@ import { DashboardShell } from '@/components/layout/DashboardShell'
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
   if (!user) redirect('/login?signout=1')
-<<<<<<< HEAD
-=======
 
   // Dev-only: fitur switch akun testing. Flag dipakai widget untuk tombol
   // "Kembali ke akun asli". Nonaktif & selalu false di production.
@@ -28,7 +26,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         })
       : null,
   ])
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 
   // Hanya field aman yang dikirim ke client — jangan pernah teruskan
   // full row Prisma (ada password hash dsb).

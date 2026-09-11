@@ -325,8 +325,6 @@ async function seedApprovalNotifications() {
   console.log(`Notifikasi persetujuan: ${created} baris baru (dari ${aps.length} AP)`)
 }
 
-<<<<<<< HEAD
-=======
 /**
  * Checklist demo untuk AP yang belum punya checklist sama sekali (idempoten —
  * dijalankan tiap seed, skip yang sudah terisi). Kemunculan progress bar di
@@ -397,15 +395,11 @@ async function seedActionPlanExtras() {
   console.log(`Checklist demo: ${created} item untuk ${empty.length} action plan`)
 }
 
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 async function main() {
   await upsertSuperAdmin()
   await seedDemoCompanies()
   await seedApprovalNotifications()
-<<<<<<< HEAD
-=======
   await seedActionPlanExtras()
->>>>>>> d56e9bf655fa6a5ea4d2756757baa8f9ef16cb02
 }
 
 main()
