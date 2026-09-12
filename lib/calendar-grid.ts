@@ -9,9 +9,12 @@ export interface CalendarEvent {
   priority: string
   startDate: string
   endDate: string
+  picId?: string
   picName: string
   labelName: string
+  projectId?: string | null
   projectName: string
+  divisionId?: string | null
   divisionName: string
 }
 

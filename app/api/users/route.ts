@@ -82,6 +82,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Company ID tidak ditemukan' }, { status: 400 })
     }
 
+    // Seat Quota Guard berdasarkan subscription tier perusahaan (PRD §B10 & Settings)
+    const QUOTA_MAP: Record<string, number> = { BASIC: 20, PREMIUM: 35, ENTERPRISE: 50 }
+    const targetCompany = await prisma.company.findUnique({
+      where: { id: targetCompanyId },
+      select: { id: true, name: true, subscription: true, deletedAt: true },
+    })
+    if (!targetCompany || targetCompany.deletedAt) {
+      return NextResponse.json({ error: 'Company tidak valid atau telah dihapus' }, { status: 400 })
+    }
+
+    const quota = QUOTA_MAP[targetCompany.subscription] ?? 50
+    const activeCount = await prisma.user.count({
+      where: {
+        companyId: targetCompanyId,
+        deletedAt: null,
+        isGuest: false,
+      },
+    })
+    if (activeCount >= quota) {
+      return NextResponse.json(
+        {
+          error: `Batas kuota pengguna untuk perusahaan "${targetCompany.name}" telah tercapai (${quota} kursi pada paket ${targetCompany.subscription}). Upgrade paket untuk menambah kuota.`,
+        },
+        { status: 403 }
+      )
+    }
+
     // Validasi relasi opsional: harus ada, belum di-soft-delete, dan companyId sama.
     if (body.divisionId) {
       const division = await prisma.division.findUnique({ where: { id: body.divisionId } })

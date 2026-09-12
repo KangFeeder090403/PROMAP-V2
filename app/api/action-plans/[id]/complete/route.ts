@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
+import { logActivity } from '@/lib/activity-log'
 
 // PIC menyelesaikan Action Plan pribadi sendiri tanpa review atasan.
 // Hanya berlaku untuk isPersonal: true (atau taskId: null).
@@ -43,6 +44,14 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (result.count === 0) {
       return NextResponse.json({ error: 'Status Action Plan sudah berubah, refresh halaman' }, { status: 409 })
     }
+
+    await logActivity({
+      userId: user.id,
+      actionPlanId: id,
+      action: 'STATUS_CHANGED',
+      oldValue: existing.status,
+      newValue: 'COMPLETE',
+    })
 
     return NextResponse.json({ success: true, status: 'COMPLETE' })
   } catch (error) {

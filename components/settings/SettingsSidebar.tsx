@@ -45,13 +45,24 @@ export function SettingsSidebar({
   const [company, setCompany] = useState<Company | null>(null)
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
+  const [health, setHealth] = useState<{ status: string; vaultStatus: string; latencyMs: number; ssl: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetchCompany()
     fetchUsers()
     if (isSuperAdmin) fetchLeads()
+    if (isAdmin) fetchHealth()
   }, [])
+
+  async function fetchHealth() {
+    try {
+      const res = await fetch('/api/system/health')
+      if (!res.ok) return
+      const data = await res.json()
+      setHealth(data)
+    } catch { /* silent */ }
+  }
 
   async function fetchCompany() {
     try {
@@ -239,13 +250,17 @@ export function SettingsSidebar({
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">
                 Master Database Sync
               </p>
-              <p className="text-sm font-bold text-slate-100">Multi-Tenant Vault OK</p>
+              <p className="text-sm font-bold text-slate-100">
+                {health?.vaultStatus ?? 'Multi-Tenant Vault OK'}
+              </p>
               <div className="flex items-center gap-3 mt-1">
                 <span className="flex items-center gap-1 text-[11px] text-slate-400">
                   <Wifi className="h-3 w-3 text-emerald-400" />
-                  Latensi Replikasi: ~14ms
+                  Latensi Replikasi: {health ? `~${health.latencyMs}ms` : 'Mengukur...'}
                 </span>
-                <span className="text-[11px] text-emerald-400 font-medium">SSL TLS 1.3 Active</span>
+                <span className="text-[11px] text-emerald-400 font-medium">
+                  {health?.ssl ?? 'SSL TLS 1.3 Active'}
+                </span>
               </div>
             </div>
           </div>

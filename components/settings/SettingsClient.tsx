@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
-import { Building2, LayoutGrid, Users, Tag } from 'lucide-react'
+import { Building2, LayoutGrid, Users, Tag, TrendingUp, Check } from 'lucide-react'
 import { CompanySection } from '@/components/settings/CompanySection'
 import { DivisionSection } from '@/components/settings/DivisionSection'
 import { UserSection } from '@/components/settings/UserSection'
 import { UserLabelSection } from '@/components/settings/UserLabelSection'
+import { LeadSection } from '@/components/settings/LeadSection'
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
+import { AuditLogModal } from '@/components/settings/AuditLogModal'
 
-type Tab = 'company' | 'division' | 'user' | 'userLabel'
+type Tab = 'company' | 'division' | 'user' | 'userLabel' | 'leads'
 
 function defaultTabFor(role: Role): Tab {
   if (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL') return 'company'
@@ -52,13 +54,27 @@ const TAB_CONFIG: {
     icon: Tag,
     roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'],
   },
+  {
+    key: 'leads',
+    label: 'Pipeline Prospek (Leads)',
+    shortLabel: 'Leads',
+    icon: TrendingUp,
+    roles: ['SUPER_ADMIN'],
+  },
 ]
 
 export function SettingsClient({ role, companyId }: { role: Role; companyId: string | null }) {
   const [tab, setTab] = useState<Tab>(() => defaultTabFor(role))
+  const [auditLogOpen, setAuditLogOpen] = useState(false)
+  const [savedToast, setSavedToast] = useState(false)
 
   const visibleTabs = TAB_CONFIG.filter((t) => (t.roles as string[]).includes(role))
   const showSidebar = role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER'
+
+  function handleSaveClick() {
+    setSavedToast(true)
+    setTimeout(() => setSavedToast(false), 3000)
+  }
 
   return (
     <div className="space-y-5">
@@ -76,18 +92,33 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium transition-colors"
+            onClick={() => setAuditLogOpen(true)}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium transition-colors cursor-pointer shadow-xs"
           >
             Audit Log Ringkas
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
+            onClick={handleSaveClick}
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer"
           >
-            Simpan Perubahan
+            {savedToast ? (
+              <>
+                <Check size={14} />
+                Tersimpan
+              </>
+            ) : (
+              'Simpan Perubahan'
+            )}
           </button>
         </div>
       </div>
+
+      {savedToast && (
+        <div className="rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 px-4 py-2 text-xs text-blue-700 dark:text-blue-300">
+          Konfigurasi disimpan otomatis pada masing-masing modul formulir (Perusahaan, Divisi, User, Label).
+        </div>
+      )}
 
       {/* ── Tab Navigation ── */}
       <div className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none border-b border-slate-200 dark:border-slate-800">
@@ -101,7 +132,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
               onClick={() => setTab(t.key)}
               className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 isActive
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-semibold'
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
@@ -117,7 +148,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
       <div className={showSidebar ? 'grid grid-cols-1 lg:grid-cols-3 gap-6' : ''}>
         {/* Main content */}
         <div className={showSidebar ? 'lg:col-span-2' : ''}>
-          {tab === 'company' && (role === 'SUPER_ADMIN') && <CompanySection role={role} />}
+          {tab === 'company' && role === 'SUPER_ADMIN' && <CompanySection role={role} />}
           {tab === 'division' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL') && (
             <DivisionSection role={role} companyId={companyId} />
           )}
@@ -127,6 +158,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
           {tab === 'userLabel' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER') && (
             <UserLabelSection role={role} companyId={companyId} />
           )}
+          {tab === 'leads' && role === 'SUPER_ADMIN' && <LeadSection />}
         </div>
 
         {/* Sidebar */}
@@ -136,6 +168,13 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
           </div>
         )}
       </div>
+
+      {/* Audit Log Modal */}
+      <AuditLogModal
+        open={auditLogOpen}
+        onOpenChange={setAuditLogOpen}
+        companyId={companyId}
+      />
     </div>
   )
 }
