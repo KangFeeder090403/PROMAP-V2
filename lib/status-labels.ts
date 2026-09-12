@@ -58,7 +58,7 @@ export const AP_PRIORITY_STYLE: Record<string, string> = {
 }
 
 export const AP_PRIORITY_LABEL: Record<string, string> = {
-  HIGH: 'Tinggi',
-  MEDIUM: 'Sedang',
-  LOW: 'Rendah',
+  HIGH: 'High',
+  MEDIUM: 'Medium',
+  LOW: 'LOW',
 }

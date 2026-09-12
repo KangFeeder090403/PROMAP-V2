@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export function ActionPlanFormModal({
   actionPlan: ActionPlan | null
   /** Pre-fill dari konteks pemanggil (halaman project, board, My Work). */
   defaults?: { taskId?: string | null; picId?: string | null }
-  onSuccess: () => void
+  onSuccess: (keepOpen?: boolean) => void | Promise<void>
 }) {
   const mode: 'create' | 'edit' = actionPlan ? 'edit' : 'create'
   const schema = mode === 'create' ? createActionPlanSchema : updateActionPlanSchema
@@ -54,6 +54,8 @@ export function ActionPlanFormModal({
   const [loading, setLoading] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [createMore, setCreateMore] = useState(false)
+  const [createdCount, setCreatedCount] = useState(0)
+  const [lastCreatedTitle, setLastCreatedTitle] = useState<string | null>(null)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [users, setUsers] = useState<PickUser[]>([])
   const [tasks, setTasks] = useState<PickTask[]>([])
@@ -74,11 +76,17 @@ export function ActionPlanFormModal({
       setShowDiscardConfirm(true)
       return
     }
+    if (!next) {
+      setCreatedCount(0)
+      setLastCreatedTitle(null)
+    }
     onOpenChange(next)
   }
 
   function handleConfirmDiscard() {
     setShowDiscardConfirm(false)
+    setCreatedCount(0)
+    setLastCreatedTitle(null)
     reset()
     onOpenChange(false)
   }
@@ -111,7 +119,11 @@ export function ActionPlanFormModal({
   }, [open, mode])
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setCreatedCount(0)
+      setLastCreatedTitle(null)
+      return
+    }
     setSubmitError('')
     setShowMore(false)
     reset({
@@ -186,6 +198,9 @@ export function ActionPlanFormModal({
     // "Buat lagi": modal tetap terbuka, konteks (task/PIC/tanggal) dipertahankan
     // supaya entri beruntun tidak perlu diisi ulang.
     if (createMore && mode === 'create') {
+      setLastCreatedTitle(values.title)
+      setCreatedCount((c) => c + 1)
+      onSuccess(true)
       reset({
         title: '',
         outcomeKpi: '',
@@ -195,12 +210,11 @@ export function ActionPlanFormModal({
         taskId: values.taskId,
         picId: values.picId,
       })
-      setFocus('title')
-      onSuccess()
+      setTimeout(() => setFocus('title'), 0)
       return
     }
 
-    onSuccess()
+    onSuccess(false)
   }
 
   return (
@@ -220,6 +234,15 @@ export function ActionPlanFormModal({
           className="space-y-4"
           noValidate
         >
+          {createdCount > 0 && lastCreatedTitle && (
+            <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span className="truncate">
+                ✓ Tersimpan: &ldquo;{lastCreatedTitle}&rdquo; · #{createdCount} dibuat
+              </span>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">Judul</Label>
             <Input id="title" aria-invalid={!!errors.title} {...register('title')} />
@@ -276,9 +299,9 @@ export function ActionPlanFormModal({
                 <div className="space-y-1.5">
                   <Label htmlFor="priority" className="text-slate-700 dark:text-slate-300">Prioritas</Label>
                   <select id="priority" {...register('priority')} className={SELECT_CLASS}>
-                    <option value="HIGH">Tinggi</option>
-                    <option value="MEDIUM">Sedang</option>
-                    <option value="LOW">Rendah</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">LOW</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
@@ -343,7 +366,7 @@ export function ActionPlanFormModal({
                 disabled={loading}
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
               >
-                {loading ? 'Menyimpan...' : 'Simpan'}
+                {loading ? 'Menyimpan...' : 'Simpan (Ctrl+↵)'}
               </button>
             </div>
           </div>

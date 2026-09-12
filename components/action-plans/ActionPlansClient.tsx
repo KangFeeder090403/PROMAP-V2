@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import {
@@ -11,6 +11,8 @@ import {
   Plus,
   MoreHorizontal,
   X,
+  FileSpreadsheet,
+  CheckCircle2,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
@@ -22,6 +24,8 @@ import {
 } from '@/lib/status-labels'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
+import { BulkCreateModal } from '@/components/action-plans/BulkCreateModal'
+import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 
 export interface ActionPlan {
   id: string
@@ -125,8 +129,41 @@ export function ActionPlansClient({
   )
 
   const [formOpen, setFormOpen] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
+  const [successBanner, setSuccessBanner] = useState<string | null>(null)
+  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showSuccess(msg: string) {
+    setSuccessBanner(msg)
+    if (bannerTimer.current) clearTimeout(bannerTimer.current)
+    bannerTimer.current = setTimeout(() => setSuccessBanner(null), 4000)
+  }
+
+  // Global Hotkey: 'c' or 'C' opens create modal when not typing in inputs
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() === 'c' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target as HTMLElement | null
+        const isInput =
+          target?.tagName === 'INPUT' ||
+          target?.tagName === 'TEXTAREA' ||
+          target?.tagName === 'SELECT' ||
+          target?.isContentEditable
+        if (!isInput && !formOpen && !bulkOpen && !selected) {
+          e.preventDefault()
+          setEditing(null)
+          setFormOpen(true)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      if (bannerTimer.current) clearTimeout(bannerTimer.current)
+    }
+  }, [formOpen, bulkOpen, selected])
 
   // Buka detail jika diakses lewat deep-link ?open=id
   useEffect(() => {
@@ -238,18 +275,49 @@ export function ActionPlansClient({
           </p>
           <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Program Initiatives &amp; Action Plans</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null)
-            setFormOpen(true)
-          }}
-          className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Action Plan Baru
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setBulkOpen(true)}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+          >
+            <FileSpreadsheet className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            Bulk Paste
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null)
+              setFormOpen(true)
+            }}
+            title="Tekan 'C' di keyboard untuk buat cepat"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Action Plan Baru
+            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-sans font-medium text-blue-100 bg-blue-600/60 rounded">
+              C
+            </kbd>
+          </button>
+        </div>
       </div>
+
+      {/* ===== Success micro-banner ===== */}
+      {successBanner && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-medium text-emerald-800 dark:text-emerald-300 animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>{successBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccessBanner(null)}
+            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ===== Chips workflow state ===== */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-9 gap-2">
@@ -427,6 +495,39 @@ export function ActionPlansClient({
               </tr>
             </thead>
             <tbody>
+              {/* Quick Inline Add Row */}
+              <tr className="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/30">
+                <td colSpan={8} className="px-5 py-2">
+                  <InlineQuickAdd
+                    placeholder="Tambah cepat: ketik judul action plan lalu tekan Enter..."
+                    buttonText="+ Tambah Action Plan Cepat (Inline)"
+                    onAdd={async (quickTitle) => {
+                      try {
+                        const res = await fetch('/api/action-plans/bulk', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            items: [{ title: quickTitle, outcomeKpi: quickTitle }],
+                          }),
+                        })
+                        if (!res.ok) {
+                          const errData = await res.json().catch(() => ({}))
+                          alert(errData.error || 'Gagal menambahkan Action Plan')
+                          return false
+                        }
+                        const createdData = await res.json()
+                        const createdId = createdData?.items?.[0]?.id
+                        if (createdId) setHighlightedId(createdId)
+                        showSuccess(`Action Plan "${quickTitle}" berhasil ditambahkan!`)
+                        await fetchData()
+                      } catch {
+                        alert('Terjadi kesalahan jaringan.')
+                        return false
+                      }
+                    }}
+                  />
+                </td>
+              </tr>
               {data.items.map((ap) => {
                 const isOverdue =
                   ap.status !== 'COMPLETE' &&
@@ -594,8 +695,20 @@ export function ActionPlansClient({
         open={formOpen}
         onOpenChange={setFormOpen}
         actionPlan={editing}
-        onSuccess={() => {
-          setFormOpen(false)
+        onSuccess={(keepOpen) => {
+          if (!keepOpen) setFormOpen(false)
+          showSuccess(editing ? 'Action Plan berhasil diperbarui!' : 'Action Plan berhasil dibuat!')
+          fetchData()
+        }}
+      />
+
+      <BulkCreateModal
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        currentUserId={userId}
+        userRole={role}
+        onSuccess={(count) => {
+          showSuccess(`${count} Action Plan berhasil dibuat secara massal!`)
           fetchData()
         }}
       />
