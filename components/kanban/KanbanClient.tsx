@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { KanbanColumn } from '@/components/kanban/KanbanColumn'
@@ -33,7 +34,18 @@ async function fetchAllActionPlans(): Promise<ActionPlan[]> {
   return all
 }
 
-export function KanbanClient({ role, userId, projectId }: { role: Role; userId: string; projectId: string }) {
+export function KanbanClient({
+  role,
+  userId,
+  divisionId,
+  projectId,
+}: {
+  role: Role
+  userId: string
+  divisionId?: string | null
+  projectId: string
+}) {
+  const router = useRouter()
   const [items, setItems] = useState<ActionPlan[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +106,7 @@ export function KanbanClient({ role, userId, projectId }: { role: Role; userId: 
   }, [scoped])
 
   function canDrag(ap: ActionPlan) {
-    return canDragKanbanCard(ap, { id: userId, role })
+    return canDragKanbanCard(ap, { id: userId, role, divisionId })
   }
 
   function onDragStart(e: React.DragEvent, id: string) {
@@ -111,7 +123,7 @@ export function KanbanClient({ role, userId, projectId }: { role: Role; userId: 
     if (!ap) return
     if (columnForStatus(ap.status) === targetColumn) return
 
-    const action = resolveKanbanDrop(ap, targetColumn, { id: userId, role })
+    const action = resolveKanbanDrop(ap, targetColumn, { id: userId, role, divisionId })
     if (!action) {
       showToast('Transisi tidak diizinkan untuk status atau peran Anda saat ini.')
       return
@@ -224,7 +236,7 @@ export function KanbanClient({ role, userId, projectId }: { role: Role; userId: 
         onChanged={() => selected && refreshSelected(selected)}
         onEdit={() => {
           if (!selected) return
-          window.location.href = `/action-plans?open=${selected.id}&highlight=${selected.id}`
+          router.push(`/action-plans?open=${selected.id}&highlight=${selected.id}`)
         }}
       />
     </div>

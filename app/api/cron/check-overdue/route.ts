@@ -17,11 +17,12 @@ export async function GET(req: Request) {
   try {
     const now = new Date()
 
-    // (a) Overdue — endDate lewat, status belum final.
+    // (a) Overdue — endDate lewat, status masih pengerjaan aktif awal.
+    // Sesuai PRD §A4 & CLAUDE.md: hanya NOT_STARTED & IN_PROGRESS yang transisi ke OVERDUE.
     const overdue = await prisma.actionPlan.findMany({
       where: {
         endDate: { lt: now },
-        status: { notIn: ['APPROVED', 'COMPLETE', 'OVERDUE'] },
+        status: { in: ['NOT_STARTED', 'IN_PROGRESS'] },
         deletedAt: null,
       },
     })

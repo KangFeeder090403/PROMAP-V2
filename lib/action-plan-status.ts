@@ -61,7 +61,7 @@ type KanbanDropApInput = {
 export function resolveKanbanDrop(
   ap: KanbanDropApInput,
   targetColumn: KanbanColumnKey,
-  user: { id: string; role: Role }
+  user: { id: string; role: Role; divisionId?: string | null }
 ): KanbanDropAction | null {
   if (targetColumn === columnForStatus(ap.status)) return null
 
@@ -73,7 +73,10 @@ export function resolveKanbanDrop(
     ap.status === 'PENDING_APPROVAL' &&
     (user.role === 'SUPER_ADMIN' ||
       user.role === 'ADMIN_OPERATIONAL' ||
-      (user.role === 'MANAGER' && ap.divisionId !== null))
+      (user.role === 'MANAGER' &&
+        user.divisionId !== null &&
+        user.divisionId !== undefined &&
+        user.divisionId === ap.divisionId))
 
   if (targetColumn === 'IN_PROGRESS') {
     if (isOwner && ['NOT_STARTED', 'REJECTED', 'OVERDUE'].includes(ap.status)) return { kind: 'start' }
@@ -103,6 +106,9 @@ export function resolveKanbanDrop(
 }
 
 /** Kartu boleh di-drag kalau ada minimal satu kolom tujuan yang valid untuk user ini. */
-export function canDragKanbanCard(ap: KanbanDropApInput, user: { id: string; role: Role }): boolean {
+export function canDragKanbanCard(
+  ap: KanbanDropApInput,
+  user: { id: string; role: Role; divisionId?: string | null }
+): boolean {
   return KANBAN_COLUMNS.some((c) => resolveKanbanDrop(ap, c.key, user) !== null)
 }

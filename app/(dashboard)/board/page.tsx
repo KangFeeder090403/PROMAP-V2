@@ -10,5 +10,12 @@ export default async function KanbanPage({
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
-  return <KanbanClient role={user.role} userId={user.id} projectId={searchParams.projectId ?? ''} />
+  return (
+    <KanbanClient
+      role={user.role}
+      userId={user.id}
+      divisionId={user.divisionId}
+      projectId={searchParams.projectId ?? ''}
+    />
+  )
 }
