@@ -69,7 +69,8 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
   const [savedToast, setSavedToast] = useState(false)
 
   const visibleTabs = TAB_CONFIG.filter((t) => (t.roles as string[]).includes(role))
-  const showSidebar = role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER'
+  const showSidebar =
+    (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER') && tab !== 'leads'
 
   function handleSaveClick() {
     setSavedToast(true)

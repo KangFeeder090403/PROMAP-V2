@@ -3,11 +3,11 @@ import { getSessionUser } from '@/lib/rbac'
 import { LeadsManagementClient } from '@/components/leads/LeadsManagementClient'
 
 export const metadata = {
-  title: 'CRM Leads — ProMaP',
-  description: 'Manajemen prospek dan uji coba calon tenant',
+  title: 'Manajemen Leads & Uji Coba — ProMaP',
+  description: 'Pantau konversi calon klien B2B, status uji coba 30 hari, dan aktivitas login calon tenant.',
 }
 
-export default async function LeadsPage() {
+export default async function SettingsLeadsPage() {
   const user = await getSessionUser()
   if (!user) redirect('/login')
   if (user.role !== 'SUPER_ADMIN') redirect('/settings')

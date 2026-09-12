@@ -229,10 +229,10 @@ export function SettingsSidebar({
 
           <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
             <a
-              href="/leads"
+              href="/settings/leads"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline w-full justify-center"
             >
-              Buka Full CRM Leads (/leads)
+              Buka Full CRM Leads (/settings/leads)
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
