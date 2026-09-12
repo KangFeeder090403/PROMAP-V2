@@ -25,6 +25,10 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
   if (!token) {
+    // Root path — tampilkan landing page, bukan form login
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/landing', req.url))
+    }
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
