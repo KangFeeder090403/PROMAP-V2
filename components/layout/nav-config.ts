@@ -7,6 +7,7 @@ import {
   Calendar,
   FileText,
   Settings,
+  BarChart3,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -46,10 +47,18 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
     ],
   },
-  // Grup INSIGHTS (Reports) sengaja belum ada — halamannya belum dibuat,
-  // link mati lebih buruk daripada menu belum lengkap. Tambahkan saat UI-12.
-  // Action Plans sengaja tidak ada slot nav (keputusan PO, §B2).
-  // Route /action-plans tetap hidup dan diakses dari Board / Project detail.
+  // Grup INSIGHTS — UI-12: Halaman Reports sudah tersedia.
+  {
+    label: 'Insights',
+    items: [
+      {
+        label: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+        roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'] as Role[],
+      },
+    ],
+  },
   {
     label: null,
     items: [
