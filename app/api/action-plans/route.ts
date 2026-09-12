@@ -14,12 +14,15 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get('status')
-    const priority = searchParams.get('priority')
+
+    // Multi-value params (dapat di-repeat: ?status=IN_PROGRESS&status=OVERDUE)
+    const statuses = searchParams.getAll('status')
+    const priorities = searchParams.getAll('priority')
+    const picIds = searchParams.getAll('picId')
+    const divisionIds = searchParams.getAll('divisionId')
+
     const taskId = searchParams.get('taskId')
     const projectId = searchParams.get('projectId')
-    const picId = searchParams.get('picId')
-    const divisionId = searchParams.get('divisionId')
     const dateRange = searchParams.get('dateRange')
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
@@ -37,11 +40,21 @@ export async function GET(req: Request) {
     const baseWhere: Prisma.ActionPlanWhereInput = { ...apScope(user), deletedAt: null }
 
     const where: Prisma.ActionPlanWhereInput = { ...baseWhere }
-    if (status) where.status = status as ActionPlanStatus
-    if (priority) where.priority = priority as Priority
+
+    // Multi-value filter: gunakan `in` saat ada lebih dari satu nilai
+    if (statuses.length === 1) where.status = statuses[0] as ActionPlanStatus
+    else if (statuses.length > 1) where.status = { in: statuses as ActionPlanStatus[] }
+
+    if (priorities.length === 1) where.priority = priorities[0] as Priority
+    else if (priorities.length > 1) where.priority = { in: priorities as Priority[] }
+
+    if (picIds.length === 1) where.picId = picIds[0]
+    else if (picIds.length > 1) where.picId = { in: picIds }
+
+    if (divisionIds.length === 1) where.divisionId = divisionIds[0]
+    else if (divisionIds.length > 1) where.divisionId = { in: divisionIds }
+
     if (taskId) where.taskId = taskId
-    if (picId) where.picId = picId
-    if (divisionId) where.divisionId = divisionId
     if (projectId) {
       where.task = { projectId, deletedAt: null }
     }
@@ -49,6 +62,7 @@ export async function GET(req: Request) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { id: { contains: search, mode: 'insensitive' } },
+        { outcomeKpi: { contains: search, mode: 'insensitive' } },
       ]
     }
 

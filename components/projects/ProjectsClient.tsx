@@ -6,17 +6,17 @@ import Link from 'next/link'
 import {
   Building2,
   Calendar,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FolderKanban,
   MoreHorizontal,
   Plus,
-  Search,
-  SortDesc,
 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { ProjectForm } from '@/components/projects/ProjectForm'
+import { FilterToolbar } from '@/components/ui/FilterToolbar'
+import { FilterEmptyState } from '@/components/ui/FilterEmptyState'
+import { useFilterState } from '@/lib/use-filter-state'
 
 export interface Project {
   id: string
@@ -50,6 +50,19 @@ function formatDate(date: string | null) {
   return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+// Sort option values untuk Projects (client-side)
+const PROJECT_SORT_OPTIONS = [
+  { value: 'newest', label: 'Terbaru dibuat' },
+  { value: 'oldest', label: 'Terlama dibuat' },
+  { value: 'deadline_asc', label: 'Deadline Terdekat' },
+  { value: 'alpha', label: 'Nama A-Z' },
+]
+
+const PROJECT_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Aktif', dot: 'bg-emerald-500' },
+  { value: 'INACTIVE', label: 'Nonaktif', dot: 'bg-slate-400' },
+]
+
 export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: boolean }) {
   const router = useRouter()
   const [data, setData] = useState<Project[] | null>(null)
@@ -58,22 +71,14 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
 
-  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL')
-  const [divisionFilter, setDivisionFilter] = useState('ALL')
-  const [sortOrder, setSortOrder] = useState<SortOrder>('NEWEST')
-  const [page, setPage] = useState(1)
+  // Filter state (UI-11: terikat URL Query Params PRD §B8, debounce 250ms)
+  const filterState = useFilterState(250)
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null)
 
   const canManage = CAN_MANAGE.includes(role)
 
   useEffect(() => {
     fetchData()
-    fetch('/api/divisions')
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setDivisions)
-      .catch(() => setDivisions([]))
   }, [])
 
   // Header "+ New > Project" mengarah ke /projects?new=1. Buka modal, lalu
@@ -84,11 +89,6 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
     setFormOpen(true)
     router.replace('/projects', { scroll: false })
   }, [openCreate])
-
-  // Reset halaman saat kriteria berubah.
-  useEffect(() => {
-    setPage(1)
-  }, [searchQuery, statusFilter, divisionFilter, sortOrder])
 
   async function fetchData() {
     try {
@@ -106,17 +106,17 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
 
   const filtered = useMemo(() => {
     if (!data) return []
-    const q = searchQuery.trim().toLowerCase()
+    const q = (filterState.debouncedSearch || '').trim().toLowerCase()
     let rows = data.filter((p) => {
-      if (statusFilter === 'ACTIVE' && !p.isActive) return false
-      if (statusFilter === 'INACTIVE' && p.isActive) return false
-      // Project lintas divisi harus tetap muncul di filter divisi manapun yang terlibat.
-      if (
-        divisionFilter !== 'ALL' &&
-        p.divisionId !== divisionFilter &&
-        !p.divisions?.some((d) => d.id === divisionFilter)
-      ) {
-        return false
+      // Status filter: 'ACTIVE' / 'INACTIVE'
+      if (filterState.statuses.includes('ACTIVE') && !filterState.statuses.includes('INACTIVE') && !p.isActive) return false
+      if (filterState.statuses.includes('INACTIVE') && !filterState.statuses.includes('ACTIVE') && p.isActive) return false
+      // Division filter: multi-select, project lintas divisi muncul di semua divisinya.
+      if (filterState.divisionIds.length > 0) {
+        const inDiv =
+          filterState.divisionIds.includes(p.divisionId ?? '') ||
+          p.divisions?.some((d) => filterState.divisionIds.includes(d.id))
+        if (!inDiv) return false
       }
       if (q) {
         const haystack = `${p.name} ${p.description ?? ''}`.toLowerCase()
@@ -126,14 +126,17 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
     })
 
     rows = [...rows].sort((a, b) => {
-      switch (sortOrder) {
+      switch (filterState.sortBy) {
+        case 'oldest':
         case 'OLDEST':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'deadline_asc':
         case 'DEADLINE': {
           const ae = a.endDate ? new Date(a.endDate).getTime() : Number.POSITIVE_INFINITY
           const be = b.endDate ? new Date(b.endDate).getTime() : Number.POSITIVE_INFINITY
           return ae - be
         }
+        case 'alpha':
         case 'ALPHA':
           return a.name.localeCompare(b.name)
         default:
@@ -141,11 +144,11 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
       }
     })
     return rows
-  }, [data, searchQuery, statusFilter, divisionFilter, sortOrder])
+  }, [data, filterState.debouncedSearch, filterState.statuses, filterState.divisionIds, filterState.sortBy])
 
   const activeCount = useMemo(() => (data ?? []).filter((p) => p.isActive).length, [data])
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safePage = Math.min(page, pageCount)
+  const safePage = Math.min(filterState.page, pageCount)
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const rangeStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1
   const rangeEnd = Math.min(safePage * PAGE_SIZE, filtered.length)
@@ -215,84 +218,28 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
         </div>
       </div>
 
-      {/* Operational Filter Toolbar */}
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1">
-          {/* Search */}
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama inisiatif atau deskripsi..."
-              className="w-full h-9 pl-9 pr-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
-            />
-          </div>
-
-          {/* Status filter */}
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              aria-label="Filter Status"
-              className="h-9 appearance-none pr-8 pl-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="ACTIVE">Aktif</option>
-              <option value="INACTIVE">Nonaktif</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          </div>
-
-          {/* Divisi filter */}
-          <div className="relative">
-            <select
-              value={divisionFilter}
-              onChange={(e) => setDivisionFilter(e.target.value)}
-              aria-label="Filter Divisi"
-              className="h-9 appearance-none pr-8 pl-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-            >
-              <option value="ALL">Semua Divisi</option>
-              {divisions.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          </div>
-
-          {/* Sort */}
-          <div className="relative">
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-              aria-label="Urutkan"
-              className="h-9 appearance-none pr-8 pl-3 text-sm rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-            >
-              <option value="NEWEST">Terbaru</option>
-              <option value="OLDEST">Terlama</option>
-              <option value="DEADLINE">Deadline Terdekat</option>
-              <option value="ALPHA">Nama A-Z</option>
-            </select>
-            <SortDesc className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null)
-              setFormOpen(true)
-            }}
-            className="inline-flex items-center gap-2 h-9 px-4 self-end xl:self-auto rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold transition-colors shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Buat Project Baru
-          </button>
-        )}
-      </div>
+      {/* ===== Filter & Sort Toolbar (UI-11) ===== */}
+      <FilterToolbar
+        filterState={filterState}
+        sortOptions={PROJECT_SORT_OPTIONS}
+        filterConfig={{
+          statuses: PROJECT_STATUS_OPTIONS,
+          divisions: true,
+          pics: false,
+          projects: false,
+          dateRange: false,
+          entityName: 'Inisiatif Proyek',
+          totalEntities: data.length,
+        }}
+        totalResults={filtered.length}
+        loading={loading}
+        onNew={
+          canManage
+            ? () => { setEditing(null); setFormOpen(true) }
+            : undefined
+        }
+        newLabel="Project Baru"
+      />
 
       {/* Zero-Data: tenant/belum ada project sama sekali */}
       {data.length === 0 ? (
@@ -329,6 +276,14 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
             </Link>
           )}
         </div>
+      ) : filtered.length === 0 ? (
+        /* Keadaan 3: Keadaan Tanpa Hasil (Empty State) */
+        <FilterEmptyState
+          activeFilterCount={filterState.activeFilterCount}
+          searchKeyword={filterState.debouncedSearch || undefined}
+          onReset={filterState.resetFilters}
+          onRestoreDefaults={filterState.restoreDefaults}
+        />
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
@@ -345,28 +300,7 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {pageRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-14 text-center">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Tidak ada inisiatif yang cocok dengan filter atau pencarian Anda.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery('')
-                          setStatusFilter('ALL')
-                          setDivisionFilter('ALL')
-                          setSortOrder('NEWEST')
-                        }}
-                        className="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                      >
-                        Reset Filter
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  pageRows.map((p) => {
+                {pageRows.map((p) => {
                     const pct = p.taskCount > 0 ? Math.round((p.completedTasks / p.taskCount) * 100) : 0
                     return (
                       <tr
@@ -516,8 +450,7 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                         </td>
                       </tr>
                     )
-                  })
-                )}
+                  })}
               </tbody>
             </table>
           </div>
@@ -539,7 +472,7 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
               <button
                 type="button"
                 disabled={safePage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => filterState.setPage(Math.max(1, safePage - 1))}
                 aria-label="Halaman sebelumnya"
                 className="p-1.5 rounded-md text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
@@ -559,7 +492,7 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
               <button
                 type="button"
                 disabled={safePage >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                onClick={() => filterState.setPage(Math.min(pageCount, safePage + 1))}
                 aria-label="Halaman berikutnya"
                 className="p-1.5 rounded-md text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
