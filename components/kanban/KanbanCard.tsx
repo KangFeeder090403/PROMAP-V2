@@ -6,13 +6,15 @@ import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 export function KanbanCard({
   ap,
   draggable,
+  isSelected = false,
   onDragStart,
   onClick,
 }: {
   ap: ActionPlan
   draggable: boolean
+  isSelected?: boolean
   onDragStart: (e: React.DragEvent, id: string) => void
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
 }) {
   const projectLabel = ap.task?.project?.name ?? 'Personal'
   // Kolom "Dikerjakan" & "Review" masing-masing menggabung 2 status backend jadi 1
@@ -23,33 +25,36 @@ export function KanbanCard({
 
   return (
     <div
+      data-kanban-card-id={ap.id}
       draggable={draggable}
       onDragStart={(e) => draggable && onDragStart(e, ap.id)}
       onClick={onClick}
       title={!draggable ? 'Lihat detail (tidak bisa dipindah oleh Anda)' : undefined}
-      className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-3.5 cursor-pointer hover:shadow-md transition-shadow ${
-        draggable ? 'cursor-grab active:cursor-grabbing' : ''
-      }`}
+      className={`rounded-lg border shadow-sm p-3.5 cursor-pointer transition-all select-none ${
+        isSelected
+          ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 dark:border-blue-500'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md'
+      } ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400">{ap.code}</span>
+      <div className="flex items-center justify-between gap-1.5 min-w-0">
+        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 truncate">{ap.code}</span>
         {subStatusBadge && (
-          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${AP_STATUS_STYLE[subStatusBadge]}`}>
+          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${AP_STATUS_STYLE[subStatusBadge]}`}>
             {AP_STATUS_LABEL[subStatusBadge]}
           </span>
         )}
       </div>
 
-      <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-2">{ap.title}</p>
+      <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">{ap.title}</p>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">{projectLabel}</p>
 
-      <div className="mt-2.5 flex items-center justify-between gap-2">
+      <div className="mt-2.5 flex items-center justify-between gap-1.5 min-w-0">
         <span
-          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${AP_PRIORITY_STYLE[ap.priority]}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${AP_PRIORITY_STYLE[ap.priority]}`}
         >
           {AP_PRIORITY_LABEL[ap.priority]}
         </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[45%]">
+        <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
           {ap.pic?.name ?? '—'}
         </span>
       </div>
