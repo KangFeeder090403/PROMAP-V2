@@ -62,8 +62,8 @@ export const authOptions: NextAuthOptions = {
         if (!user?.password) return null
         if (user.deletedAt) return null
         if (user.status !== 'ACTIVE') return null
-        // Company di-soft-delete → seluruh usernya ikut terkunci.
-        if (user.company && (user.company.deletedAt || !user.company.isActive)) return null
+        // Company di-soft-delete → seluruh usernya ikut terkunci (kecuali SUPER_ADMIN yang scope-nya cross-tenant).
+        if (user.role !== 'SUPER_ADMIN' && user.company && (user.company.deletedAt || !user.company.isActive)) return null
 
         const ok = await bcrypt.compare(credentials.password, user.password)
         if (!ok) return null
