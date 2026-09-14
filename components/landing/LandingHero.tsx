@@ -28,7 +28,7 @@ export function LandingHero() {
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 dark:border-blue-900/50 dark:bg-blue-950/40">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
             <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-              Platform Eksekusi Tim · © Governance 2026
+              Platform Eksekusi &amp; Tata Kelola Tim
             </span>
           </div>
 

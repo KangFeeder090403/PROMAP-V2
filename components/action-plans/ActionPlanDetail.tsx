@@ -521,11 +521,11 @@ export function ActionPlanDetail({
                   </div>
                 </section>
 
-                {/* Manager Governance Sign-off */}
+                {/* Keputusan Manager */}
                 {canReview && (
                   <section className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Manager Governance Sign-off
+                      Persetujuan &amp; Keputusan Manager
                     </h3>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {ap.evaluationNote
@@ -631,7 +631,7 @@ export function ActionPlanDetail({
                   }}
                   className="inline-flex h-9 items-center rounded-md bg-indigo-500 px-4 text-sm font-medium text-white transition-colors hover:bg-indigo-600"
                 >
-                  Review &amp; Sign-off
+                  Tinjau &amp; Beri Keputusan
                 </button>
               )}
             </div>

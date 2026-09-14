@@ -10,8 +10,8 @@ const FOOTER_LINKS = {
   ],
   Perusahaan: [
     { label: 'Privasi & Ketentuan', href: '#' },
-    { label: 'Keamanan & Compliance', href: '#' },
-    { label: 'Panduan SLA', href: '#' },
+    { label: 'Keamanan & Kepatuhan', href: '#' },
+    { label: 'Standar Layanan', href: '#' },
   ],
 }
 
