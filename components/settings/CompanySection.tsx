@@ -125,51 +125,56 @@ export function CompanySection({ role }: { role: Role }) {
         )}
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         {data.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 p-5">Belum ada perusahaan</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                  <th className="px-5 py-3">Nama</th>
+                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <th className="px-5 py-3">Nama Perusahaan</th>
                   <th className="px-5 py-3">Kode Unik</th>
-                  <th className="px-5 py-3">Subscription</th>
+                  <th className="px-5 py-3">Paket</th>
                   <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Aksi</th>
+                  <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {data.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0">
-                    <td className="px-5 py-3 text-slate-800 dark:text-slate-100">{c.name}</td>
-                    <td className="px-5 py-3 text-slate-600 dark:text-slate-300 font-mono text-xs">{c.uniqueCode}</td>
-                    <td className="px-5 py-3">
+                  <tr key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-5 py-3.5 font-medium text-slate-900 dark:text-slate-100">{c.name}</td>
+                    <td className="px-5 py-3.5">
+                      <span className="font-mono text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700">
+                        {c.uniqueCode}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${SUBSCRIPTION_STYLE[c.subscription]}`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${SUBSCRIPTION_STYLE[c.subscription]}`}
                       >
                         {c.subscription}
                       </span>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          c.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                          c.isActive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                         }`}
                       >
+                        <span className={`h-1.5 w-1.5 rounded-full ${c.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                         {c.isActive ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             setEditing(c)
                             setFormOpen(true)
                           }}
-                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          className="h-7 px-2.5 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         >
                           Edit
                         </button>
@@ -177,7 +182,7 @@ export function CompanySection({ role }: { role: Role }) {
                           <button
                             type="button"
                             onClick={() => setDeleting(c)}
-                            className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            className="h-7 px-2.5 rounded-md text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                           >
                             Hapus
                           </button>
