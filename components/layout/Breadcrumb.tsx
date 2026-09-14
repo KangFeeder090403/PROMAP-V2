@@ -89,7 +89,7 @@ export function Breadcrumb() {
               {isLast ? (
                 <span
                   aria-current="page"
-                  className="truncate text-base font-semibold text-slate-900 dark:text-slate-50"
+                  className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
                 >
                   {crumb.label}
                 </span>

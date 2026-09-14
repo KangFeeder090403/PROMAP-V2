@@ -95,9 +95,9 @@ function sortOverdue(rows: OverdueRow[], by: OverdueSort): OverdueRow[] {
 
 const RISK_LABEL = { CRITICAL: 'Tinggi', HIGH: 'Sedang', MEDIUM: 'Rendah' } as const
 const RISK_STYLE = {
-  CRITICAL: 'bg-red-100 text-red-700',
-  HIGH: 'bg-amber-100 text-amber-700',
-  MEDIUM: 'bg-slate-100 dark:bg-slate-800 text-slate-600',
+  CRITICAL: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/20',
+  HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/20',
+  MEDIUM: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:border dark:border-slate-700',
 } as const
 const RISK_DOT = {
   CRITICAL: 'bg-red-500',
@@ -123,7 +123,7 @@ function initials(name: string) {
 }
 
 const btnBase =
-  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors'
+  'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors'
 
 /** Tombol Ingatkan PIC — status dari hasil POST /remind (429 = sudah dikirim 24 jam). */
 function RemindButton({
@@ -135,17 +135,17 @@ function RemindButton({
 }) {
   if (state === 'sending') {
     return (
-      <button disabled className={`${btnBase} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-wait`}>
+      <button disabled className={`${btnBase} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-wait shrink-0`}>
         <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-        Mengirim…
+        <span className="hidden sm:inline">Mengirim…</span>
       </button>
     )
   }
   if (state === 'sent') {
     return (
-      <span className={`${btnBase} bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300`}>
+      <span className={`${btnBase} bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 shrink-0`}>
         <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-        Terkirim
+        <span className="hidden sm:inline">Terkirim</span>
       </span>
     )
   }
@@ -153,23 +153,25 @@ function RemindButton({
     return (
       <span
         title="Pengingat sudah dikirim dalam 24 jam terakhir"
-        className={`${btnBase} bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300`}
+        className={`${btnBase} bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 shrink-0`}
       >
-        Sudah diingatkan
+        <CheckCircle2 className="w-3.5 h-3.5 sm:hidden" aria-hidden="true" />
+        <span className="hidden sm:inline">Sudah diingatkan</span>
       </span>
     )
   }
   return (
     <button
       onClick={onClick}
-      className={`${btnBase} ${
+      title="Kirim pengingat ke PIC"
+      className={`${btnBase} shrink-0 ${
         state === 'error'
           ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300'
           : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
       }`}
     >
       <BellRing className="w-3.5 h-3.5" aria-hidden="true" />
-      {state === 'error' ? 'Gagal, ulangi' : 'Ingatkan PIC'}
+      <span className="hidden xl:inline">{state === 'error' ? 'Gagal' : 'Ingatkan'}</span>
     </button>
   )
 }
@@ -330,8 +332,8 @@ export function DashboardClient() {
   return (
     <div className={`space-y-6 transition-opacity duration-200 ${switching ? 'opacity-60 pointer-events-none' : ''}`}>
       {error && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 px-4 py-3">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           <button
             onClick={() => void fetchData(range, picFilter, false)}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-colors"
@@ -410,9 +412,9 @@ export function DashboardClient() {
           label="Selesai"
           value={metrics.complete}
           icon={CheckCircle2}
-          iconClass="bg-emerald-50 text-emerald-600"
+          iconClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"
           badge={
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 dark:border dark:border-emerald-800/40 px-2 py-0.5 rounded">
               {Math.round(metrics.completionRate)}%
             </span>
           }
@@ -433,12 +435,12 @@ export function DashboardClient() {
         <MetricCard
           label="Lewat Tenggat"
           value={metrics.overdue}
-          valueClass="text-orange-600"
+          valueClass="text-orange-600 dark:text-orange-400"
           icon={AlertTriangle}
-          iconClass="bg-orange-50 text-orange-600"
+          iconClass="bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-300"
           badge={
             metrics.overdue > 0 ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-700 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 dark:bg-orange-950/60 dark:border dark:border-orange-800/40 text-orange-700 dark:text-orange-300 text-xs font-semibold">
                 <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
                 Perlu ditindak
               </span>
@@ -489,8 +491,8 @@ export function DashboardClient() {
                       className={`p-2 rounded flex-shrink-0 mt-0.5 ${
                         isAP
                           ? isApproval
-                            ? 'bg-indigo-50 text-indigo-600'
-                            : 'bg-amber-50 text-amber-600'
+                            ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300'
+                            : 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
                           : 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300'
                       }`}
                     >
@@ -670,15 +672,15 @@ export function DashboardClient() {
                 const pct = (n: number) => (w.total > 0 ? Math.round((n / w.total) * 100) : 0)
                 const isHigh = w.overdue >= 1 && w.total >= 6
                 const chip = isHigh ? (
-                  <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-xs font-bold inline-flex items-center gap-1">
+                  <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 dark:border dark:border-orange-800/40 text-xs font-bold inline-flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Beban Tinggi ({w.total} AP)
                   </span>
                 ) : w.review > 0 ? (
-                  <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-xs font-medium">
+                  <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/40 text-xs font-medium">
                     {w.review} Review ({w.total} AP)
                   </span>
                 ) : (
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-medium">
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/40 text-xs font-medium">
                     Optimal ({w.total} AP)
                   </span>
                 )
@@ -759,10 +761,10 @@ export function DashboardClient() {
       {data.portfolio && <PortfolioSection portfolio={data.portfolio} />}
 
       {/* Overdue & Critical Deadlines */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+            <span className="p-2 rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5" aria-hidden="true" />
             </span>
             <div>
@@ -799,34 +801,36 @@ export function DashboardClient() {
               : 'Tidak ada action plan yang melewati tenggat. Mantap.'}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[820px]">
+          <div className="w-full">
+            <table className="w-full table-fixed text-left">
               <thead>
-                <tr className="bg-slate-50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="px-4 py-2.5 rounded-l-md font-medium">Rencana Aksi</th>
-                  <th className="px-4 py-2.5 font-medium">Prioritas</th>
-                  <th className="px-4 py-2.5 font-medium">Penanggung Jawab</th>
-                  <th className="px-4 py-2.5 font-medium">Dibuat</th>
-                  <th className="px-4 py-2.5 font-medium">Batas Waktu</th>
-                  <th className="px-4 py-2.5 font-medium">Terlambat</th>
-                  <th className="px-4 py-2.5 text-right rounded-r-md font-medium">Tindakan</th>
+                <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                  <th className="px-3 py-2.5 rounded-l-md font-medium">Rencana Aksi</th>
+                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap hidden sm:table-cell">Prioritas</th>
+                  <th className="w-32 px-2 py-2.5 font-medium whitespace-nowrap hidden md:table-cell">PIC</th>
+                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap hidden lg:table-cell">Batas Waktu</th>
+                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap">Terlambat</th>
+                  <th className="w-36 px-2 py-2.5 text-right rounded-r-md font-medium whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {overdueShown.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors border-t border-slate-100 dark:border-slate-800">
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-2">
-                          <span className="font-mono text-xs font-semibold text-blue-700">{row.refCode}</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-50 truncate max-w-sm">{row.title}</span>
+                  <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-t border-slate-100 dark:border-slate-800">
+                    <td className="px-3 py-2.5 min-w-0">
+                      <div className="flex flex-col min-w-0">
+                        <span className="inline-flex items-center gap-1.5 min-w-0">
+                          <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 shrink-0">{row.refCode}</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100 truncate">{row.title}</span>
                         </span>
-                        {row.subtitle && (
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-sm mt-0.5">{row.subtitle}</span>
-                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {row.subtitle && (
+                            <span className="truncate max-w-[200px]">{row.subtitle}</span>
+                          )}
+                          <span className="md:hidden text-slate-400">· {row.picName}</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-2.5 whitespace-nowrap hidden sm:table-cell">
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${RISK_STYLE[row.risk]}`}
                       >
@@ -834,23 +838,24 @@ export function DashboardClient() {
                         {RISK_LABEL[row.risk]}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center">
+                    <td className="px-2 py-2.5 whitespace-nowrap hidden md:table-cell min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[9px] font-bold flex items-center justify-center shrink-0">
                           {initials(row.picName)}
                         </span>
-                        <span className="text-slate-700 dark:text-slate-300 font-medium">{row.picName}</span>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium text-xs truncate">{row.picName}</span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-2.5 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap hidden lg:table-cell">
+                      {fmtDate(row.deadline)}
+                    </td>
+                    <td className="px-2 py-2.5 whitespace-nowrap">
+                      <span className="font-mono text-xs font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/50 dark:border dark:border-orange-800/40 px-2 py-0.5 rounded inline-block">
+                        {row.lateDays} Hari
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{row.createdAt ? fmtDate(row.createdAt) : '—'}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600">{fmtDate(row.deadline)}</td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs font-semibold text-orange-700 bg-orange-100 px-2 py-0.5 rounded">
-                        Terlambat {row.lateDays} Hari
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="inline-flex items-center gap-1.5">
+                    <td className="px-2 py-2.5 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         <RemindButton state={remindState[row.id]} onClick={() => void handleRemind(row.id)} />
                         <Link
                           href={`/action-plans?open=${row.id}&highlight=${row.id}`}
@@ -858,11 +863,11 @@ export function DashboardClient() {
                             e.preventDefault()
                             handleOpenAPDetail(row.id)
                           }}
-                          className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm`}
+                          className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm shrink-0`}
                         >
-                          Buka Detail
+                          Detail
                         </Link>
-                      </span>
+                      </div>
                     </td>
                   </tr>
                 ))}

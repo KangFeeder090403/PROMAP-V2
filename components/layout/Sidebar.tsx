@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
+import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
 
 function initials(name: string) {
   return name
@@ -49,17 +50,17 @@ export function Sidebar({
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
-      <div className="flex h-16 items-center gap-3 border-b border-slate-800 px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm shadow-sm">
+      <div className="flex h-14 items-center gap-3 border-b border-slate-800 px-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
           {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white leading-tight">
+          <p className="truncate text-xs font-semibold text-white leading-tight">
             {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
           </p>
           <div className="flex items-center gap-1.5 pt-0.5">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <p className="truncate text-[11px] font-medium text-slate-400 leading-none">
+            <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
               {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
             </p>
           </div>
@@ -109,8 +110,8 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="border-t border-slate-800 p-3">
-        <div className="flex items-center gap-2">
+      <div className="border-t border-slate-800 p-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-white">
             {initials(user.name)}
           </div>
@@ -119,6 +120,7 @@ export function Sidebar({
             <p className="truncate text-xs text-slate-400">{user.role}</p>
           </div>
         </div>
+        <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
       </div>
     </aside>
   )

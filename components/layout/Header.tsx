@@ -10,7 +10,7 @@ import type { SessionUser } from '@/components/layout/DashboardShell'
 
 export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: SessionUser }) {
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 md:px-6 dark:border-slate-800 dark:bg-slate-900">
+    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 md:px-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"

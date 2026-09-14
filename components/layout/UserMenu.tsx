@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { signOut } from 'next-auth/react'
+import { Settings, History } from 'lucide-react'
 import type { SessionUser } from '@/components/layout/DashboardShell'
+import { AuditLogModal } from '@/components/settings/AuditLogModal'
 
 function initials(name: string) {
   return name
@@ -15,18 +18,24 @@ function initials(name: string) {
 
 export function UserMenu({ user }: { user: SessionUser }) {
   const [open, setOpen] = useState(false)
+  const [auditLogOpen, setAuditLogOpen] = useState(false)
+
+  const canAccessSettings =
+    user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+  const canAccessAuditLog =
+    user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-md p-1 hover:bg-slate-100"
+        className="flex items-center gap-2 rounded-lg p-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-white">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[11px] font-semibold text-white">
           {initials(user.name)}
         </div>
-        <span className="hidden text-sm font-medium text-slate-700 md:inline">{user.name}</span>
+        <span className="hidden text-xs font-medium text-slate-700 dark:text-slate-300 md:inline">{user.name}</span>
       </button>
 
       {open && (
@@ -60,6 +69,38 @@ export function UserMenu({ user }: { user: SessionUser }) {
                 </div>
               </div>
             </div>
+
+            {(canAccessSettings || canAccessAuditLog) && (
+              <>
+                <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
+                <div className="px-1 py-1 space-y-0.5">
+                  {canAccessSettings && (
+                    <Link
+                      href="/settings"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <Settings className="h-3.5 w-3.5 text-slate-400" />
+                      <span>Pengaturan &amp; Tata Kelola</span>
+                    </Link>
+                  )}
+                  {canAccessAuditLog && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false)
+                        setAuditLogOpen(true)
+                      }}
+                      className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 text-left transition-colors cursor-pointer"
+                    >
+                      <History className="h-3.5 w-3.5 text-slate-400" />
+                      <span>Audit Log Aktivitas</span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
             <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
             <button
               type="button"
@@ -71,6 +112,14 @@ export function UserMenu({ user }: { user: SessionUser }) {
           </div>
         </>
       )}
+
+      {/* Modal Audit Log Global */}
+      <AuditLogModal
+        open={auditLogOpen}
+        onOpenChange={setAuditLogOpen}
+        companyId={user.companyId ?? null}
+      />
     </div>
   )
 }
+

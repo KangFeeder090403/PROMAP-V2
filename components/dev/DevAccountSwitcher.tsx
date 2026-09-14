@@ -110,17 +110,17 @@ export function DevAccountSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Akun Testing (dev)"
-        className="fixed bottom-5 right-5 z-50 inline-flex h-11 items-center gap-2 rounded-full bg-slate-900 px-4 text-sm font-medium text-white shadow-lg hover:bg-slate-800"
+        className="relative inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/90 px-2 py-1 text-[11px] font-medium text-slate-300 transition-all hover:bg-slate-700 hover:text-white"
       >
-        <Users className="h-4 w-4" />
-        Testing Akun
+        <Users className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+        <span className="hidden sm:inline">Test</span>
         {isImpersonating && (
-          <span className="inline-flex h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
         )}
       </button>
 
       {open && (
-        <div className="fixed bottom-[5.5rem] right-5 z-50 flex max-h-[75vh] w-[380px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed bottom-16 left-3 z-50 flex max-h-[75vh] w-[340px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Switch Akun (Dev)</p>
