@@ -17,6 +17,7 @@ const SEGMENT_GROUP: Record<string, string | null> = {
   calendar: 'Execution',
   proposals: 'Execution',
   'action-plans': 'Execution',
+  reports: 'Insights',
   settings: null,
 }
 

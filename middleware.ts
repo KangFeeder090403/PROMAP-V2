@@ -11,12 +11,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Root path dan /landing — ditangani langsung oleh app/page.tsx (server component),
-  // tidak perlu rewrite/redirect di sini.
-  if (pathname === '/' || pathname === '/landing') {
-    return NextResponse.next()
-  }
-
   // Public pages — exact match
   if ((PUBLIC_PAGES as readonly string[]).includes(pathname)) {
     return NextResponse.next()

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
 import type { Prisma } from '@/lib/generated/prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser()

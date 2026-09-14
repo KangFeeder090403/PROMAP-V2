@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/rbac'
 import { getQuarterlyAggregation } from '@/lib/calendar-query'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser()

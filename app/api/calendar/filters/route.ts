@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser, projectScope, divisionScope } from '@/lib/rbac'
 import { AP_STATUS_LABEL, AP_PRIORITY_LABEL } from '@/lib/status-labels'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const user = await getSessionUser()
