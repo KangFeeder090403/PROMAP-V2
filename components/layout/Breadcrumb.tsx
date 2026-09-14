@@ -20,16 +20,27 @@ const SEGMENT_GROUP: Record<string, string | null> = {
   settings: null,
 }
 
+const CUSTOM_LABELS: Record<string, string> = {
+  settings: 'Pengaturan Sistem',
+  'audit-logs': 'Audit Trail & Tata Kelola',
+  'user-labels': 'Label Jabatan',
+  leads: 'Pipeline Leads',
+  new: 'Baru',
+}
+
 /** Fallback label untuk segment yang tidak ada di nav (mis. /action-plans). */
 function titleize(segment: string) {
-  return segment
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
+  return (
+    CUSTOM_LABELS[segment] ??
+    segment
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+  )
 }
 
 /** Sub-route statis yang punya label sendiri. Sisanya dianggap id → 'Detail'. */
-const STATIC_SUB_SEGMENTS = new Set(['leads', 'user-labels', 'new'])
+const STATIC_SUB_SEGMENTS = new Set(['leads', 'user-labels', 'audit-logs', 'new'])
 
 function isStaticSegment(segment: string) {
   return STATIC_SUB_SEGMENTS.has(segment)
@@ -54,15 +65,16 @@ export function Breadcrumb() {
     if (group) crumbs.push({ label: group })
 
     const href = '/' + first
-    crumbs.push({ label: findNavItem(href)?.label ?? titleize(first), href })
+    crumbs.push({ label: CUSTOM_LABELS[first] ?? findNavItem(href)?.label ?? titleize(first), href })
 
     // Segment dinamis (id) tidak bisa jadi label bermakna tanpa fetch —
     // ponytail: render 'Detail'. Upgrade: page kirim nama entitas via context
     // kalau nanti butuh breadcrumb "Projects / Redesign Website".
     for (const seg of rest) {
-      crumbs.push({ label: isStaticSegment(seg) ? titleize(seg) : 'Detail' })
+      crumbs.push({ label: CUSTOM_LABELS[seg] ?? (isStaticSegment(seg) ? titleize(seg) : 'Detail') })
     }
   }
+
 
   const last = crumbs.length - 1
 
