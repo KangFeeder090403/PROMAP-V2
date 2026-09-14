@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Dialog,
   DialogContent,
@@ -12,49 +10,89 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Proposal } from '@/components/proposals/ProposalsClient'
-import { createProposalSchema } from '@/lib/validations/proposal'
-import { z } from 'zod'
+import { Target, AlertCircle, Lightbulb, FileEdit } from 'lucide-react'
 
-const formSchema = createProposalSchema
-  .omit({ status: true })
-  .extend({ submitNow: z.boolean() })
+interface ProposalFormModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  proposal: Proposal | null
+  onSuccess: () => void
+}
 
-type FormValues = z.infer<typeof formSchema>
+const CATEGORIES = [
+  'Efisiensi Operasional',
+  'Pengembangan Produk',
+  'Peningkatan Kualitas & Layanan',
+  'Pengurangan Biaya / Waste',
+  'Otomasi & Tooling Internal',
+  'Lainnya',
+]
 
 export function ProposalFormModal({
   open,
   onOpenChange,
   proposal,
   onSuccess,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  proposal: Proposal | null
-  onSuccess: () => void
-}) {
+}: ProposalFormModalProps) {
   const mode: 'create' | 'edit' = proposal ? 'edit' : 'create'
+
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState(CATEGORIES[0])
+  const [problem, setProblem] = useState('')
+  const [solution, setSolution] = useState('')
+  const [impact, setImpact] = useState('')
+  const [submitNow, setSubmitNow] = useState(false)
 
   const [submitError, setSubmitError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(formSchema) })
-
   useEffect(() => {
     if (!open) return
     setSubmitError('')
-    reset({
-      title: proposal?.title ?? '',
-      description: proposal?.description ?? '',
-      submitNow: false,
-    })
-  }, [open, proposal, reset])
 
-  async function onSubmit(values: FormValues) {
+    if (proposal) {
+      setTitle(proposal.title || '')
+      // Parsing jika deskripsi terformat sebelumnya
+      const desc = proposal.description || ''
+      setProblem(desc)
+      setSolution('')
+      setImpact('')
+      setCategory(CATEGORIES[0])
+    } else {
+      setTitle('')
+      setCategory(CATEGORIES[0])
+      setProblem('')
+      setSolution('')
+      setImpact('')
+      setSubmitNow(false)
+    }
+  }, [open, proposal])
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) {
+      setSubmitError('Judul usulan wajib diisi')
+      return
+    }
+    if (!problem.trim()) {
+      setSubmitError('Latar belakang masalah wajib diisi')
+      return
+    }
+
+    // Gabungkan 4 bagian terstruktur ke description
+    const fullDescription = [
+      `[Kategori: ${category}]`,
+      '',
+      `LATAR BELAKANG & MASALAH:`,
+      problem.trim(),
+      '',
+      solution.trim() ? `USULAN SOLUSI & TINDAKAN:\n${solution.trim()}\n` : '',
+      impact.trim() ? `TARGET HASIL / ESTIMASI DAMPAK:\n${impact.trim()}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
+      .trim()
+
     setSubmitError('')
     setLoading(true)
 
@@ -63,11 +101,11 @@ export function ProposalFormModal({
     const body =
       mode === 'create'
         ? {
-            title: values.title,
-            description: values.description,
-            status: values.submitNow ? 'SUBMITTED' : 'DRAFT',
+            title: title.trim(),
+            description: fullDescription,
+            status: submitNow ? 'SUBMITTED' : 'DRAFT',
           }
-        : { title: values.title, description: values.description }
+        : { title: title.trim(), description: fullDescription }
 
     const res = await fetch(url, {
       method,
@@ -88,67 +126,124 @@ export function ProposalFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-800">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto dark:bg-slate-900 dark:border-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-slate-900 dark:text-slate-100">
-            {mode === 'create' ? 'Proposal Baru' : 'Edit Proposal'}
+          <DialogTitle className="text-slate-900 dark:text-slate-100 flex items-center gap-2 text-base font-semibold">
+            <FileEdit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            {mode === 'create' ? 'Buat Usulan Inisiatif Baru' : 'Edit Usulan Inisiatif'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form onSubmit={onSubmit} className="space-y-4 pt-1" noValidate>
+          {/* Judul */}
           <div className="space-y-1.5">
-            <Label htmlFor="title" className="text-slate-700 dark:text-slate-300">
-              Judul
+            <Label htmlFor="prop-title" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Judul Usulan <span className="text-red-500">*</span>
             </Label>
-            <Input id="title" aria-invalid={!!errors.title} {...register('title')} />
-            {errors.title && <p className="text-sm text-red-600 dark:text-red-400">{errors.title.message}</p>}
+            <Input
+              id="prop-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Contoh: Digitalisasi Formulir Permintaan Barang Antar Divisi"
+              className="h-9 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+            />
           </div>
 
+          {/* Kategori */}
           <div className="space-y-1.5">
-            <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">
-              Deskripsi
+            <Label htmlFor="prop-category" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Kategori Inisiatif
+            </Label>
+            <select
+              id="prop-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full h-9 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Bagian 1: Masalah */}
+          <div className="space-y-1.5">
+            <Label htmlFor="prop-problem" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Latar Belakang & Masalah <span className="text-red-500">*</span>
             </Label>
             <textarea
-              id="description"
-              rows={4}
-              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              {...register('description')}
+              id="prop-problem"
+              rows={3}
+              value={problem}
+              onChange={(e) => setProblem(e.target.value)}
+              placeholder="Apa kendala atau hambatan operasional yang terjadi saat ini?"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.description && (
-              <p className="text-sm text-red-600 dark:text-red-400">{errors.description.message}</p>
-            )}
+          </div>
+
+          {/* Bagian 2: Solusi */}
+          <div className="space-y-1.5">
+            <Label htmlFor="prop-solution" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Rencana Aksi / Solusi yang Diusulkan
+            </Label>
+            <textarea
+              id="prop-solution"
+              rows={3}
+              value={solution}
+              onChange={(e) => setSolution(e.target.value)}
+              placeholder="Langkah atau metode spesifik apa yang direkomendasikan untuk menyelesaikan masalah tersebut?"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Bagian 3: Estimasi Dampak */}
+          <div className="space-y-1.5">
+            <Label htmlFor="prop-impact" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Target Hasil / Dampak Operasional
+            </Label>
+            <textarea
+              id="prop-impact"
+              rows={2}
+              value={impact}
+              onChange={(e) => setImpact(e.target.value)}
+              placeholder="Contoh: Menghemat waktu pemrosesan hingga 50%, mengurangi kesalahan input data"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           {mode === 'create' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 id="submitNow"
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-blue-500 focus:ring-blue-500"
-                {...register('submitNow')}
+                checked={submitNow}
+                onChange={(e) => setSubmitNow(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
               />
-              <Label htmlFor="submitNow" className="text-slate-700 dark:text-slate-300">
-                Langsung submit untuk approval
+              <Label htmlFor="submitNow" className="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                Langsung submit ke meja review manajer (bukan simpan sebagai draft)
               </Label>
             </div>
           )}
 
-          {submitError && <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>}
+          {submitError && <p className="text-xs text-red-600 dark:text-red-400">{submitError}</p>}
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 h-8 px-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 h-8 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors disabled:opacity-50 shadow-xs"
             >
-              {loading ? 'Menyimpan...' : 'Simpan'}
+              {loading ? 'Menyimpan...' : mode === 'create' ? (submitNow ? 'Ajukan Sekarang' : 'Simpan Draft') : 'Simpan Perubahan'}
             </button>
           </div>
         </form>
