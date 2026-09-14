@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import {
   BarChart3,
   Download,
@@ -178,8 +180,29 @@ function StatCard({
   footer?: React.ReactNode
   accent: string
 }) {
+  const numRef = useRef<HTMLSpanElement>(null)
+
+  useGSAP(() => {
+    const rawNum = parseFloat(value)
+    if (!isNaN(rawNum) && numRef.current) {
+      const obj = { val: 0 }
+      gsap.to(obj, {
+        val: rawNum,
+        duration: 0.9,
+        ease: 'power2.out',
+        onUpdate: () => {
+          if (numRef.current) {
+            numRef.current.textContent = Number.isInteger(rawNum)
+              ? Math.round(obj.val).toString()
+              : obj.val.toFixed(1)
+          }
+        },
+      })
+    }
+  }, [value])
+
   return (
-    <Card className="p-5 flex flex-col gap-3 min-w-0">
+    <Card className="p-5 flex flex-col gap-3 min-w-0 transition-all duration-200 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 min-w-0">
           {label}
@@ -190,7 +213,7 @@ function StatCard({
       </div>
 
       <div className="flex items-baseline gap-1 min-w-0">
-        <span className="text-3xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-50">
+        <span ref={numRef} className="text-3xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-50">
           {value}
         </span>
         {unit && <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{unit}</span>}
