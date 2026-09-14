@@ -1,7 +1,51 @@
 'use client'
 
+import { Calendar, GripVertical } from 'lucide-react'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL, AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+
+// Palet warna untuk category badge (division/project) — cycling berdasarkan char pertama
+const CATEGORY_COLORS = [
+  'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+  'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
+  'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300',
+]
+
+// Palet warna avatar PIC — cycling berdasarkan inisial
+const AVATAR_COLORS = [
+  'bg-blue-500',
+  'bg-violet-500',
+  'bg-emerald-500',
+  'bg-rose-500',
+  'bg-amber-500',
+  'bg-teal-500',
+  'bg-indigo-500',
+  'bg-pink-500',
+]
+
+function colorForString(s: string, palette: string[]): string {
+  let hash = 0
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
+  return palette[Math.abs(hash) % palette.length]
+}
+
+function initials(name?: string | null): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/)
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0].slice(0, 2).toUpperCase()
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+}
 
 export function KanbanCard({
   ap,
@@ -16,12 +60,22 @@ export function KanbanCard({
   onDragStart: (e: React.DragEvent, id: string) => void
   onClick: (e: React.MouseEvent) => void
 }) {
-  const projectLabel = ap.task?.project?.name ?? 'Personal'
-  // Kolom "Dikerjakan" & "Review" masing-masing menggabung 2 status backend jadi 1
-  // kolom (§PRD B7) — badge ini beda-in sub-status yang butuh perhatian berbeda:
-  // OVERDUE (masih boleh /start) vs EVIDENCE_REQUIRED (nunggu PIC submit ulang,
-  // reviewer BELUM bisa langsung selesaikan dari sini).
-  const subStatusBadge = ap.status === 'OVERDUE' || ap.status === 'EVIDENCE_REQUIRED' ? ap.status : null
+  // Label kategori: pakai division, fallback ke project, fallback ke 'Personal'
+  const categoryLabel = ap.division?.name ?? ap.task?.project?.name ?? 'Personal'
+
+  // Sub-status badge khusus (OVERDUE, EVIDENCE_REQUIRED, PENDING_APPROVAL, REJECTED, COMPLETE, APPROVED)
+  const specialStatuses = ['OVERDUE', 'EVIDENCE_REQUIRED', 'PENDING_APPROVAL', 'REJECTED', 'COMPLETE', 'APPROVED']
+  const subStatusBadge = specialStatuses.includes(ap.status) ? ap.status : null
+
+  const picInitials = initials(ap.pic?.name)
+  const avatarColor = colorForString(ap.pic?.name ?? ap.picId, AVATAR_COLORS)
+  const categoryColor = colorForString(categoryLabel, CATEGORY_COLORS)
+
+  const checklistPct =
+    ap.checklistTotal > 0 ? Math.round((ap.checklistDone / ap.checklistTotal) * 100) : null
+
+  const isOverdue = ap.status === 'OVERDUE' || new Date(ap.endDate) < new Date()
+  const isPendingApproval = ap.status === 'PENDING_APPROVAL'
 
   return (
     <div
@@ -30,47 +84,130 @@ export function KanbanCard({
       onDragStart={(e) => draggable && onDragStart(e, ap.id)}
       onClick={onClick}
       title={!draggable ? 'Lihat detail (tidak bisa dipindah oleh Anda)' : undefined}
-      className={`rounded-lg border shadow-sm p-3.5 cursor-pointer transition-all select-none ${
+      className={`group rounded-xl border shadow-sm p-3.5 transition-all duration-150 select-none ${
         isSelected
           ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 dark:border-blue-500'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md'
-      } ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700'
+      } ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
     >
-      <div className="flex items-center justify-between gap-1.5 min-w-0">
-        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 truncate">{ap.code}</span>
-        {subStatusBadge && (
-          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${AP_STATUS_STYLE[subStatusBadge]}`}>
-            {AP_STATUS_LABEL[subStatusBadge]}
+      {/* Row 1: Code + Category badge + drag handle */}
+      <div className="flex items-start justify-between gap-1.5 mb-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 shrink-0">
+            {ap.code}
           </span>
+          <span
+            className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide truncate ${categoryColor}`}
+            title={categoryLabel}
+          >
+            {categoryLabel}
+          </span>
+        </div>
+        {draggable && (
+          <GripVertical className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
         )}
       </div>
 
-      <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">{ap.title}</p>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">{projectLabel}</p>
-
-      <div className="mt-2.5 flex items-center justify-between gap-1.5 min-w-0">
-        <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${AP_PRIORITY_STYLE[ap.priority]}`}
-        >
-          {AP_PRIORITY_LABEL[ap.priority]}
-        </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-          {ap.pic?.name ?? '—'}
-        </span>
-      </div>
-
-      {ap.checklistTotal > 0 && (
-        <div className="mt-2.5 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded overflow-hidden">
-          <div
-            className="h-full bg-blue-500"
-            style={{ width: `${Math.round((ap.checklistDone / ap.checklistTotal) * 100)}%` }}
-          />
+      {/* Sub-status badge (PENDING_APPROVAL, REJECTED, OVERDUE, dst) */}
+      {subStatusBadge && (
+        <div className="mb-2">
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${AP_STATUS_STYLE[subStatusBadge]}`}
+          >
+            {subStatusBadge === 'OVERDUE' && <span>⚠</span>}
+            {AP_STATUS_LABEL[subStatusBadge]}
+          </span>
         </div>
       )}
 
-      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 font-mono">
-        {new Date(ap.endDate).toLocaleDateString('id-ID')}
+      {/* Title */}
+      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug mb-2.5">
+        {ap.title}
       </p>
+
+      {/* Checklist progress */}
+      {ap.checklistTotal > 0 && (
+        <div className="mb-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Checklist {ap.checklistDone}/{ap.checklistTotal} ({checklistPct}%)
+            </span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${checklistPct === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+              style={{ width: `${checklistPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Evidence attachment icon (jika ada evidenceLink) */}
+      {ap.evidenceLink && (
+        <div className="mb-2 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+          Evidence Att...
+        </div>
+      )}
+
+      {/* Review note (untuk NEEDS_REVISION) */}
+      {ap.reviewNote && ap.status === 'REJECTED' && (
+        <div className="mb-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2 border border-slate-200 dark:border-slate-700">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-0.5">Review Note:</p>
+          <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 italic">
+            &ldquo;{ap.reviewNote}&rdquo;
+          </p>
+        </div>
+      )}
+
+      {/* Footer: priority + deadline + avatar */}
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Priority */}
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${AP_PRIORITY_STYLE[ap.priority]}`}
+          >
+            {ap.priority === 'HIGH' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />}
+            {ap.priority === 'MEDIUM' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />}
+            {ap.priority === 'LOW' && <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />}
+            {AP_PRIORITY_LABEL[ap.priority]}
+          </span>
+
+          {/* Deadline */}
+          <span
+            className={`inline-flex items-center gap-1 text-[11px] ${
+              isOverdue ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-slate-400 dark:text-slate-500'
+            }`}
+          >
+            <Calendar className="h-3 w-3 shrink-0" />
+            {isOverdue && ap.status !== 'OVERDUE' ? 'Due: ' : ''}
+            {formatDate(ap.endDate)}
+          </span>
+        </div>
+
+        {/* Avatar PIC */}
+        <div
+          className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${avatarColor}`}
+          title={ap.pic?.name ?? 'Tidak ada PIC'}
+        >
+          {picInitials}
+        </div>
+      </div>
+
+      {/* Review button — muncul jika PENDING_APPROVAL (untuk reviewer) */}
+      {isPendingApproval && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onClick(e)
+          }}
+          className="mt-2.5 w-full h-7 rounded-md bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+        >
+          Review
+        </button>
+      )}
     </div>
   )
 }

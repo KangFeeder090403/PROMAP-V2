@@ -4,6 +4,7 @@ import type { Prisma, ActionPlanStatus, Priority } from '@/lib/generated/prisma/
 import { getSessionUser, apScope, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { shortRef } from '@/lib/dashboard-aggregate'
+import { logActivity } from '@/lib/activity-log'
 
 export async function GET(req: Request) {
   try {
@@ -16,9 +17,21 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
     const taskId = searchParams.get('taskId')
+    const projectId = searchParams.get('projectId')
+    const picId = searchParams.get('picId')
+    const divisionId = searchParams.get('divisionId')
+    const dateRange = searchParams.get('dateRange')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const sortBy = searchParams.get('sortBy') ?? 'newest'
+    const view = searchParams.get('view')
     const search = searchParams.get('search')?.trim()
+
+    const isBoardView = view === 'board'
     const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
-    const pageSize = Math.min(50, Math.max(1, Number(searchParams.get('pageSize') ?? '10') || 10))
+    const pageSize = isBoardView
+      ? 2000
+      : Math.min(50, Math.max(1, Number(searchParams.get('pageSize') ?? '10') || 10))
 
     // Buku besar (scope penuh, tanpa filter baris) — dipakai untuk chips.
     const baseWhere: Prisma.ActionPlanWhereInput = { ...apScope(user), deletedAt: null }
@@ -27,11 +40,52 @@ export async function GET(req: Request) {
     if (status) where.status = status as ActionPlanStatus
     if (priority) where.priority = priority as Priority
     if (taskId) where.taskId = taskId
+    if (picId) where.picId = picId
+    if (divisionId) where.divisionId = divisionId
+    if (projectId) {
+      where.task = { projectId, deletedAt: null }
+    }
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { id: { contains: search, mode: 'insensitive' } },
       ]
+    }
+
+    if (dateRange) {
+      const now = new Date()
+      if (dateRange === 'today') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      } else if (dateRange === 'week') {
+        const day = now.getDay()
+        const diffToMon = (day + 6) % 7
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMon, 0, 0, 0, 0)
+        const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      } else if (dateRange === 'month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      }
+    } else if (dateFrom || dateTo) {
+      if (dateFrom) where.endDate = { gte: new Date(dateFrom) }
+      if (dateTo) where.startDate = { lte: new Date(dateTo) }
+    }
+
+    let orderBy: Prisma.ActionPlanOrderByWithRelationInput = { createdAt: 'desc' }
+    if (sortBy === 'oldest' || sortBy === 'createdAt_asc') {
+      orderBy = { createdAt: 'asc' }
+    } else if (sortBy === 'deadline_asc' || sortBy === 'due_asc') {
+      orderBy = { endDate: 'asc' }
+    } else if (sortBy === 'deadline_desc' || sortBy === 'due_desc') {
+      orderBy = { endDate: 'desc' }
+    } else if (sortBy === 'priority_desc') {
+      orderBy = { priority: 'asc' } // HIGH, MEDIUM, LOW
     }
 
     // Chips workflow state: hitung per status dari seluruh AP in-scope.
@@ -42,13 +96,16 @@ export async function GET(req: Request) {
     })
     const counts = Object.fromEntries(statusGroups.map((g) => [g.status, g._count._all]))
 
+    const skip = isBoardView ? 0 : (page - 1) * pageSize
+    const take = pageSize
+
     const [total, items] = await Promise.all([
       prisma.actionPlan.count({ where }),
       prisma.actionPlan.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        orderBy,
+        skip,
+        take,
         include: {
           pic: { select: { id: true, name: true, role: true } },
           task: {
@@ -193,6 +250,14 @@ export async function POST(req: Request) {
         isPersonal,
         status: 'NOT_STARTED'
       }
+    })
+
+    await logActivity({
+      userId: user.id,
+      actionPlanId: result.id,
+      action: 'STATUS_CHANGED',
+      oldValue: null,
+      newValue: 'NOT_STARTED',
     })
 
     if (target.id !== user.id) {

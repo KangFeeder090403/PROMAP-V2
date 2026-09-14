@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, canReassignAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 const REASSIGNABLE = ['NOT_STARTED', 'IN_PROGRESS', 'REJECTED']
 
@@ -52,6 +53,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const result = await prisma.actionPlan.update({
       where: { id },
       data: { picId: newPic.id }
+    })
+
+    await logActivity({
+      userId: user.id,
+      actionPlanId: id,
+      action: 'REASSIGNED',
+      oldValue: existing.picId,
+      newValue: newPic.id,
     })
 
     await notify({

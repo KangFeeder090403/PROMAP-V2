@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 // PIC submit AP untuk direview. IN_PROGRESS/EVIDENCE_REQUIRED -> PENDING_APPROVAL.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -39,7 +40,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'Action Plan sudah berubah status, refresh dulu' }, { status: 409 })
     }
 
-    // ponytail: ActivityLog write skip, isi saat roadmap #18 Audit Log
+    await logActivity({
+      userId: user.id,
+      actionPlanId: id,
+      action: 'STATUS_CHANGED',
+      oldValue: ap.status,
+      newValue: 'PENDING_APPROVAL',
+    })
 
     if (ap.divisionId) {
       const managers = await prisma.user.findMany({

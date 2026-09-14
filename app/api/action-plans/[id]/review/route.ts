@@ -2,6 +2,7 @@ import { getSessionUser, apScope, canReviewActionPlan } from '@/lib/rbac'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 const ACTION_TO_STATUS = {
   COMPLETE: 'COMPLETE',
@@ -52,7 +53,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       )
     }
 
-    // ponytail: ActivityLog write skip, isi saat roadmap #18 Audit Log
+    await logActivity({
+      userId: user.id,
+      actionPlanId: params.id,
+      action: 'STATUS_CHANGED',
+      oldValue: ap.status,
+      newValue: newStatus,
+    })
 
     const titleMap = {
       COMPLETE: 'AP disetujui',
