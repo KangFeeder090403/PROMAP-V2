@@ -4,14 +4,18 @@
 
 export interface CalendarEvent {
   id: string
+  code?: string
   title: string
   status: string
   priority: string
   startDate: string
   endDate: string
+  picId?: string
   picName: string
   labelName: string
+  projectId?: string | null
   projectName: string
+  divisionId?: string | null
   divisionName: string
 }
 
@@ -105,3 +109,40 @@ export function computeWeekSegments(week: Date[], events: CalendarEvent[]): BarS
     return { ...seg, lane }
   })
 }
+
+/** Ambil 7 hari untuk 1 minggu spesifik berdasarkan anchor date (Senin - Minggu) */
+export function getWeekDays(baseDate: Date): Date[] {
+  const d = startOfDay(baseDate)
+  const day = d.getDay()
+  const diffToMon = (day + 6) % 7 // Senin = 0
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - diffToMon)
+
+  const days: Date[] = []
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday)
+    cur.setDate(monday.getDate() + i)
+    days.push(cur)
+  }
+  return days
+}
+
+export type CalendarViewMode = 'month' | 'week' | 'day'
+
+/** Hitung rentang from dan to secara deterministik tanpa re-alokasi berlebih */
+export function resolveCalendarRange(mode: CalendarViewMode, baseDate: Date): { from: string; to: string } {
+  if (mode === 'day') {
+    const dStr = fmtISO(baseDate)
+    return { from: dStr, to: dStr }
+  }
+
+  if (mode === 'week') {
+    const week = getWeekDays(baseDate)
+    return { from: fmtISO(week[0]), to: fmtISO(week[6]) }
+  }
+
+  // mode === 'month'
+  const weeks = getMonthGrid(baseDate)
+  return { from: fmtISO(weeks[0][0]), to: fmtISO(weeks[weeks.length - 1][6]) }
+}
+

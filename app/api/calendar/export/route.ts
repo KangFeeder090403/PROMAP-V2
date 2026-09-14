@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
-import { buildCalendarWhere } from '@/lib/calendar-query'
+import { shortRef } from '@/lib/dashboard-aggregate'
+import { buildCalendarWhere, resolveDateRange } from '@/lib/calendar-query'
 import { chunkIntoWeeks, computeWeekSegments, fmtISO, type CalendarEvent } from '@/lib/calendar-grid'
 import { AP_STATUS_LABEL } from '@/lib/status-labels'
 
@@ -42,23 +43,42 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const fromRaw = searchParams.get('from')
     const toRaw = searchParams.get('to')
-    if (!fromRaw || !toRaw) {
-      return NextResponse.json({ error: 'from dan to wajib diisi' }, { status: 400 })
+    const dateRange = searchParams.get('dateRange')
+    const quarter = searchParams.get('quarter')
+    const yearRaw = searchParams.get('year')
+
+    if (!fromRaw && !toRaw && !dateRange && !quarter) {
+      return NextResponse.json(
+        { error: 'Parameter from & to atau dateRange/quarter wajib diisi' },
+        { status: 400 }
+      )
     }
-    const from = new Date(fromRaw)
-    const to = new Date(toRaw)
+
+    const { from, to } = resolveDateRange({
+      from: fromRaw,
+      to: toRaw,
+      dateRange,
+      quarter,
+      year: yearRaw,
+    })
+
     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
       return NextResponse.json({ error: 'from atau to bukan tanggal valid' }, { status: 400 })
     }
 
-    const where = buildCalendarWhere(user, from, to)
-
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
     const divisionId = searchParams.get('divisionId')
-    if (status) where.status = status as any
-    if (priority) where.priority = priority as any
-    if (divisionId) where.divisionId = divisionId
+    const picId = searchParams.get('picId')
+    const projectId = searchParams.get('projectId')
+
+    const where = buildCalendarWhere(user, from, to, {
+      status,
+      priority,
+      divisionId,
+      picId,
+      projectId,
+    })
 
     const rows = await prisma.actionPlan.findMany({
       where,
@@ -72,6 +92,7 @@ export async function GET(req: Request) {
 
     const events: CalendarEvent[] = rows.map((ap) => ({
       id: ap.id,
+      code: shortRef(ap.id, 'AP'),
       title: ap.title,
       status: ap.status,
       priority: ap.priority,
@@ -174,7 +195,8 @@ export async function GET(req: Request) {
     })
 
     const filename = `calendar-${fmtISO(from)}-${fmtISO(to)}.pdf`
-    return new NextResponse(Buffer.from(doc.output('arraybuffer')), {
+    const pdfArrayBuffer = doc.output('arraybuffer')
+    return new Response(pdfArrayBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
