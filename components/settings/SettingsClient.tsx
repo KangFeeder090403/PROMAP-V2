@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
-import { Building2, LayoutGrid, Users, Tag, TrendingUp, Check } from 'lucide-react'
+import Link from 'next/link'
+import { Building2, LayoutGrid, Users, Tag, TrendingUp, Check, ShieldCheck } from 'lucide-react'
 import { CompanySection } from '@/components/settings/CompanySection'
 import { DivisionSection } from '@/components/settings/DivisionSection'
 import { UserSection } from '@/components/settings/UserSection'
@@ -90,7 +91,14 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
             dinamis, dan pipeline prospek (Leads).
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Link
+            href="/settings/audit-logs"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors cursor-pointer shadow-xs"
+          >
+            <ShieldCheck size={15} className="text-blue-600" />
+            <span>Audit Trail &amp; Tata Kelola</span>
+          </Link>
           <button
             type="button"
             onClick={() => setAuditLogOpen(true)}
@@ -98,6 +106,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
           >
             Audit Log Ringkas
           </button>
+
           <button
             type="button"
             onClick={handleSaveClick}
