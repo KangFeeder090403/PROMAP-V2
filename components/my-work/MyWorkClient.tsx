@@ -10,11 +10,13 @@ import {
   ChevronDown,
   CircleDashed,
   Clock,
+  Copy,
   ExternalLink,
   FileCheck2,
   FileText,
   Hourglass,
   Inbox,
+  MoreVertical,
   Paperclip,
   XCircle,
 } from 'lucide-react'
@@ -200,6 +202,92 @@ function DeadlineChip({ iso, now }: { iso: string; now: Date }) {
   )
 }
 
+function CardKebabMenu({
+  refCode,
+  id,
+  onOpenDetail,
+}: {
+  refCode: string
+  id: string
+  onOpenDetail?: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copyRefCode = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard?.writeText(refCode)
+    setCopied(true)
+    setTimeout(() => {
+      setCopied(false)
+      setOpen(false)
+    }, 1200)
+  }
+
+  const copyDirectLink = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const url = `${window.location.origin}/action-plans?open=${id}&highlight=${id}`
+    navigator.clipboard?.writeText(url)
+    setCopied(true)
+    setTimeout(() => {
+      setCopied(false)
+      setOpen(false)
+    }, 1200)
+  }
+
+  return (
+    <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label={`Menu aksi ${refCode}`}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-20"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-8 z-30 w-44 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1 shadow-lg text-xs animate-in fade-in zoom-in-95 duration-100">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpen(false)
+                onOpenDetail?.(id)
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+              Buka Detail Drawer
+            </button>
+            <button
+              type="button"
+              onClick={copyRefCode}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <Copy className="h-3.5 w-3.5 text-slate-400" />
+              {copied ? 'Tersalin!' : `Salin Kode (${refCode})`}
+            </button>
+            <button
+              type="button"
+              onClick={copyDirectLink}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <Paperclip className="h-3.5 w-3.5 text-slate-400" />
+              Salin Tautan Langsung
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 /** Baris Action Plan versi "aktiv" (sedang dikerjakan / deadline / aksi). */
 function ActionRow({
   row,
@@ -245,6 +333,7 @@ function ActionRow({
       </div>
       <div className="flex items-center gap-2">
         <DeadlineChip iso={row.endDate} now={now} />
+        <CardKebabMenu refCode={row.refCode} id={row.id} onOpenDetail={onSelect} />
       </div>
     </div>
   )
@@ -289,17 +378,20 @@ function ReviewRow({
           Disubmit {timeAgo(row.updatedAt, now)}
         </p>
       </div>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onSelect?.(row.id)
-        }}
-        className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 text-center"
-      >
-        Lihat Pengajuan
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect?.(row.id)
+          }}
+          className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 text-center"
+        >
+          Lihat Pengajuan
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+        <CardKebabMenu refCode={row.refCode} id={row.id} onOpenDetail={onSelect} />
+      </div>
     </div>
   )
 }
@@ -337,10 +429,13 @@ function CompleteRow({
           Selesai pada {new Date(row.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
         </p>
       </div>
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-        Selesai
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+          Selesai
+        </span>
+        <CardKebabMenu refCode={row.refCode} id={row.id} onOpenDetail={onSelect} />
+      </div>
     </div>
   )
 }
@@ -516,6 +611,7 @@ export function MyWorkClient() {
   const [selectedAP, setSelectedAP] = useState<ActionPlan | null>(null)
   const [highlightedId, setHighlightedId] = useState<string | null>(null)
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+  const [bannerCollapsed, setBannerCollapsed] = useState(false)
 
   const handleOpenDetail = useCallback(async (id: string) => {
     setHighlightedId(id)
@@ -679,7 +775,7 @@ export function MyWorkClient() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-            {data.user.role === 'MANAGER' ? 'Manager' : data.user.role === 'SUPER_ADMIN' ? 'Admin' : 'PIC'} · Personal Console
+            {data.user.role === 'MANAGER' ? 'MANAGER' : data.user.role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'PIC'} PERSONAL CONSOLE
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">My Work</h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -731,80 +827,96 @@ export function MyWorkClient() {
 
       <div className="grid gap-6 xl:grid-cols-12">
         {/* KOLOM KIRI */}
+        {/* KOLOM KIRI */}
         <div className="space-y-6 xl:col-span-8">
-          {/* Action Required - hanya tampil di tab 'aksi' agar tab 'semua' menampilkan 14 item langsung tanpa tertutup banner */}
-          {tab === 'aksi' && aksiItems.length > 0 && (
+          {/* Action Required Banner - tampil di tab 'semua' dan tab 'aksi' jika ada item yang butuh aksi */}
+          {(tab === 'semua' || tab === 'aksi') && aksiItems.length > 0 && (
             <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-4 sm:p-5">
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-                </span>
-                <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Butuh Aksi Anda</h2>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                  {aksiItems.length}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                  </span>
+                  <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Butuh Aksi Anda Segera</h2>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    {aksiItems.length}
+                  </span>
+                </div>
+                {tab === 'semua' && (
+                  <button
+                    type="button"
+                    onClick={() => setBannerCollapsed((c) => !c)}
+                    className="flex items-center gap-1 text-xs font-medium text-amber-800 dark:text-amber-300 hover:text-amber-900 hover:underline"
+                  >
+                    {bannerCollapsed ? 'Tampilkan' : 'Ciutkan'}
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${bannerCollapsed ? '' : 'rotate-180'}`} />
+                  </button>
+                )}
               </div>
-              <div className="mt-3 divide-y divide-amber-200/70">
-                {aksiItems.map((it) => {
-                  const isHighlighted = highlightedId === it.id
-                  return (
-                    <div
-                      key={it.refCode}
-                      onClick={() => {
-                        if (it.kind === 'ap') handleOpenDetail(it.id)
-                      }}
-                      className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 px-2 rounded-lg transition-all cursor-pointer ${
-                        isHighlighted
-                          ? 'ring-2 ring-blue-500 bg-amber-100/80 dark:bg-amber-900/60 shadow-sm'
-                          : 'hover:bg-amber-100/40 dark:hover:bg-amber-900/20'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-amber-200">
-                            {it.icon}
-                          </span>
-                          <span className="font-mono text-[11px] font-medium text-amber-800 dark:text-amber-300">{it.refCode}</span>
-                          <span className="rounded bg-white dark:bg-slate-900 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300 ring-1 ring-amber-200">
-                            {it.kindLabel}
-                          </span>
+
+              {!bannerCollapsed && (
+                <div className="mt-3 divide-y divide-amber-200/70">
+                  {aksiItems.map((it) => {
+                    const isHighlighted = highlightedId === it.id
+                    return (
+                      <div
+                        key={it.refCode}
+                        onClick={() => {
+                          if (it.kind === 'ap') handleOpenDetail(it.id)
+                        }}
+                        className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 px-2 rounded-lg transition-all cursor-pointer ${
+                          isHighlighted
+                            ? 'ring-2 ring-blue-500 bg-amber-100/80 dark:bg-amber-900/60 shadow-sm'
+                            : 'hover:bg-amber-100/40 dark:hover:bg-amber-900/20'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-slate-900 ring-1 ring-amber-200">
+                              {it.icon}
+                            </span>
+                            <span className="font-mono text-[11px] font-medium text-amber-800 dark:text-amber-300">{it.refCode}</span>
+                            <span className="rounded bg-white dark:bg-slate-900 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300 ring-1 ring-amber-200">
+                              {it.kindLabel}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-50">{it.title}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{it.desc}</p>
                         </div>
-                        <p className="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-50">{it.title}</p>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{it.desc}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {it.kind === 'ap' && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {it.kind === 'ap' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenDetail(it.id)
+                              }}
+                              className="inline-flex h-8 w-24 shrink-0 items-center justify-center rounded-md border border-amber-300 dark:border-amber-800 bg-white/90 dark:bg-slate-900/90 px-2 text-xs font-medium text-amber-900 dark:text-amber-200 transition-colors hover:bg-white dark:hover:bg-slate-800 text-center"
+                            >
+                              Lihat Detail
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleOpenDetail(it.id)
+                              if (it.kind === 'ap') {
+                                handleOpenDetail(it.id)
+                              } else {
+                                window.location.href = it.href
+                              }
                             }}
-                            className="inline-flex h-8 w-24 shrink-0 items-center justify-center rounded-md border border-amber-300 dark:border-amber-800 bg-white/90 dark:bg-slate-900/90 px-2 text-xs font-medium text-amber-900 dark:text-amber-200 transition-colors hover:bg-white dark:hover:bg-slate-800 text-center"
+                            className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md bg-blue-500 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-600 text-center"
                           >
-                            Lihat Detail
+                            {it.cta}
+                            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (it.kind === 'ap') {
-                              handleOpenDetail(it.id)
-                            } else {
-                              window.location.href = it.href
-                            }
-                          }}
-                          className="inline-flex h-8 w-36 shrink-0 items-center justify-center gap-1.5 rounded-md bg-blue-500 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-600 text-center"
-                        >
-                          {it.cta}
-                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 

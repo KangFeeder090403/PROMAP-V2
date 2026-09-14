@@ -12,6 +12,12 @@ import {
   UserCheck,
   FileText,
   StickyNote,
+  Paperclip,
+  Check,
+  Edit2,
+  Upload,
+  Globe,
+  Github,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_STATUS_STYLE, AP_STATUS_LABEL, AP_PRIORITY_STYLE, AP_PRIORITY_LABEL } from '@/lib/status-labels'
@@ -64,6 +70,20 @@ function initials(name?: string | null) {
 type Tab = 'work' | 'activity'
 type PresetReview = 'COMPLETE' | 'REJECTED' | 'EVIDENCE_REQUIRED'
 
+function getServiceIcon(url: string) {
+  const lower = url.toLowerCase()
+  if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
+    return <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+  }
+  if (lower.includes('figma.com')) {
+    return <Target className="h-4 w-4 shrink-0 text-purple-500" />
+  }
+  if (lower.includes('github.com') || lower.includes('gitlab.com')) {
+    return <Github className="h-4 w-4 shrink-0 text-slate-800 dark:text-slate-200" />
+  }
+  return <Globe className="h-4 w-4 shrink-0 text-blue-500" />
+}
+
 export function ActionPlanDetail({
   actionPlan,
   role,
@@ -89,6 +109,10 @@ export function ActionPlanDetail({
   const [conflict, setConflict] = useState(false)
   const [presetReview, setPresetReview] = useState<PresetReview>('COMPLETE')
   const [checklistCounts, setChecklistCounts] = useState<{ id: string; done: number; total: number } | null>(null)
+  const [isEditingEvidence, setIsEditingEvidence] = useState(false)
+  const [inlineEvidence, setInlineEvidence] = useState('')
+  const [inlineNote, setInlineNote] = useState('')
+  const [savingEvidence, setSavingEvidence] = useState(false)
 
   if (!actionPlan) return null
 
@@ -139,6 +163,32 @@ export function ActionPlanDetail({
       return
     }
     onChanged()
+  }
+
+  async function handleSaveInlineEvidence() {
+    if (!inlineEvidence.trim() && !inlineNote.trim()) {
+      setIsEditingEvidence(false)
+      return
+    }
+    setSavingEvidence(true)
+    try {
+      const res = await fetch(`/api/action-plans/${ap.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evidenceLink: inlineEvidence.trim() || null,
+          evaluationNote: inlineNote.trim() || null,
+        }),
+      })
+      if (res.ok) {
+        setIsEditingEvidence(false)
+        onChanged()
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSavingEvidence(false)
+    }
   }
 
   async function handleCompletePersonal() {
@@ -367,35 +417,106 @@ export function ActionPlanDetail({
 
                 {/* Evidence Submission */}
                 <section>
-                  <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <FileText className="h-3.5 w-3.5" /> Evidence Submission
-                  </h3>
-                  <div className="mt-2 space-y-2">
-                    {ap.evidenceLink ? (
-                      <a
-                        href={ap.evidenceLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  <div className="flex items-center justify-between">
+                    <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <FileText className="h-3.5 w-3.5" /> Evidence Submission
+                    </h3>
+                    {isOwner && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status) && !isEditingEvidence && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInlineEvidence(ap.evidenceLink || '')
+                          setInlineNote(ap.evaluationNote || '')
+                          setIsEditingEvidence(true)
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        <FileText className="h-4 w-4 shrink-0 text-blue-500" />
-                        <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
-                          {ap.evidenceLink}
-                        </span>
-                        <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                      </a>
-                    ) : (
-                      <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-500 dark:text-slate-400">
-                        Belum ada bukti yang dikirim.
-                      </p>
+                        <Edit2 className="h-3 w-3" />
+                        {ap.evidenceLink || ap.evaluationNote ? 'Ubah Bukti' : '+ Tambah Bukti'}
+                      </button>
                     )}
-                    {ap.evaluationNote && (
-                      <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-3">
-                        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                        <p className="text-sm italic text-slate-600 dark:text-slate-400">
-                          “{ap.evaluationNote}” — PIC
-                        </p>
+                  </div>
+
+                  <div className="mt-2 space-y-2">
+                    {isEditingEvidence ? (
+                      <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 dark:border-blue-900/60 dark:bg-blue-950/20 space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Tautan Dokumen / Cloud Drive
+                          </label>
+                          <div className="relative mt-1">
+                            <input
+                              type="url"
+                              value={inlineEvidence}
+                              onChange={(e) => setInlineEvidence(e.target.value)}
+                              placeholder="https://drive.google.com/... atau https://figma.com/..."
+                              className="h-8 w-full rounded-md border border-slate-300 bg-white px-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Catatan Bukti / Hasil Kerja (Opsional)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={inlineNote}
+                            onChange={(e) => setInlineNote(e.target.value)}
+                            placeholder="Jelaskan ringkas deliverables atau catatan penting..."
+                            className="mt-1 w-full rounded-md border border-slate-300 bg-white p-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={savingEvidence}
+                            onClick={() => setIsEditingEvidence(false)}
+                            className="rounded px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800"
+                          >
+                            Batal
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingEvidence}
+                            onClick={handleSaveInlineEvidence}
+                            className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            <Check className="h-3 w-3" />
+                            {savingEvidence ? 'Menyimpan...' : 'Simpan Bukti'}
+                          </button>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        {ap.evidenceLink ? (
+                          <a
+                            href={ap.evidenceLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            {getServiceIcon(ap.evidenceLink)}
+                            <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
+                              {ap.evidenceLink}
+                            </span>
+                            <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                          </a>
+                        ) : (
+                          <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-500 dark:text-slate-400">
+                            Belum ada bukti yang dikirim.
+                          </p>
+                        )}
+                        {ap.evaluationNote && (
+                          <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-3">
+                            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                            <p className="text-sm italic text-slate-600 dark:text-slate-400">
+                              “{ap.evaluationNote}” — PIC
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </section>

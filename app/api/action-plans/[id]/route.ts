@@ -98,6 +98,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (body.title !== undefined) updateData.title = body.title
     if (body.outcomeKpi !== undefined) updateData.outcomeKpi = body.outcomeKpi
     if (body.priority !== undefined) updateData.priority = body.priority
+    if (body.evidenceLink !== undefined) updateData.evidenceLink = body.evidenceLink
+    if (body.evaluationNote !== undefined) updateData.evaluationNote = body.evaluationNote
     if (body.startDate !== undefined) updateData.startDate = body.startDate ? new Date(body.startDate) : null
     if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null
 
