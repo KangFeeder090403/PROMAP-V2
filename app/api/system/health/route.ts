@@ -17,9 +17,8 @@ export async function GET() {
 
     return NextResponse.json({
       status: 'OK',
-      vaultStatus: 'Multi-Tenant Vault OK',
+      database: 'connected',
       latencyMs: Math.max(1, latencyMs),
-      ssl: 'SSL TLS 1.3 Active',
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

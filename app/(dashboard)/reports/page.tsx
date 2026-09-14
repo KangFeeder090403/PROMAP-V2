@@ -4,12 +4,12 @@ import { getSessionUser } from '@/lib/rbac'
 import ReportsClient from '@/components/reports/ReportsClient'
 
 export const metadata: Metadata = {
-  title: 'Executive Reports & Performance Analytics — ProMaP',
+  title: 'Laporan Kinerja — ProMaP',
   description:
-    'Executive Intelligence & Oversight Console. Laporan komprehensif realisasi Action Plan, evaluasi kecepatan eksekusi, audit kepatuhan bukti kerja, serta export data formal eksekutif.',
+    'Ringkasan penyelesaian action plan, kecepatan pengerjaan, dan kelengkapan bukti kerja per periode.',
 }
 
-// PRD §C1 #16, §B5 — Hanya peran senior yang dapat mengakses executive reports
+// Laporan hanya untuk Manager ke atas
 const ALLOWED_ROLES = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER']
 
 export default async function ReportsPage() {
@@ -17,5 +17,5 @@ export default async function ReportsPage() {
   if (!user) redirect('/login')
   if (!ALLOWED_ROLES.includes(user.role)) redirect('/')
 
-  return <ReportsClient />
+  return <ReportsClient role={user.role} />
 }

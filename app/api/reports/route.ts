@@ -1,36 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser, apScope } from '@/lib/rbac'
+import { getSessionUser, requireRole, apScope } from '@/lib/rbac'
+import { getQuarterRange, overlapsPeriod } from '@/lib/report-period'
+import { logActivity } from '@/lib/activity-log'
 
-// PRD §C1 #16 — Executive Reports & Performance Analytics API
-// Returns aggregated metrics for the Executive Intelligence & Oversight Console
+// Ringkasan angka untuk halaman Laporan.
 
-function getQuarterRange(quarterStr?: string | null) {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() // 0-indexed
+export const dynamic = 'force-dynamic'
 
-  let qNum = Math.floor(month / 3) + 1
-  let qYear = year
-
-  if (quarterStr) {
-    // Parse "Q3-2026" or "Q3 2026"
-    const m = quarterStr.match(/Q(\d)[\s-]?(\d{4})/)
-    if (m) {
-      qNum = parseInt(m[1])
-      qYear = parseInt(m[2])
-    }
-  }
-
-  const startMonth = (qNum - 1) * 3
-  const start = new Date(qYear, startMonth, 1)
-  const end = new Date(qYear, startMonth + 3, 0, 23, 59, 59, 999) // last day of quarter
-
-  const label = `Q${qNum} ${qYear} (${start.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})`
-  const quarterLabel = `Q${qNum}-${qYear}`
-
-  return { start, end, label, quarterLabel, qNum, qYear }
-}
+const ALLOWED_ROLES = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'] as const
 
 export async function GET(req: NextRequest) {
   const user = await getSessionUser()
@@ -38,10 +16,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Only senior roles access executive reports
-  if (!['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'].includes(user.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const forbidden = requireRole([...ALLOWED_ROLES])(user)
+  if (forbidden) return forbidden
 
   const { searchParams } = new URL(req.url)
   const quarterParam = searchParams.get('quarter')
@@ -50,48 +26,64 @@ export async function GET(req: NextRequest) {
   const { start, end, label, quarterLabel, qNum, qYear } = getQuarterRange(quarterParam)
   const scope = apScope(user)
 
-  // Base where clause scoped to user's access
-  const baseWhere = {
+  // Scope sesuai role + hanya AP yang beririsan dengan periode
+  const baseWhere: Record<string, unknown> = {
     ...scope,
     deletedAt: null,
-    startDate: { gte: start },
-    endDate: { lte: end },
+    ...overlapsPeriod(start, end),
   }
 
-  // If division filter applied (and user is SUPER_ADMIN or ADMIN_OPERATIONAL)
-  if (divisionParam && divisionParam !== 'ALL' && user.role !== 'MANAGER') {
-    Object.assign(baseWhere, { divisionId: divisionParam })
+  // Filter divisi berlaku untuk SUPER_ADMIN dan ADMIN_OPERATIONAL
+  const hasDivisionFilter = divisionParam && divisionParam !== 'ALL' && user.role !== 'MANAGER'
+  if (hasDivisionFilter) {
+    baseWhere.divisionId = divisionParam
   }
 
   // ─── 1. KPI Metrics ───────────────────────────────────────────
-  const [allAPs, completedAPs, overdueAPs, pendingSignOffAPs] = await Promise.all([
-    prisma.actionPlan.findMany({
-      where: baseWhere,
-      select: {
-        id: true,
-        status: true,
-        startDate: true,
-        endDate: true,
-        createdAt: true,
-        updatedAt: true,
-        evidenceLink: true,
-      },
-    }),
-    prisma.actionPlan.count({
-      where: { ...baseWhere, status: 'COMPLETE' },
-    }),
-    prisma.actionPlan.count({
-      where: { ...baseWhere, status: 'OVERDUE' },
-    }),
-    prisma.actionPlan.count({
-      where: { ...baseWhere, status: 'PENDING_APPROVAL' },
-    }),
-  ])
+  // Satu query memuat seluruh AP pada scope + periode, metrik dihitung di memori
+  const allAPs = await prisma.actionPlan.findMany({
+    where: baseWhere,
+    select: {
+      id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      createdAt: true,
+      updatedAt: true,
+      evidenceLink: true,
+    },
+  })
 
   const totalAPs = allAPs.length
+  const completedAPs = allAPs.filter((ap) => ap.status === 'COMPLETE').length
+  const overdueAPs = allAPs.filter((ap) => ap.status === 'OVERDUE').length
+  const pendingSignOffAPs = allAPs.filter((ap) => ap.status === 'PENDING_APPROVAL').length
+  const evidenceRequiredAPs = allAPs.filter((ap) => ap.status === 'EVIDENCE_REQUIRED').length
+  const rejectedAPs = allAPs.filter((ap) => ap.status === 'REJECTED').length
+
   const goalRealization = totalAPs > 0 ? Math.round((completedAPs / totalAPs) * 1000) / 10 : 0
 
-  // SLA: average days from startDate to updatedAt for COMPLETE APs
+  // Perbandingan dengan kuartal sebelumnya untuk tren capaian
+  const prevQuarter = getQuarterRange(`Q${qNum === 1 ? 4 : qNum - 1}-${qNum === 1 ? qYear - 1 : qYear}`)
+  const prevWhere: Record<string, unknown> = {
+    ...scope,
+    deletedAt: null,
+    ...overlapsPeriod(prevQuarter.start, prevQuarter.end),
+  }
+  if (hasDivisionFilter) {
+    prevWhere.divisionId = divisionParam
+  }
+
+  const [prevTotal, prevCompleted] = await Promise.all([
+    prisma.actionPlan.count({ where: prevWhere }),
+    prisma.actionPlan.count({ where: { ...prevWhere, status: 'COMPLETE' } }),
+  ])
+  const prevRealization = prevTotal > 0 ? Math.round((prevCompleted / prevTotal) * 1000) / 10 : null
+  const realizationTrend =
+    prevRealization === null ? null : Math.round((goalRealization - prevRealization) * 10) / 10
+
+  // Rata-rata lama pengerjaan AP yang COMPLETE (hari)
+  // ponytail: updatedAt dipakai sebagai waktu selesai karena schema ActionPlan belum punya completedAt.
   const completeAPs = allAPs.filter((ap) => ap.status === 'COMPLETE')
   let avgResolutionDays = 0
   if (completeAPs.length > 0) {
@@ -102,26 +94,31 @@ export async function GET(req: NextRequest) {
     avgResolutionDays = Math.round((totalDays / completeAPs.length) * 10) / 10
   }
 
-  // Evidence compliance: APs that have evidenceLink or are APPROVED/COMPLETE
-  const evidencedAPs = allAPs.filter(
-    (ap) => ap.evidenceLink || ap.status === 'APPROVED' || ap.status === 'COMPLETE'
-  ).length
+  // Kelengkapan bukti: hanya AP yang memiliki evidenceLink riil (bukan null dan bukan string kosong)
+  const evidencedAPs = allAPs.filter((ap) => Boolean(ap.evidenceLink && ap.evidenceLink.trim() !== '')).length
   const evidenceCompliance = totalAPs > 0 ? Math.round((evidencedAPs / totalAPs) * 1000) / 10 : 0
 
-  // Overdue mitigation: proportion resolved before escalation (not OVERDUE)
-  const mitigatedCount = totalAPs - overdueAPs
-  const mitigationRate = totalAPs > 0 ? Math.round((mitigatedCount / totalAPs) * 1000) / 10 : 0
+  // Ketepatan waktu: AP yang tidak berstatus OVERDUE
+  const notOverdueCount = totalAPs - overdueAPs
+  const onTimeRate = totalAPs > 0 ? Math.round((notOverdueCount / totalAPs) * 1000) / 10 : 0
 
-  // ─── 2. Division Performance Distribution ─────────────────────
-  const divisionWhere: Record<string, unknown> = {}
-  if (user.role === 'SUPER_ADMIN') {
-    // all divisions
-  } else if (user.role === 'ADMIN_OPERATIONAL') {
+  // ─── 2. Kinerja per Divisi ─────────────────────────────────────
+  // Guard role: Manager tanpa divisi fallback aman (tidak menghasilkan id: null)
+  const divisionWhere: Record<string, unknown> = { deletedAt: null }
+  if (user.role === 'ADMIN_OPERATIONAL') {
     divisionWhere.companyId = user.companyId!
   } else if (user.role === 'MANAGER') {
-    divisionWhere.id = user.divisionId!
+    if (user.divisionId) {
+      divisionWhere.id = user.divisionId
+    } else {
+      divisionWhere.id = '__NO_DIVISION__' // menghasilkan empty array yang aman, bukan Prisma error
+    }
   }
-  divisionWhere.deletedAt = null
+
+  // Jika ada filter divisi aktif di UI, terapkan ke query divisi agar tabel ikut terfilter
+  if (hasDivisionFilter) {
+    divisionWhere.id = divisionParam
+  }
 
   const divisions = await prisma.division.findMany({
     where: divisionWhere,
@@ -132,14 +129,11 @@ export async function GET(req: NextRequest) {
         take: 1,
       },
       actionPlans: {
-        where: {
-          deletedAt: null,
-          startDate: { gte: start },
-          endDate: { lte: end },
-        },
+        where: { deletedAt: null, ...overlapsPeriod(start, end) },
         select: { status: true, endDate: true },
       },
     },
+    orderBy: { name: 'asc' },
   })
 
   const divisionDistribution = divisions.map((div) => {
@@ -149,7 +143,6 @@ export async function GET(req: NextRequest) {
     const overdue = aps.filter((ap) => ap.status === 'OVERDUE').length
     const completionPct = total > 0 ? Math.round((done / total) * 100) : 0
 
-    // Governance index scoring
     let governanceIndex: 'Prima' | 'Luar Biasa' | 'Stabil' | 'Waspada' | 'Kritis'
     const overdueRatio = total > 0 ? overdue / total : 0
     if (completionPct >= 95 && overdueRatio < 0.05) governanceIndex = 'Luar Biasa'
@@ -170,51 +163,69 @@ export async function GET(req: NextRequest) {
     }
   })
 
-  // ─── 3. Bottleneck Analysis ───────────────────────────────────
-  const pendingManagerApproval = await prisma.actionPlan.count({
-    where: { ...baseWhere, status: 'PENDING_APPROVAL' },
-  })
-  const evidenceRequired = await prisma.actionPlan.count({
-    where: { ...baseWhere, status: 'EVIDENCE_REQUIRED' },
-  })
-  const rejectedCount = await prisma.actionPlan.count({
-    where: { ...baseWhere, status: 'REJECTED' },
-  })
+  // ─── 3. Analisis Hambatan (dihitung dari allAPs di memori) ──────
+  const bottleneckTotal = pendingSignOffAPs + evidenceRequiredAPs + rejectedAPs + overdueAPs
+  const share = (n: number) => (bottleneckTotal > 0 ? Math.round((n / bottleneckTotal) * 100) : 0)
 
-  const bottleneckTotal = pendingManagerApproval + evidenceRequired + rejectedCount + overdueAPs
   const bottlenecks = [
     {
-      label: 'Menunggu Verifikasi Manager',
-      count: pendingManagerApproval,
-      share: bottleneckTotal > 0 ? Math.round((pendingManagerApproval / bottleneckTotal) * 100) : 40,
-      description: 'Rata-rata tertahan di meja reviewer lebih dari 2.8 hari',
+      label: 'Menunggu persetujuan Manager',
+      count: pendingSignOffAPs,
+      share: share(pendingSignOffAPs),
+      description: 'Action Plan sudah diajukan PIC, belum ditinjau Manager.',
+      status: 'PENDING_APPROVAL',
     },
     {
-      label: 'Revisi Bukti / Evidence Kurang Lengkap',
-      count: evidenceRequired + rejectedCount,
-      share:
-        bottleneckTotal > 0
-          ? Math.round(((evidenceRequired + rejectedCount) / bottleneckTotal) * 100)
-          : 35,
-      description: 'Penolakan audit karena resolusi file tidak sesuai format standar',
+      label: 'Bukti kerja perlu dilengkapi',
+      count: evidenceRequiredAPs + rejectedAPs,
+      share: share(evidenceRequiredAPs + rejectedAPs),
+      description: 'Dikembalikan ke PIC karena bukti kurang atau ditolak Manager.',
+      status: 'EVIDENCE_REQUIRED',
     },
     {
-      label: 'Ketergantungan Vendor Eksternal',
+      label: 'Lewat tenggat',
       count: overdueAPs,
-      share: bottleneckTotal > 0 ? Math.round((overdueAPs / bottleneckTotal) * 100) : 25,
-      description: 'Menunggu response surat penawaran & SLA pengiriman',
+      share: share(overdueAPs),
+      description: 'Melewati tanggal selesai dan belum dituntaskan.',
+      status: 'OVERDUE',
     },
   ]
 
-  // ─── 4. Divisions list for filter dropdown ─────────────────────
-  const divisionList = divisions.map((d) => ({ id: d.id, name: d.name }))
+  // ─── 4. Nama perusahaan ────────────────────────────────────────
+  const company =
+    user.role === 'SUPER_ADMIN' || !user.companyId
+      ? null
+      : await prisma.company.findUnique({
+          where: { id: user.companyId },
+          select: { name: true },
+        })
 
-  // ─── 5. Available quarters ─────────────────────────────────────
+  // ─── 5. Pilihan divisi untuk dropdown filter ───────────────────
+  // Ambil daftar lengkap divisi tenant untuk filter dropdown (tidak terpengaruh divisionParam)
+  const fullDivisionWhere: Record<string, unknown> = { deletedAt: null }
+  if (user.role === 'ADMIN_OPERATIONAL') fullDivisionWhere.companyId = user.companyId!
+  else if (user.role === 'MANAGER' && user.divisionId) fullDivisionWhere.id = user.divisionId
+
+  const filterDivisions =
+    hasDivisionFilter
+      ? await prisma.division.findMany({
+          where: fullDivisionWhere,
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        })
+      : divisions.map((d) => ({ id: d.id, name: d.name }))
+
+  const divisionList = filterDivisions.map((d) => ({ id: d.id, name: d.name }))
+
+  // ─── 6. Kuartal yang tersedia ──────────────────────────────────
   const availableQuarters = []
   for (let i = 0; i < 4; i++) {
     let q = qNum - i
     let y = qYear
-    if (q <= 0) { q += 4; y -= 1 }
+    if (q <= 0) {
+      q += 4
+      y -= 1
+    }
     const sMonth = (q - 1) * 3
     const sDate = new Date(y, sMonth, 1)
     const eDate = new Date(y, sMonth + 3, 0)
@@ -224,13 +235,21 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // Audit log ringan untuk pembacaan laporan eksekutif
+  await logActivity({
+    userId: user.id,
+    action: 'UPDATED',
+    oldValue: null,
+    newValue: `Akses laporan kinerja periode ${quarterLabel} (filter divisi: ${divisionParam ?? 'ALL'})`,
+  })
+
   return NextResponse.json({
     meta: {
       quarter: quarterLabel,
       quarterLabel: label,
       divisionFilter: divisionParam ?? 'ALL',
       generatedAt: new Date().toISOString(),
-      companyName: user.role === 'SUPER_ADMIN' ? 'Semua Perusahaan' : null,
+      companyName: user.role === 'SUPER_ADMIN' ? 'Semua Perusahaan' : (company?.name ?? null),
     },
     kpi: {
       goalRealization: {
@@ -238,14 +257,14 @@ export async function GET(req: NextRequest) {
         completed: completedAPs,
         total: totalAPs,
         unit: '%',
-        trend: '+5.2', // future: compare to previous quarter
+        trend: realizationTrend,
+        prevQuarter: prevQuarter.shortLabel,
         status: goalRealization >= 80 ? 'ON_TRACK' : goalRealization >= 60 ? 'AT_RISK' : 'CRITICAL',
       },
+      // Target SLA dan badge status dibuang (tidak ada di schema/PRD).
       resolutionSLA: {
         value: avgResolutionDays,
-        target: 5.0,
-        unit: 'Hari',
-        status: avgResolutionDays <= 5.0 ? 'ON_TARGET' : 'BREACHED',
+        unit: 'hari',
       },
       evidenceCompliance: {
         value: evidenceCompliance,
@@ -253,18 +272,18 @@ export async function GET(req: NextRequest) {
         total: totalAPs,
         pendingSignOff: pendingSignOffAPs,
         unit: '%',
-        label: 'AUDITED',
+        label: 'memiliki bukti valid',
       },
       overdueRisk: {
-        value: mitigationRate,
+        value: onTimeRate,
         activeOverdue: overdueAPs,
         unit: '%',
-        label: 'Pre-BOD',
+        label: 'tidak terlambat',
       },
     },
     divisionDistribution,
     bottlenecks,
-    meta2: {
+    options: {
       availableQuarters,
       divisionList,
     },

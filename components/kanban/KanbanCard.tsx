@@ -4,28 +4,28 @@ import { Calendar, GripVertical } from 'lucide-react'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL, AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 
-// Palet warna untuk category badge (division/project) — cycling berdasarkan char pertama
+// Palet warna untuk category badge (division/project) — cycling berdasarkan char pertama (bebas violet/pink)
 const CATEGORY_COLORS = [
-  'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+  'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
   'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
   'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
-  'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
   'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
   'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300',
 ]
 
-// Palet warna avatar PIC — cycling berdasarkan inisial
+// Palet warna avatar PIC — cycling berdasarkan inisial (bebas violet/pink)
 const AVATAR_COLORS = [
   'bg-blue-500',
-  'bg-violet-500',
-  'bg-emerald-500',
-  'bg-rose-500',
-  'bg-amber-500',
-  'bg-teal-500',
   'bg-indigo-500',
-  'bg-pink-500',
+  'bg-emerald-500',
+  'bg-teal-500',
+  'bg-amber-500',
+  'bg-sky-500',
+  'bg-slate-600',
+  'bg-blue-600',
 ]
 
 function colorForString(s: string, palette: string[]): string {

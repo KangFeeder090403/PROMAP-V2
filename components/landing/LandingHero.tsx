@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { ArrowRight, BarChart3, Clock, FileCheck, TrendingUp } from 'lucide-react'
 
 const STATS = [
-  { value: '99.4%', label: 'Execution Rate', icon: TrendingUp },
+  { value: '99.4%', label: 'Capaian Eksekusi', icon: TrendingUp },
   { value: '3 Taraf', label: 'Tingkat Persetujuan', icon: FileCheck },
-  { value: '100%', label: 'Audit Evidence', icon: BarChart3 },
+  { value: '100%', label: 'Bukti Kerja Tervalidasi', icon: BarChart3 },
   { value: '< 2 Detik', label: 'Ekspor Data', icon: Clock },
 ]
 

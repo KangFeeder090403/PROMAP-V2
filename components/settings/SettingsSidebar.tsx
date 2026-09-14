@@ -9,9 +9,9 @@ import type { ManagedUser } from '@/components/settings/UserSection'
 // ── helpers ────────────────────────────────────────────────────────────────────
 
 const SUBSCRIPTION_STYLE: Record<string, string> = {
-  BASIC:      'bg-slate-700 text-slate-200',
-  PREMIUM:    'bg-blue-700 text-blue-100',
-  ENTERPRISE: 'bg-indigo-700 text-indigo-100',
+  BASIC:      'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  PREMIUM:    'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
+  ENTERPRISE: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300',
 }
 const SUBSCRIPTION_LABEL: Record<string, string> = {
   BASIC: 'Paket Basic', PREMIUM: 'Paket Premium', ENTERPRISE: 'Paket Enterprise',
@@ -23,7 +23,7 @@ const QUOTA_MAP: Record<string, number> = { BASIC: 20, PREMIUM: 35, ENTERPRISE: 
 const LEAD_STATUS_STYLE: Record<string, string> = {
   NEW:         'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
   TRIAL_ACTIVE:'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  CONVERTED:   'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+  CONVERTED:   'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
   COLD:        'bg-slate-100 text-slate-500 dark:bg-slate-500/15 dark:text-slate-400',
 }
 const LEAD_STATUS_LABEL: Record<string, string> = {
@@ -154,7 +154,7 @@ export function SettingsSidebar({
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div className="rounded-lg bg-slate-50 dark:bg-slate-800/40 p-2.5 border border-slate-100 dark:border-slate-800/60">
               <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 mb-1">
-                <Shield className="h-3.5 w-3.5 text-violet-500" />
+                <Shield className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 <span className="text-[11px] font-medium">Super Admin</span>
               </div>
               <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{superAdminCount}</p>

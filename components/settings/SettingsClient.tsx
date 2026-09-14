@@ -78,11 +78,10 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Enterprise Settings &amp; Tata Kelola
+            Pengaturan &amp; Tata Kelola
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-xl">
-            Kelola konfigurasi perusahaan, struktur divisi, hak akses tim (RBAC), approval label jabatan
-            dinamis, dan pipeline prospek (Leads).
+            Kelola konfigurasi perusahaan, struktur divisi, hak akses tim, approval jabatan, dan pipeline prospek.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -122,9 +121,9 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
       </div>
 
       {/* ── 2-Column Content ── */}
-      <div className={showSidebar ? 'grid grid-cols-1 lg:grid-cols-3 gap-6' : ''}>
+      <div className={showSidebar ? 'grid grid-cols-1 xl:grid-cols-3 gap-6' : ''}>
         {/* Main content */}
-        <div className={showSidebar ? 'lg:col-span-2' : ''}>
+        <div className={showSidebar ? 'xl:col-span-2' : ''}>
           {tab === 'company' && role === 'SUPER_ADMIN' && <CompanySection role={role} />}
           {tab === 'division' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL') && (
             <DivisionSection role={role} companyId={companyId} />
@@ -140,7 +139,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
 
         {/* Sidebar */}
         {showSidebar && (
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-1">
             <SettingsSidebar role={role} companyId={companyId} />
           </div>
         )}

@@ -45,6 +45,11 @@ async function fetchBoardActionPlans(params: {
   if (params.sortBy) query.set('sortBy', params.sortBy)
 
   const res = await fetch(`/api/action-plans?${query.toString()}`)
+  if (res.status === 401 || res.status === 403) {
+    const err = new Error('FORBIDDEN') as Error & { status: number }
+    err.status = res.status
+    throw err
+  }
   if (!res.ok) throw new Error('Gagal memuat data')
   const json: { items: ActionPlan[]; total: number } = await res.json()
   return json.items
@@ -65,6 +70,7 @@ export function KanbanClient({
   const [items, setItems] = useState<ActionPlan[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const [search, setSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [picFilter, setPicFilter] = useState<string>('')
@@ -93,8 +99,13 @@ export function KanbanClient({
         sortBy,
       })
       setItems(data)
-    } catch {
-      setError('Terjadi kesalahan saat memuat data Kanban. Coba lagi.')
+      setError(null)
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403 || e?.message === 'FORBIDDEN') {
+        setDenied(true)
+      } else {
+        setError('Terjadi kesalahan saat memuat data Kanban. Coba lagi.')
+      }
     } finally {
       setLoading(false)
     }
@@ -400,6 +411,23 @@ export function KanbanClient({
       .then((updated) => {
         if (updated) setSelected(updated)
       })
+  }
+
+  if (denied) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto my-12">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Anda tidak memiliki izin untuk melihat Kanban Board ini.
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    )
   }
 
   if (loading && !items) {

@@ -36,8 +36,8 @@ export interface Proposal {
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-violet-500', 'bg-emerald-500',
-  'bg-rose-500', 'bg-amber-500', 'bg-teal-500', 'bg-indigo-500', 'bg-pink-500',
+  'bg-blue-500', 'bg-indigo-500', 'bg-emerald-500',
+  'bg-teal-500', 'bg-amber-500', 'bg-sky-500', 'bg-slate-600', 'bg-blue-600',
 ]
 
 function colorForString(s: string): string {
@@ -103,6 +103,7 @@ export function ProposalsClient({
   const [data, setData] = useState<Proposal[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
@@ -142,8 +143,13 @@ export function ProposalsClient({
       if (sort) q.set('sortBy', sort)
 
       const res = await fetch(`/api/proposals?${q.toString()}`)
+      if (res.status === 401 || res.status === 403) {
+        setDenied(true)
+        return
+      }
       if (!res.ok) throw new Error('Gagal memuat data')
       const json = await res.json()
+      setError(null)
       if (Array.isArray(json)) {
         setData(json)
       } else {
@@ -247,6 +253,23 @@ export function ProposalsClient({
       : p.status === 'SUBMITTED' && p.proposerId !== userId
 
   // ── render ─────────────────────────────────────────────────────────────────
+
+  if (denied) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto my-12">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Anda tidak memiliki izin untuk melihat usulan proposal ini.
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    )
+  }
 
   if (loading && !data) {
     return (

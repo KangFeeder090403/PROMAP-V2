@@ -9,7 +9,9 @@ function canViewAP(
 ) {
   if (user.role === 'SUPER_ADMIN') return true
   if (ap.companyId !== user.companyId) return false
-  return true
+  if (user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') return user.divisionId !== null && ap.divisionId === user.divisionId
+  return ap.picId === user.id
 }
 
 function canEditAP(

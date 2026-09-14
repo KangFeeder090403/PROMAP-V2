@@ -40,22 +40,22 @@ const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 const STATUS_DOT_COLOR: Record<string, string> = {
   NOT_STARTED: 'bg-slate-400',
   IN_PROGRESS: 'bg-blue-500',
-  PENDING_APPROVAL: 'bg-violet-500',
-  EVIDENCE_REQUIRED: 'bg-cyan-500',
+  PENDING_APPROVAL: 'bg-indigo-500',
+  EVIDENCE_REQUIRED: 'bg-amber-500',
   APPROVED: 'bg-emerald-500',
   REJECTED: 'bg-red-500',
-  OVERDUE: 'bg-red-500',
+  OVERDUE: 'bg-orange-500',
   COMPLETE: 'bg-emerald-500',
 }
 
 const STATUS_BAR_COLOR: Record<string, string> = {
   NOT_STARTED: '#94a3b8',
   IN_PROGRESS: '#3b82f6',
-  PENDING_APPROVAL: '#8b5cf6',
-  EVIDENCE_REQUIRED: '#06b6d4',
+  PENDING_APPROVAL: '#6366f1',
+  EVIDENCE_REQUIRED: '#f59e0b',
   APPROVED: '#10b981',
   REJECTED: '#ef4444',
-  OVERDUE: '#ef4444',
+  OVERDUE: '#f97316',
   COMPLETE: '#10b981',
 }
 
@@ -95,6 +95,7 @@ export function CalendarClient() {
   const [events, setEvents] = useState<CalendarEvent[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [denied, setDenied] = useState(false)
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
   const [activeView, setActiveView] = useState<ViewTab>('calendar')
   const [showSidebar, setShowSidebar] = useState(true)
@@ -153,12 +154,19 @@ export function CalendarClient() {
 
     fetch(`/api/calendar?${params.toString()}`)
       .then((r) => {
+        if (r.status === 401 || r.status === 403) {
+          setDenied(true)
+          return null
+        }
         if (!r.ok) throw new Error('Gagal memuat data kalender')
         return r.json()
       })
       .then((data) => {
-        setEvents(data)
-        setLastRefreshed(new Date())
+        if (data) {
+          setEvents(data)
+          setLastRefreshed(new Date())
+          setError(null)
+        }
       })
       .catch(() => setError('Terjadi kesalahan. Coba lagi.'))
       .finally(() => setLoading(false))
@@ -241,6 +249,23 @@ export function CalendarClient() {
   const milestonePct = milestoneTotal > 0 ? Math.round((milestoneDone / milestoneTotal) * 100) : 0
 
   const isAtToday = fmtISO(anchorDate) === fmtISO(today)
+
+  if (denied) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto my-12">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Anda tidak memiliki izin untuk melihat kalender jadwal ini.
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -660,10 +685,16 @@ export function CalendarClient() {
           )}
 
           {loading && !events && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                <p className="text-xs text-slate-400">Memuat kalender...</p>
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-7 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <div key={i} className="h-6 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+                ))}
+              </div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-20 bg-slate-50 dark:bg-slate-800/60 rounded-lg animate-pulse" />
+                ))}
               </div>
             </div>
           )}
@@ -695,7 +726,7 @@ export function CalendarClient() {
                   return (
                     <button key={ev.id} onClick={() => setSelected(ev)} className="w-full text-left">
                       <div className="flex items-start gap-2 group">
-                        <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-violet-500 flex items-center justify-center text-[10px] font-bold text-white mt-0.5">
+                        <div className="h-7 w-7 shrink-0 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white mt-0.5">
                           {initials}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -728,13 +759,13 @@ export function CalendarClient() {
               </div>
             </div>
 
-            {/* Milestone Progress (PRD §B8, §B10 Compliant: Active Period target, no fake sprint) */}
+            {/* Milestone Progress */}
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Flag size={14} className="text-slate-500 dark:text-slate-400" />
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
-                    Milestone Progress
+                    Progres Periode
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400 font-medium">
@@ -743,11 +774,11 @@ export function CalendarClient() {
               </div>
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Total Completion</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Total Selesai</span>
                   <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
                     {milestonePct}%{' '}
                     <span className="font-normal text-slate-400">
-                      ({milestoneDone}/{milestoneTotal} plans)
+                      ({milestoneDone}/{milestoneTotal} plan)
                     </span>
                   </span>
                 </div>
@@ -759,15 +790,15 @@ export function CalendarClient() {
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">STATUS COLOR LEGEND (§D2)</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Warna Status</p>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                   {[
                     { color: 'bg-blue-500', label: 'In Progress' },
-                    { color: 'bg-violet-500', label: 'Pending Approval' },
-                    { color: 'bg-cyan-500', label: 'Evidence Required' },
+                    { color: 'bg-indigo-500', label: 'Pending Approval' },
+                    { color: 'bg-amber-500', label: 'Evidence Required' },
                     { color: 'bg-red-500', label: 'Needs Revision' },
                     { color: 'bg-emerald-500', label: 'Complete/Approved' },
-                    { color: 'bg-orange-300', label: 'Overdue' },
+                    { color: 'bg-orange-500', label: 'Overdue' },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1.5">
                       <span className={`h-2 w-2 rounded-full shrink-0 ${color}`} />

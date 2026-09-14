@@ -1,32 +1,30 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import {
   BarChart3,
-  FileText,
   Download,
   RefreshCw,
   TrendingUp,
+  TrendingDown,
   Clock,
   ShieldCheck,
   AlertTriangle,
   ChevronDown,
+  ChevronRight,
   Table2,
   BarChart2,
-  Mail,
   Calendar,
-  Send,
-  CheckCircle2,
-  XCircle,
   Loader2,
-  ExternalLink,
+  Lock,
+  FileText,
   FileSpreadsheet,
-  BookOpen,
-  BriefcaseBusiness,
-  Layers,
+  Users,
+  Lightbulb,
 } from 'lucide-react'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Tipe data dari /api/reports ──────────────────────────────────────────────
 
 interface KpiCard {
   goalRealization: {
@@ -34,15 +32,11 @@ interface KpiCard {
     completed: number
     total: number
     unit: string
-    trend: string
+    trend: number | null
+    prevQuarter: string
     status: string
   }
-  resolutionSLA: {
-    value: number
-    target: number
-    unit: string
-    status: string
-  }
+  resolutionSLA: { value: number; unit: string }
   evidenceCompliance: {
     value: number
     audited: number
@@ -51,13 +45,10 @@ interface KpiCard {
     unit: string
     label: string
   }
-  overdueRisk: {
-    value: number
-    activeOverdue: number
-    unit: string
-    label: string
-  }
+  overdueRisk: { value: number; activeOverdue: number; unit: string; label: string }
 }
+
+type GovernanceIndex = 'Luar Biasa' | 'Prima' | 'Stabil' | 'Waspada' | 'Kritis'
 
 interface DivisionRow {
   id: string
@@ -67,7 +58,7 @@ interface DivisionRow {
   completedAPs: number
   overdueAPs: number
   completionPct: number
-  governanceIndex: 'Prima' | 'Luar Biasa' | 'Stabil' | 'Waspada' | 'Kritis'
+  governanceIndex: GovernanceIndex
 }
 
 interface Bottleneck {
@@ -75,11 +66,7 @@ interface Bottleneck {
   count: number
   share: number
   description: string
-}
-
-interface Quarter {
-  value: string
-  label: string
+  status: string
 }
 
 interface ReportsData {
@@ -93,157 +80,350 @@ interface ReportsData {
   kpi: KpiCard
   divisionDistribution: DivisionRow[]
   bottlenecks: Bottleneck[]
-  meta2: {
-    availableQuarters: Quarter[]
+  options: {
+    availableQuarters: { value: string; label: string }[]
     divisionList: { id: string; name: string }[]
   }
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Label tampilan ───────────────────────────────────────────────────────────
 
-function GovernanceBadge({ index }: { index: DivisionRow['governanceIndex'] }) {
-  const styles: Record<string, string> = {
-    'Luar Biasa': 'bg-violet-500/15 text-violet-400 border border-violet-500/30',
-    Prima: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
-    Stabil: 'bg-blue-500/15 text-blue-400 border border-blue-500/30',
-    Waspada: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
-    Kritis: 'bg-red-500/15 text-red-400 border border-red-500/30',
-  }
-  const dots: Record<string, string> = {
-    'Luar Biasa': 'bg-violet-400',
-    Prima: 'bg-emerald-400',
-    Stabil: 'bg-blue-400',
-    Waspada: 'bg-amber-400',
-    Kritis: 'bg-red-400',
-  }
+const GOVERNANCE_LABEL: Record<GovernanceIndex, string> = {
+  'Luar Biasa': 'Sangat Baik',
+  Prima: 'Baik',
+  Stabil: 'Cukup',
+  Waspada: 'Perlu Perhatian',
+  Kritis: 'Kritis',
+}
+
+const GOVERNANCE_STYLE: Record<GovernanceIndex, string> = {
+  'Luar Biasa':
+    'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+  Prima:
+    'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800',
+  Stabil:
+    'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
+  Waspada:
+    'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
+  Kritis: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800',
+}
+
+const GOVERNANCE_DOT: Record<GovernanceIndex, string> = {
+  'Luar Biasa': 'bg-emerald-600 dark:bg-emerald-400',
+  Prima: 'bg-green-600 dark:bg-green-400',
+  Stabil: 'bg-blue-600 dark:bg-blue-400',
+  Waspada: 'bg-amber-600 dark:bg-amber-400',
+  Kritis: 'bg-red-600 dark:bg-red-400',
+}
+
+// ─── Komponen kecil ───────────────────────────────────────────────────────────
+
+function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[index] ?? styles['Stabil']}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dots[index] ?? 'bg-blue-400'}`} />
-      {index}
+    <div
+      className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function GovernanceBadge({ level }: { level: GovernanceIndex }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${GOVERNANCE_STYLE[level]}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${GOVERNANCE_DOT[level]}`} />
+      {GOVERNANCE_LABEL[level]}
     </span>
   )
 }
 
-function ProgressBar({ pct, colorClass = 'bg-blue-500' }: { pct: number; colorClass?: string }) {
+function Bar({ pct, tone = 'auto' }: { pct: number; tone?: 'auto' | 'warning' }) {
+  const color =
+    tone === 'warning'
+      ? 'bg-amber-500'
+      : pct >= 85
+        ? 'bg-emerald-500'
+        : pct >= 60
+          ? 'bg-blue-500'
+          : pct >= 40
+            ? 'bg-amber-500'
+            : 'bg-red-500'
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-700 ${colorClass}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
-      </div>
-      <span className="text-xs font-mono text-slate-400 w-9 text-right">{pct}%</span>
+    <div className="h-1.5 w-full min-w-0 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-all duration-500 ${color}`}
+        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+      />
     </div>
   )
 }
 
-function KpiMetricCard({
-  icon,
-  title,
+function StatCard({
+  icon: Icon,
+  label,
   value,
   unit,
-  sub1,
-  sub2,
+  context,
+  footer,
   accent,
-  trend,
-  badge,
 }: {
-  icon: React.ReactNode
-  title: string
-  value: string | number
+  icon: React.ElementType
+  label: string
+  value: string
   unit?: string
-  sub1?: React.ReactNode
-  sub2?: React.ReactNode
+  context: string
+  footer?: React.ReactNode
   accent: string
-  trend?: string
-  badge?: React.ReactNode
 }) {
   return (
-    <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5 flex flex-col gap-3 hover:border-slate-600/70 transition-all duration-200 hover:bg-slate-800/80">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{title}</span>
-        <span className={`p-2 rounded-lg ${accent}`}>{icon}</span>
+    <Card className="p-5 flex flex-col gap-3 min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 min-w-0">
+          {label}
+        </p>
+        <span className={`shrink-0 inline-flex p-1.5 rounded-md ${accent}`}>
+          <Icon className="w-4 h-4" />
+        </span>
       </div>
-      <div className="flex items-end gap-2">
-        <span className="text-4xl font-bold text-white tabular-nums leading-none">{value}</span>
-        {unit && <span className="text-lg font-medium text-slate-400 mb-0.5">{unit}</span>}
-        {trend && (
-          <span className="text-sm font-medium text-emerald-400 mb-0.5 flex items-center gap-0.5">
-            <TrendingUp className="w-3.5 h-3.5" />
-            {trend}%
-          </span>
-        )}
+
+      <div className="flex items-baseline gap-1 min-w-0">
+        <span className="text-3xl font-bold tabular-nums tracking-tight text-slate-900 dark:text-slate-50">
+          {value}
+        </span>
+        {unit && <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{unit}</span>}
       </div>
-      {sub1 && <div className="text-sm text-slate-400">{sub1}</div>}
-      {sub2 && <div>{sub2}</div>}
-      {badge && <div>{badge}</div>}
-    </div>
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">{context}</p>
+      {footer}
+    </Card>
   )
 }
 
-// ─── Downloadable Report Cards ────────────────────────────────────────────────
-
 function DownloadCard({
-  icon,
+  icon: Icon,
   title,
-  fileType,
-  size,
   description,
-  note,
-  onDownload,
+  fileType,
   loading,
+  onDownload,
 }: {
-  icon: React.ReactNode
+  icon: React.ElementType
   title: string
-  fileType: string
-  size: string
   description: string
-  note: string
-  onDownload: () => void
+  fileType: 'PDF' | 'CSV'
   loading: boolean
+  onDownload: () => void
 }) {
   return (
-    <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5 flex items-start gap-4 hover:border-slate-600/70 transition-all duration-200 group">
-      <div className="p-3 rounded-xl bg-slate-700/60 text-blue-400 group-hover:bg-blue-600/20 transition-colors shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-white text-sm">{title}</p>
-          <span className="text-xs font-mono bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">
-            {fileType} · {size}
-          </span>
+    <Card className="p-4 flex flex-col gap-3 min-w-0">
+      <div className="flex items-start gap-3 min-w-0">
+        <span className="shrink-0 inline-flex p-2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+          <Icon className="w-4 h-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-medium text-slate-800 dark:text-slate-100">{title}</h3>
+            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+              {fileType}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</p>
         </div>
-        <p className="text-xs text-slate-400 mt-1">{description}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{note}</p>
       </div>
+
       <button
         onClick={onDownload}
         disabled={loading}
-        className="shrink-0 flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors"
+        className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors disabled:opacity-60"
       >
-        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-        {loading ? 'Memuat…' : fileType === 'XLSX' ? 'Download XLSX' : 'Download PDF'}
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" /> Menyiapkan…
+          </>
+        ) : (
+          <>
+            <Download className="w-4 h-4" /> Unduh
+          </>
+        )}
       </button>
+    </Card>
+  )
+}
+
+function Dropdown({
+  icon: Icon,
+  buttonLabel,
+  open,
+  setOpen,
+  widthClass,
+  children,
+}: {
+  icon: React.ElementType
+  buttonLabel: string
+  open: boolean
+  setOpen: (v: boolean) => void
+  widthClass: string
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('mousedown', onClick)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('mousedown', onClick)
+    }
+  }, [open, setOpen])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm transition-colors max-w-full"
+      >
+        <Icon className="w-4 h-4 shrink-0 text-slate-400" />
+        <span className="truncate">{buttonLabel}</span>
+        <ChevronDown className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute left-0 top-full mt-1 z-20 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md py-1 max-h-72 overflow-y-auto ${widthClass} max-w-[calc(100vw-2rem)]`}
+        >
+          {children}
+        </div>
+      )}
     </div>
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+function DropdownItem({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+        active
+          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
+          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
 
-export default function ReportsClient() {
+function SectionHead({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string
+  subtitle: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 p-5 border-b border-slate-200 dark:border-slate-800">
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h2>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function Skeleton() {
+  const block = 'bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg'
+  return (
+    <div className="space-y-5">
+      <div className={`h-8 w-64 ${block}`} />
+      <div className="flex flex-wrap gap-2">
+        <div className={`h-9 w-48 ${block}`} />
+        <div className={`h-9 w-40 ${block}`} />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className={`h-36 ${block}`} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <div className={`xl:col-span-7 h-80 ${block}`} />
+        <div className={`xl:col-span-5 h-80 ${block}`} />
+      </div>
+    </div>
+  )
+}
+
+function StateCard({
+  icon: Icon,
+  tone,
+  title,
+  message,
+  children,
+}: {
+  icon: React.ElementType
+  tone: 'danger' | 'neutral'
+  title: string
+  message: string
+  children?: React.ReactNode
+}) {
+  return (
+    <Card className="max-w-lg mx-auto mt-12 p-8 text-center">
+      <span
+        className={`inline-flex p-3 rounded-full ${
+          tone === 'danger'
+            ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
+        }`}
+      >
+        <Icon className="w-6 h-6" />
+      </span>
+      <h2 className="mt-4 text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h2>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{message}</p>
+      {children && <div className="mt-5 flex flex-wrap justify-center gap-2">{children}</div>}
+    </Card>
+  )
+}
+
+const btnPrimary =
+  'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors'
+const btnSecondary =
+  'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors'
+
+// ─── Halaman ──────────────────────────────────────────────────────────────────
+
+export default function ReportsClient({ role }: { role: string }) {
   const [data, setData] = useState<ReportsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedQuarter, setSelectedQuarter] = useState<string>('')
-  const [selectedDivision, setSelectedDivision] = useState<string>('ALL')
+  const [denied, setDenied] = useState(false)
+  const [selectedQuarter, setSelectedQuarter] = useState('')
+  const [selectedDivision, setSelectedDivision] = useState('ALL')
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
   const [quarterOpen, setQuarterOpen] = useState(false)
   const [divisionOpen, setDivisionOpen] = useState(false)
-  const [downloadLoading, setDownloadLoading] = useState<Record<string, boolean>>({})
-  const [dispatchLoading, setDispatchLoading] = useState(false)
-  const [dispatchSent, setDispatchSent] = useState(false)
+  const [downloading, setDownloading] = useState<Record<string, boolean>>({})
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const fetchData = useCallback(async (quarter?: string, division?: string) => {
     setLoading(true)
@@ -253,12 +433,17 @@ export default function ReportsClient() {
       if (quarter) params.set('quarter', quarter)
       if (division && division !== 'ALL') params.set('division', division)
       const res = await fetch(`/api/reports?${params}`)
+      if (res.status === 401 || res.status === 403) {
+        setDenied(true)
+        return
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json: ReportsData = await res.json()
       setData(json)
+      setError(null)
       if (!quarter && json.meta.quarter) setSelectedQuarter(json.meta.quarter)
     } catch (e) {
-      setError('Gagal memuat data laporan. Coba refresh halaman.')
+      setError('Gagal memuat laporan. Periksa koneksi lalu coba lagi.')
       console.error(e)
     } finally {
       setLoading(false)
@@ -268,6 +453,12 @@ export default function ReportsClient() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (!downloadError) return
+    const t = setTimeout(() => setDownloadError(null), 4000)
+    return () => clearTimeout(t)
+  }, [downloadError])
 
   const handleQuarterChange = (q: string) => {
     setSelectedQuarter(q)
@@ -282,708 +473,524 @@ export default function ReportsClient() {
   }
 
   const handleDownload = async (type: string, key: string) => {
-    setDownloadLoading((prev) => ({ ...prev, [key]: true }))
+    setDownloading((prev) => ({ ...prev, [key]: true }))
     try {
       const params = new URLSearchParams({ type })
       if (selectedQuarter) params.set('quarter', selectedQuarter)
+      if (selectedDivision && selectedDivision !== 'ALL') params.set('division', selectedDivision)
       const res = await fetch(`/api/reports/export?${params}`)
       if (!res.ok) throw new Error('Export gagal')
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'report'
+      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'laporan'
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
-      alert('Gagal mengunduh laporan. Silakan coba lagi.')
+      setDownloadError('Gagal mengunduh laporan. Coba lagi.')
+      console.error(e)
     } finally {
-      setDownloadLoading((prev) => ({ ...prev, [key]: false }))
+      setDownloading((prev) => ({ ...prev, [key]: false }))
     }
   }
 
-  const handleTestDispatch = async () => {
-    setDispatchLoading(true)
-    // Simulate cron test dispatch (actual implementation would POST to a cron API)
-    await new Promise((r) => setTimeout(r, 1800))
-    setDispatchLoading(false)
-    setDispatchSent(true)
-    setTimeout(() => setDispatchSent(false), 4000)
-  }
-
-  // ─── Skeleton loading ────────────────────────────────────────────────────
-  if (loading) {
+  // ─── State: permission denied ──────────────────────────────────────────────
+  if (denied) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white p-6 space-y-6">
-        <div className="h-8 w-80 bg-slate-800 rounded-lg animate-pulse" />
-        <div className="flex gap-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-10 w-52 bg-slate-800 rounded-lg animate-pulse" />)}
-        </div>
-        <div className="grid grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-40 bg-slate-800 rounded-xl animate-pulse" />)}
-        </div>
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-7 h-80 bg-slate-800 rounded-xl animate-pulse" />
-          <div className="col-span-5 h-80 bg-slate-800 rounded-xl animate-pulse" />
-        </div>
-      </div>
+      <StateCard
+        icon={Lock}
+        tone="danger"
+        title="Anda tidak punya akses"
+        message="Halaman laporan hanya bisa dibuka oleh Manager ke atas."
+      >
+        <Link href="/" className={btnPrimary}>
+          Kembali ke Beranda
+        </Link>
+      </StateCard>
     )
   }
 
-  if (error) {
+  // ─── State: loading awal ───────────────────────────────────────────────────
+  if (loading && !data) return <Skeleton />
+
+  // ─── State: error ──────────────────────────────────────────────────────────
+  if (error && !data) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <XCircle className="w-16 h-16 text-red-400 mx-auto" />
-          <p className="text-white font-semibold">{error}</p>
-          <button
-            onClick={() => fetchData(selectedQuarter, selectedDivision)}
-            className="flex items-center gap-2 mx-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" /> Coba Lagi
-          </button>
-        </div>
-      </div>
+      <StateCard icon={AlertTriangle} tone="danger" title="Gagal memuat laporan" message={error}>
+        <button onClick={() => fetchData(selectedQuarter, selectedDivision)} className={btnPrimary}>
+          <RefreshCw className="w-4 h-4" /> Coba Lagi
+        </button>
+      </StateCard>
     )
   }
 
   if (!data) return null
 
-  const { kpi, divisionDistribution, bottlenecks, meta, meta2 } = data
-  const currentQuarterLabel = meta2.availableQuarters.find((q) => q.value === selectedQuarter)?.label ?? meta.quarterLabel
-  const currentDivisionLabel =
+  const { kpi, divisionDistribution, bottlenecks, meta, options } = data
+
+  const quarterLabel =
+    options.availableQuarters.find((q) => q.value === selectedQuarter)?.label ?? meta.quarterLabel
+  const divisionLabel =
     selectedDivision === 'ALL'
-      ? `Semua Divisi${meta.companyName ? ` (${meta.companyName})` : ''}`
-      : meta2.divisionList.find((d) => d.id === selectedDivision)?.name ?? 'Semua Divisi'
+      ? 'Semua Divisi'
+      : (options.divisionList.find((d) => d.id === selectedDivision)?.name ?? 'Semua Divisi')
+
+  const totalAP = kpi.goalRealization.total
+  const isEmpty = totalAP === 0 && divisionDistribution.every((d) => d.totalAPs === 0)
+  const sortedDivisions = [...divisionDistribution].sort((a, b) => b.completionPct - a.completionPct)
+  const totalDivisionAP = divisionDistribution.reduce((s, d) => s + d.totalAPs, 0)
+  const trend = kpi.goalRealization.trend
+  const worstDivision = sortedDivisions[sortedDivisions.length - 1]
+  const topBottleneck = [...bottlenecks].sort((a, b) => b.count - a.count)[0]
+
+  const updatedAt = new Date(meta.generatedAt).toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  // ─── Toolbar (dipakai di state normal maupun kosong) ───────────────────────
+  const toolbar = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Dropdown
+        icon={Calendar}
+        buttonLabel={quarterLabel}
+        open={quarterOpen}
+        setOpen={setQuarterOpen}
+        widthClass="w-72"
+      >
+        {options.availableQuarters.map((q) => (
+          <DropdownItem
+            key={q.value}
+            active={q.value === selectedQuarter}
+            onClick={() => handleQuarterChange(q.value)}
+          >
+            {q.label}
+          </DropdownItem>
+        ))}
+      </Dropdown>
+
+      {/* Manager terkunci ke divisinya sendiri — API mengabaikan filter ini */}
+      {role !== 'MANAGER' && options.divisionList.length > 0 && (
+        <Dropdown
+          icon={Users}
+          buttonLabel={divisionLabel}
+          open={divisionOpen}
+          setOpen={setDivisionOpen}
+          widthClass="w-60"
+        >
+          <DropdownItem active={selectedDivision === 'ALL'} onClick={() => handleDivisionChange('ALL')}>
+            Semua Divisi
+          </DropdownItem>
+          {options.divisionList.map((d) => (
+            <DropdownItem
+              key={d.id}
+              active={d.id === selectedDivision}
+              onClick={() => handleDivisionChange(d.id)}
+            >
+              {d.name}
+            </DropdownItem>
+          ))}
+        </Dropdown>
+      )}
+
+      <button
+        onClick={() => fetchData(selectedQuarter, selectedDivision)}
+        disabled={loading}
+        className={btnSecondary}
+      >
+        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        Muat Ulang
+      </button>
+    </div>
+  )
+
+  const header = (
+    <div className="min-w-0">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+        Laporan Kinerja
+      </h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Ringkasan penyelesaian action plan, kecepatan pengerjaan, dan kelengkapan bukti kerja per periode.
+      </p>
+      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+        {[meta.companyName, quarterLabel, divisionLabel].filter(Boolean).join(' · ')} · diperbarui {updatedAt}
+      </p>
+    </div>
+  )
+
+  // ─── State: belum ada data di periode ini ──────────────────────────────────
+  if (isEmpty) {
+    return (
+      <div className="space-y-5">
+        {header}
+        {toolbar}
+        <StateCard
+          icon={BarChart3}
+          tone="neutral"
+          title="Belum ada action plan di periode ini"
+          message="Pilih periode lain, atau mulai dengan membuat action plan baru."
+        >
+          <Link href="/action-plans" className={btnPrimary}>
+            Buka Action Plans
+          </Link>
+        </StateCard>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      {/* ─── Page Header ─────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-700/60 bg-slate-900/95 sticky top-0 z-20 backdrop-blur-sm">
-        <div className="px-6 py-4">
-          {/* Badge row */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs text-slate-500">EXECUTIVE INTELLIGENCE</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-xs font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-              PRD V2.4 §C1 #16
-            </span>
-            <span className="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
-              §B5
-            </span>
-          </div>
+    <div className={`space-y-5 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+      {header}
+      {toolbar}
 
-          {/* Title + Filter row */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-400" />
-                Executive Reports &amp; Performance Analytics
-              </h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Laporan komprehensif realisasi Action Plan, evaluasi kecepatan eksekusi, audit kepatuhan bukti kerja, serta export data formal eksekutif.
+      {/* ─── Angka utama ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <StatCard
+          icon={TrendingUp}
+          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+          label="Penyelesaian Action Plan"
+          value={String(kpi.goalRealization.value)}
+          unit="%"
+          context={`${kpi.goalRealization.completed} dari ${kpi.goalRealization.total} selesai`}
+          footer={
+            trend === null ? (
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Tidak ada data pembanding di {kpi.goalRealization.prevQuarter}
               </p>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Quarter dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => { setQuarterOpen((v) => !v); setDivisionOpen(false) }}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-lg text-sm transition-colors"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="text-slate-200 max-w-[200px] truncate">{currentQuarterLabel}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${quarterOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {quarterOpen && (
-                  <div className="absolute top-full mt-1 left-0 z-30 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/40 min-w-[280px] py-1.5 overflow-hidden">
-                    {meta2.availableQuarters.map((q) => (
-                      <button
-                        key={q.value}
-                        onClick={() => handleQuarterChange(q.value)}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 transition-colors ${selectedQuarter === q.value ? 'text-blue-400 font-semibold' : 'text-slate-300'}`}
-                      >
-                        {q.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Division dropdown */}
-              {meta2.divisionList.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => { setDivisionOpen((v) => !v); setQuarterOpen(false) }}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-lg text-sm transition-colors"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-slate-200 max-w-[180px] truncate">{currentDivisionLabel}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${divisionOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {divisionOpen && (
-                    <div className="absolute top-full mt-1 left-0 z-30 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/40 min-w-[200px] py-1.5">
-                      <button
-                        onClick={() => handleDivisionChange('ALL')}
-                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 ${selectedDivision === 'ALL' ? 'text-blue-400 font-semibold' : 'text-slate-300'}`}
-                      >
-                        Semua Divisi
-                      </button>
-                      {meta2.divisionList.map((d) => (
-                        <button
-                          key={d.id}
-                          onClick={() => handleDivisionChange(d.id)}
-                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 ${selectedDivision === d.id ? 'text-blue-400 font-semibold' : 'text-slate-300'}`}
-                        >
-                          {d.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Export button */}
-              <button
-                onClick={() => handleDownload('executive-pdf', 'quick-export')}
-                disabled={downloadLoading['quick-export']}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors"
-              >
-                {downloadLoading['quick-export'] ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                Export Format Resmi
-              </button>
-
-              <button
-                onClick={() => fetchData(selectedQuarter, selectedDivision)}
-                className="p-2 bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-lg transition-colors"
-                title="Refresh data"
-              >
-                <RefreshCw className="w-4 h-4 text-slate-400" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 space-y-6">
-        {/* ─── KPI Cards ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Goal Realization */}
-          <KpiMetricCard
-            icon={<TrendingUp className="w-4 h-4" />}
-            accent="bg-blue-500/15 text-blue-400"
-            title="Sprint Goal Realization"
-            value={kpi.goalRealization.value}
-            unit="%"
-            trend={kpi.goalRealization.trend}
-            sub1={
-              <span className="text-xs text-slate-400">
-                Progress Eksekusi:{' '}
-                <span className="text-white font-semibold">
-                  {kpi.goalRealization.completed}/{kpi.goalRealization.total}
-                </span>{' '}
-                Selesai
-              </span>
-            }
-            sub2={
-              <ProgressBar
-                pct={kpi.goalRealization.value}
-                colorClass={kpi.goalRealization.status === 'ON_TRACK' ? 'bg-blue-500' : 'bg-amber-500'}
-              />
-            }
-          />
-
-          {/* Resolution SLA */}
-          <KpiMetricCard
-            icon={<Clock className="w-4 h-4" />}
-            accent="bg-violet-500/15 text-violet-400"
-            title="Resolusi Action Plan"
-            value={kpi.resolutionSLA.value}
-            unit="Hari"
-            sub1={
-              <span className="text-xs text-slate-400">
-                Target SLA: &lt;{' '}
-                <span className="text-white">{kpi.resolutionSLA.target}</span> Hari
-              </span>
-            }
-            badge={
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                  kpi.resolutionSLA.status === 'ON_TARGET'
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-red-500/15 text-red-400 border border-red-500/30'
+            ) : (
+              <p
+                className={`inline-flex items-center gap-1 text-xs font-medium ${
+                  trend > 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : trend < 0
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
-                {kpi.resolutionSLA.status === 'ON_TARGET' ? (
-                  <CheckCircle2 className="w-3 h-3" />
-                ) : (
-                  <XCircle className="w-3 h-3" />
-                )}
-                {kpi.resolutionSLA.status === 'ON_TARGET' ? 'ON TARGET' : 'SLA BREACH'}
-              </span>
-            }
-          />
-
-          {/* Evidence Compliance */}
-          <KpiMetricCard
-            icon={<ShieldCheck className="w-4 h-4" />}
-            accent="bg-emerald-500/15 text-emerald-400"
-            title="Kepatuhan Bukti Kerja"
-            value={kpi.evidenceCompliance.value}
-            unit={`% ${kpi.evidenceCompliance.label}`}
-            sub1={
-              <span className="text-xs text-slate-400">
-                <span className="text-white font-semibold">
-                  {kpi.evidenceCompliance.audited} dari {kpi.evidenceCompliance.total}
-                </span>{' '}
-                AP tervalidasi
-              </span>
-            }
-            badge={
-              kpi.evidenceCompliance.pendingSignOff > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  <AlertTriangle className="w-3 h-3" />
-                  {kpi.evidenceCompliance.pendingSignOff} Pending Sign-off
+                {trend > 0 ? (
+                  <TrendingUp className="w-3.5 h-3.5" />
+                ) : trend < 0 ? (
+                  <TrendingDown className="w-3.5 h-3.5" />
+                ) : null}
+                <span className="tabular-nums">
+                  {trend > 0 ? '+' : ''}
+                  {trend} poin
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Semua Terverifikasi
+                <span className="text-slate-400 dark:text-slate-500 font-normal">
+                  vs {kpi.goalRealization.prevQuarter}
                 </span>
-              )
-            }
-          />
+              </p>
+            )
+          }
+        />
 
-          {/* Overdue Risk */}
-          <KpiMetricCard
-            icon={<AlertTriangle className="w-4 h-4" />}
-            accent="bg-amber-500/15 text-amber-400"
-            title="Mitigasi Overdue"
-            value={kpi.overdueRisk.value}
-            unit={`% ${kpi.overdueRisk.label}`}
-            sub1={
-              <span className="text-xs text-slate-400">
-                Tertangani sebelum:{' '}
-                <span className="text-white font-semibold">{kpi.overdueRisk.activeOverdue} Kasus</span> aktif
-              </span>
-            }
-          />
-        </div>
+        <StatCard
+          icon={Clock}
+          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+          label="Rata-rata Waktu Selesai"
+          value={String(kpi.resolutionSLA.value)}
+          unit={kpi.resolutionSLA.unit}
+          context="Dihitung dari tanggal mulai hingga selesai (Action Plan COMPLETE)"
+        />
 
-        {/* ─── Main Content Grid ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-          {/* ─── Division Distribution (left) ──────────────────────────── */}
-          <div className="xl:col-span-7 space-y-4">
-            <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-white text-sm">Distribusi Kinerja per Divisi</h2>
-                    <span className="text-xs font-mono text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded border border-slate-600">
-                      PRD §B5
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Tingkat penyelesaian action plan lintas departemen — {meta.companyName ?? 'PT Samudera Pratama'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 bg-slate-700/60 rounded-lg p-0.5">
-                  <button
-                    onClick={() => setViewMode('table')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'table' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                    title="Tampilan tabel"
-                  >
-                    <Table2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('chart')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'chart' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                    title="Tampilan grafik"
-                  >
-                    <BarChart2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+        <StatCard
+          icon={ShieldCheck}
+          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+          label="Bukti Kerja Lengkap"
+          value={String(kpi.evidenceCompliance.value)}
+          unit="%"
+          context={`${kpi.evidenceCompliance.audited} dari ${kpi.evidenceCompliance.total} action plan memiliki bukti valid`}
+          footer={
+            kpi.evidenceCompliance.pendingSignOff > 0 ? (
+              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">
+                {kpi.evidenceCompliance.pendingSignOff} menunggu persetujuan
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">Tidak ada yang menunggu persetujuan</p>
+            )
+          }
+        />
 
-              {/* Table View */}
-              {viewMode === 'table' && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-slate-700/50">
-                        <th className="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                          Departemen / Divisi
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                          Volume AP
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider min-w-[160px]">
-                          Penyelesaian
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                          Overdue
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                          Indeks Tata Kelola
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700/30">
-                      {divisionDistribution.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-12 text-center text-slate-500 text-sm">
-                            Tidak ada data divisi untuk periode ini.
-                          </td>
-                        </tr>
-                      ) : (
-                        divisionDistribution.map((div) => (
-                          <tr key={div.id} className="hover:bg-slate-700/20 transition-colors group">
-                            <td className="px-5 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-blue-500/20 flex items-center justify-center">
-                                  <BriefcaseBusiness className="w-4 h-4 text-blue-400" />
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-white">{div.name}</p>
-                                  {div.head && (
-                                    <p className="text-xs text-slate-400">PIC: {div.head}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <span className="text-sm font-bold text-white">{div.totalAPs}</span>
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="space-y-1">
-                                <ProgressBar
-                                  pct={div.completionPct}
-                                  colorClass={
-                                    div.completionPct >= 85
-                                      ? 'bg-emerald-500'
-                                      : div.completionPct >= 60
-                                      ? 'bg-blue-500'
-                                      : div.completionPct >= 40
-                                      ? 'bg-amber-500'
-                                      : 'bg-red-500'
-                                  }
-                                />
-                                <p className="text-xs text-slate-500 text-right">
-                                  {div.completedAPs}/{div.totalAPs}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              {div.overdueAPs > 0 ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500/15 text-red-400 text-xs font-bold border border-red-500/30">
-                                  {div.overdueAPs}
-                                </span>
-                              ) : (
-                                <span className="text-slate-500 text-sm">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <GovernanceBadge index={div.governanceIndex} />
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Chart View */}
-              {viewMode === 'chart' && (
-                <div className="p-5 space-y-3">
-                  {divisionDistribution.length === 0 ? (
-                    <p className="text-center text-slate-500 text-sm py-8">
-                      Tidak ada data divisi untuk periode ini.
-                    </p>
-                  ) : (
-                    divisionDistribution.map((div) => (
-                      <div key={div.id} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300 font-medium">{div.name}</span>
-                          <div className="flex items-center gap-3">
-                            <GovernanceBadge index={div.governanceIndex} />
-                            <span className="text-sm font-bold text-white tabular-nums">
-                              {div.completionPct}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${
-                              div.completionPct >= 85
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
-                                : div.completionPct >= 60
-                                ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
-                                : div.completionPct >= 40
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                                : 'bg-gradient-to-r from-red-500 to-rose-400'
-                            }`}
-                            style={{ width: `${Math.min(div.completionPct, 100)}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          {div.completedAPs}/{div.totalAPs} selesai
-                          {div.overdueAPs > 0 && (
-                            <span className="text-red-400 ml-2">· {div.overdueAPs} overdue</span>
-                          )}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="px-5 py-3 border-t border-slate-700/50 bg-slate-800/40 flex items-center justify-between">
-                <p className="text-xs text-slate-400">
-                  Total portofolio aktif periode berjalan:{' '}
-                  <span className="font-semibold text-white">
-                    {divisionDistribution.reduce((s, d) => s + d.totalAPs, 0)} Action Items
-                  </span>{' '}
-                  across {divisionDistribution.length} divisi
-                </p>
-                <button className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">
-                  Buka Analisis SLA Detail
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ─── Right Column ─────────────────────────────────────────────── */}
-          <div className="xl:col-span-5 space-y-4">
-            {/* Bottleneck Analysis */}
-            <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
-                <div>
-                  <h2 className="font-bold text-white text-sm">Analisis Kemacetan Eksekusi</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Root cause identifikasi keterlambatan Action Plan pada sprint aktif
-                  </p>
-                </div>
-                <BarChart3 className="w-4 h-4 text-slate-500" />
-              </div>
-
-              <div className="p-5 space-y-4">
-                {bottlenecks.map((b, i) => {
-                  const colors = [
-                    { bar: 'bg-blue-500', text: 'text-blue-400', bg: 'bg-blue-500/10' },
-                    { bar: 'bg-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
-                    { bar: 'bg-slate-500', text: 'text-slate-400', bg: 'bg-slate-500/10' },
-                  ]
-                  const c = colors[i % colors.length]
-                  return (
-                    <div key={i} className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-white leading-tight">{b.label}</p>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.bg} ${c.text} shrink-0`}>
-                          {b.share}% delay share
-                        </span>
-                      </div>
-                      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${c.bar}`}
-                          style={{ width: `${b.share}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-slate-500">{b.description}</p>
-                    </div>
-                  )
-                })}
-
-                {/* Recommendation callout */}
-                <div className="mt-2 bg-blue-500/8 border border-blue-500/20 rounded-xl p-4">
-                  <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1.5">
-                    ⚡ Rekomendasi Otomatis
-                  </p>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Percepat antrian review dengan mengaktifkan reminder otomatis H-1 pada Settings
-                    Notifikasi agar verifikator menyelesaikan evaluasi sebelum ambang batas SLA terlampaui.
-                  </p>
-                  <button className="mt-2.5 text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
-                    Konfigurasi Reminder Sekarang
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Cron Dispatch Schedule */}
-            <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
-                <div>
-                  <h2 className="font-bold text-white text-sm">Jadwal Pengiriman Laporan</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Automated Cron Dispatch Engine</p>
-                </div>
-                <Send className="w-4 h-4 text-slate-500" />
-              </div>
-
-              <div className="p-5 space-y-4">
-                {/* Cron status */}
-                <div className="flex items-start gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-4">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 animate-pulse shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-400">Aktif (Vercel Cron Service)</p>
-                    <p className="text-xs text-slate-400 mt-0.5 font-mono">0 7 * * 1</p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Laporan mingguan dikirimkan otomatis setiap{' '}
-                      <span className="font-semibold text-white">Senin pukul 07:00 WIB</span> ke email
-                      Direksi dan Manager Divisi.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Recipients */}
-                <div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-                    Daftar Penerima Utama
-                  </p>
-                  <div className="space-y-2">
-                    {[
-                      { email: 'board-directors@samudeerapratama.co.id', role: 'BOD', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-                      { email: 'division-leads@samudeerapratama.co.id', role: 'Leads', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-                      { email: 'compliance.audit@samudeerapratama.co.id', role: 'Auditor', color: 'text-violet-400 bg-violet-500/10 border-violet-500/30' },
-                    ].map((r) => (
-                      <div key={r.email} className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Mail className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="text-xs text-slate-300 truncate font-mono">{r.email}</span>
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold shrink-0 ${r.color}`}>
-                          {r.role}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Next run + test button */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-700/50">
-                  <div>
-                    <p className="text-xs text-slate-500">Last run: Sen, 07:00 WIB</p>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Next run:{' '}
-                      <span className="text-white">
-                        {(() => {
-                          const now = new Date()
-                          const nextMonday = new Date(now)
-                          nextMonday.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7 || 7))
-                          return nextMonday.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })
-                        })()}
-                        , 07:00 WIB
-                      </span>
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleTestDispatch}
-                    disabled={dispatchLoading || dispatchSent}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                      dispatchSent
-                        ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600'
-                    }`}
-                  >
-                    {dispatchLoading ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : dispatchSent ? (
-                      <CheckCircle2 className="w-3 h-3" />
-                    ) : (
-                      <Send className="w-3 h-3" />
-                    )}
-                    {dispatchLoading ? 'Mengirim…' : dispatchSent ? 'Terkirim!' : 'Test Dispatch Sekarang'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Downloadable Reports ──────────────────────────────────────── */}
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
-            <div className="flex items-center gap-2">
-              <h2 className="font-bold text-white text-sm">Koleksi Laporan Siap Unduh</h2>
-              <span className="text-xs font-mono text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded border border-slate-600">
-                PRD §C1 #16
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              SHA-256 VALID
-            </div>
-          </div>
-
-          <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <DownloadCard
-              icon={<BookOpen className="w-5 h-5" />}
-              title="Laporan Eksekutif Bulanan (Executive Monthly Board Pack)"
-              fileType="PDF"
-              size="~4.6 MB"
-              description="Rangkuman holistik performa bulanan untuk rapat direksi dan BOD."
-              note={`Terakhir digenerate: Hari ini 08:00 WIB oleh Sistem Otomatis`}
-              onDownload={() => handleDownload('executive-pdf', 'exec-pdf')}
-              loading={!!downloadLoading['exec-pdf']}
-            />
-            <DownloadCard
-              icon={<FileSpreadsheet className="w-5 h-5" />}
-              title="Audit Trail Kepatuhan Bukti Kerja (Evidence Compliance Log)"
-              fileType="XLSX"
-              size="~3.1 MB"
-              description="Meliputi approval signature timestamp, audit log, & hash verifikasi bukti."
-              note="Meliputi semua AP dalam rentang periode yang dipilih."
-              onDownload={() => handleDownload('evidence-csv', 'evidence-csv')}
-              loading={!!downloadLoading['evidence-csv']}
-            />
-            <DownloadCard
-              icon={<BriefcaseBusiness className="w-5 h-5" />}
-              title="Matriks Beban Kerja Tim & SLA PIC (Workload & SLA Ledger)"
-              fileType="PDF"
-              size="~4.8 MB"
-              description="Evaluasi kapasitas personil, rekap durasi pengerjaan, & bottleneck list."
-              note="Top 50 AP selesai dengan detail durasi eksekusi dan SLA."
-              onDownload={() => handleDownload('workload-pdf', 'workload-pdf')}
-              loading={!!downloadLoading['workload-pdf']}
-            />
-            <DownloadCard
-              icon={<FileText className="w-5 h-5" />}
-              title="Rekapitulasi Proposal & Evaluasi Inisiatif Q3"
-              fileType="PDF"
-              size="~8.2 MB"
-              description="Rekap 14 inisiatif strategis, status persetujuan direksi, & budget utilization."
-              note="Mencakup semua proposal yang diajukan pada periode yang dipilih."
-              onDownload={() => handleDownload('proposal-pdf', 'proposal-pdf')}
-              loading={!!downloadLoading['proposal-pdf']}
-            />
-          </div>
-
-          {/* Security strip */}
-          <div className="px-5 py-3 border-t border-slate-700/50 bg-slate-800/40">
-            <p className="text-xs text-slate-500">
-              <span className="font-semibold text-slate-400">Security &amp; Signature:</span> Semua unduhan executive report dilengkapi digital cryptographic hash untuk keperluan audit eksternal BPKP / ISO 9001:2015.
-            </p>
-          </div>
-        </div>
+        <StatCard
+          icon={AlertTriangle}
+          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+          label="Tidak Terlambat"
+          value={String(kpi.overdueRisk.value)}
+          unit="%"
+          context={
+            kpi.overdueRisk.activeOverdue > 0
+              ? `${kpi.overdueRisk.activeOverdue} action plan saat ini lewat tenggat`
+              : 'Tidak ada action plan yang lewat tenggat'
+          }
+          footer={
+            kpi.overdueRisk.activeOverdue > 0 ? (
+              <Link
+                href="/action-plans?status=OVERDUE"
+                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Lihat yang terlambat <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : undefined
+          }
+        />
       </div>
 
-      {/* Close dropdowns on outside click */}
-      {(quarterOpen || divisionOpen) && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => { setQuarterOpen(false); setDivisionOpen(false) }}
-        />
-      )}
+      {/* ─── Rincian + penyimpangan ──────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        {/* Kinerja per divisi */}
+        <Card className="xl:col-span-7 min-w-0">
+          <SectionHead
+            title="Kinerja per Divisi"
+            subtitle="Tingkat penyelesaian action plan per divisi"
+            action={
+              <div className="inline-flex rounded-md border border-slate-300 dark:border-slate-700 overflow-hidden shrink-0">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Table2 className="w-3.5 h-3.5" /> Tabel
+                </button>
+                <button
+                  onClick={() => setViewMode('chart')}
+                  className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
+                    viewMode === 'chart'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <BarChart2 className="w-3.5 h-3.5" /> Grafik
+                </button>
+              </div>
+            }
+          />
+
+          {sortedDivisions.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Tidak ada data untuk divisi ini di periode terpilih.
+              </p>
+              {selectedDivision !== 'ALL' && (
+                <button
+                  onClick={() => handleDivisionChange('ALL')}
+                  className="mt-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Tampilkan semua divisi
+                </button>
+              )}
+            </div>
+          ) : viewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <th className="text-left font-medium px-5 py-2.5">Divisi</th>
+                    <th className="text-right font-medium px-3 py-2.5">Jumlah</th>
+                    <th className="text-right font-medium px-3 py-2.5">Selesai</th>
+                    <th className="text-right font-medium px-3 py-2.5">Terlambat</th>
+                    <th className="text-left font-medium px-3 py-2.5 w-32">% Selesai</th>
+                    <th className="text-left font-medium px-3 py-2.5">Status</th>
+                    <th className="px-5 py-2.5 w-10" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {sortedDivisions.map((div) => (
+                    <tr
+                      key={div.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <td className="px-5 py-3 min-w-0">
+                        <Link
+                          href={`/action-plans?division=${div.id}`}
+                          className="block min-w-0 group"
+                          title={`Lihat action plan divisi ${div.name}`}
+                        >
+                          <span className="block truncate font-medium text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {div.name}
+                          </span>
+                          {div.head && (
+                            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                              Manager: {div.head}
+                            </span>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                        {div.totalAPs}
+                      </td>
+                      <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                        {div.completedAPs}
+                      </td>
+                      <td
+                        className={`px-3 py-3 text-right tabular-nums font-medium ${
+                          div.overdueAPs > 0
+                            ? 'text-orange-600 dark:text-orange-400'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        {div.overdueAPs}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Bar pct={div.completionPct} />
+                          <span className="shrink-0 w-9 text-right text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                            {div.completionPct}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <GovernanceBadge level={div.governanceIndex} />
+                      </td>
+                      <td className="px-5 py-3">
+                        <Link
+                          href={`/action-plans?division=${div.id}`}
+                          className="inline-flex text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                          aria-label={`Lihat action plan divisi ${div.name}`}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-5 space-y-4">
+              {sortedDivisions.map((div) => (
+                <Link key={div.id} href={`/action-plans?division=${div.id}`} className="block group min-w-0">
+                  <div className="flex items-center justify-between gap-3 mb-1.5 min-w-0">
+                    <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                      {div.name}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                      {div.completionPct}%
+                    </span>
+                  </div>
+                  <Bar pct={div.completionPct} />
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                    {div.completedAPs} dari {div.totalAPs} selesai
+                    {div.overdueAPs > 0 && ` · ${div.overdueAPs} terlambat`}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {sortedDivisions.length > 0 && (
+            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                Total {totalDivisionAP} action plan di {sortedDivisions.length} divisi pada periode ini
+              </p>
+            </div>
+          )}
+        </Card>
+
+        {/* Penyebab keterlambatan */}
+        <Card className="xl:col-span-5 min-w-0">
+          <SectionHead
+            title="Penyebab Keterlambatan"
+            subtitle="Di mana action plan paling banyak tertahan"
+          />
+
+          <div className="p-5 space-y-5">
+            {bottlenecks.every((b) => b.count === 0) ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Tidak ada action plan yang tertahan pada periode ini.
+              </p>
+            ) : (
+              bottlenecks.map((b) => (
+                <div key={b.label} className="min-w-0">
+                  <div className="flex items-start justify-between gap-3 mb-1.5 min-w-0">
+                    <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{b.label}</span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                      {b.count}
+                    </span>
+                  </div>
+                  <Bar pct={b.share} tone="warning" />
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="tabular-nums">{b.share}%</span> dari total hambatan — {b.description}
+                  </p>
+                </div>
+              ))
+            )}
+
+            {topBottleneck && topBottleneck.count > 0 && (
+              <div className="flex gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">
+                <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-200">Saran</p>
+                  <p className="mt-0.5 text-xs text-blue-800 dark:text-blue-300">
+                    Hambatan terbanyak ada di &quot;{topBottleneck.label}&quot; ({topBottleneck.count} action
+                    plan).
+                    {worstDivision && worstDivision.completionPct < 60 && (
+                      <> Divisi {worstDivision.name} paling perlu perhatian ({worstDivision.completionPct}% selesai).</>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* ─── Unduh ───────────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Unduh Laporan</h2>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            Berisi data periode {quarterLabel}
+          </p>
+        </div>
+
+        {downloadError && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-sm text-red-700 dark:text-red-300">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            {downloadError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <DownloadCard
+            icon={FileText}
+            title="Ringkasan Kinerja Periode"
+            description="Angka utama dan tabel kinerja seluruh divisi."
+            fileType="PDF"
+            loading={!!downloading.executive}
+            onDownload={() => handleDownload('executive-pdf', 'executive')}
+          />
+          <DownloadCard
+            icon={FileSpreadsheet}
+            title="Daftar Bukti Kerja"
+            description="Seluruh action plan beserta link bukti dan catatan review."
+            fileType="CSV"
+            loading={!!downloading.evidence}
+            onDownload={() => handleDownload('evidence-csv', 'evidence')}
+          />
+          <DownloadCard
+            icon={Users}
+            title="Beban Kerja per PIC"
+            description="Action plan yang sudah selesai beserta lama pengerjaannya."
+            fileType="PDF"
+            loading={!!downloading.workload}
+            onDownload={() => handleDownload('workload-pdf', 'workload')}
+          />
+          <DownloadCard
+            icon={BarChart3}
+            title="Rekap Proposal"
+            description="Proposal yang diajukan pada periode ini beserta statusnya."
+            fileType="PDF"
+            loading={!!downloading.proposal}
+            onDownload={() => handleDownload('proposal-pdf', 'proposal')}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -177,7 +177,12 @@ export function canEditProposal(user: User, proposal: { proposerId: string; stat
 export function apScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  if (user.role === 'MANAGER') {
+    // Guard: Manager tanpa divisi fallback ke PIC milik sendiri agar tidak
+    // menghasilkan { divisionId: null } yang match semua AP personal lintas tenant.
+    if (!user.divisionId) return { picId: user.id }
+    return { divisionId: user.divisionId }
+  }
   return { picId: user.id }
 }
 

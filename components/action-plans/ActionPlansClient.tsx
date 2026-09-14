@@ -107,18 +107,25 @@ export function ActionPlansClient({
   openCreate,
   initialOpenId,
   initialHighlightId,
+  initialDivisionId,
+  initialStatus,
 }: {
   role: Role
   userId: string
   openCreate?: boolean
   initialOpenId?: string
   initialHighlightId?: string
+  initialDivisionId?: string
+  initialStatus?: string
 }) {
   const router = useRouter()
   const [data, setData] = useState<Ledger | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState('')
+  const [denied, setDenied] = useState(false)
+  // Drill-down dari Laporan: /action-plans?division=…&status=…
+  const [divisionFilter, setDivisionFilter] = useState(initialDivisionId ?? '')
+  const [statusFilter, setStatusFilter] = useState(initialStatus ?? '')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
@@ -190,7 +197,7 @@ export function ActionPlansClient({
 
   useEffect(() => {
     fetchData()
-  }, [statusFilter, priorityFilter, search, page])
+  }, [statusFilter, priorityFilter, divisionFilter, search, page])
 
   // Header "+ New > Action Plan" mengarah ke /action-plans?new=1. Buka modal,
   // lalu bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
@@ -208,13 +215,19 @@ export function ActionPlansClient({
       const qs = new URLSearchParams()
       if (statusFilter) qs.set('status', statusFilter)
       if (priorityFilter) qs.set('priority', priorityFilter)
+      if (divisionFilter) qs.set('divisionId', divisionFilter)
       if (search) qs.set('search', search)
       qs.set('page', String(page))
       qs.set('pageSize', String(PAGE_SIZE))
       const res = await fetch(`/api/action-plans${qs.toString() ? `?${qs}` : ''}`)
+      if (res.status === 401 || res.status === 403) {
+        setDenied(true)
+        return
+      }
       if (!res.ok) throw new Error('Gagal memuat data')
       const ledger: Ledger = await res.json()
       setData(ledger)
+      setError(null)
       // Refresh isi drawer sekaligus kalau AP yang dibuka ikut ter-filter.
       setSelected((prev) => (prev ? ledger.items.find((a) => a.id === prev.id) ?? prev : prev))
     } catch {
@@ -224,7 +237,8 @@ export function ActionPlansClient({
     }
   }
 
-  const activeFilterCount = (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0)
+  const activeFilterCount =
+    (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0) + (divisionFilter ? 1 : 0)
   const fieldsDefined = ['statusFilter', 'priorityFilter', 'search', 'page'] as const
 
   function applyFilter(kind: (typeof fieldsDefined)[number], value: string) {
@@ -237,12 +251,41 @@ export function ActionPlansClient({
   function resetFilters() {
     setStatusFilter('')
     setPriorityFilter('')
+    setDivisionFilter('')
     setSearch('')
     setSearchInput('')
     setPage(1)
   }
 
-  if (loading && !data) return <div className="text-sm text-slate-500 dark:text-slate-400">Memuat...</div>
+  if (denied) {
+    return (
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Anda tidak memiliki izin untuk melihat Action Plan ini.
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    )
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="space-y-4">
+        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   if (error && !data) {
     return (
@@ -271,9 +314,9 @@ export function ActionPlansClient({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-            Governance §B · Operational Execution
+            Eksekusi Operasional
           </p>
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Program Initiatives &amp; Action Plans</h1>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Program &amp; Action Plan</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -301,6 +344,26 @@ export function ActionPlansClient({
           </button>
         </div>
       </div>
+
+      {/* ===== Chip drill-down dari Laporan ===== */}
+      {divisionFilter && (
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300">
+          <span>
+            Menampilkan divisi{' '}
+            <strong>{data.items[0]?.division?.name ?? 'terpilih'}</strong>
+          </span>
+          <button
+            onClick={() => {
+              setDivisionFilter('')
+              setPage(1)
+              router.replace('/action-plans', { scroll: false })
+            }}
+            className="font-medium underline hover:no-underline"
+          >
+            Tampilkan semua
+          </button>
+        </div>
+      )}
 
       {/* ===== Success micro-banner ===== */}
       {successBanner && (
@@ -512,7 +575,7 @@ export function ActionPlansClient({
                         })
                         if (!res.ok) {
                           const errData = await res.json().catch(() => ({}))
-                          alert(errData.error || 'Gagal menambahkan Action Plan')
+                          setError(errData.error || 'Gagal menambahkan Action Plan')
                           return false
                         }
                         const createdData = await res.json()
@@ -521,7 +584,7 @@ export function ActionPlansClient({
                         showSuccess(`Action Plan "${quickTitle}" berhasil ditambahkan!`)
                         await fetchData()
                       } catch {
-                        alert('Terjadi kesalahan jaringan.')
+                        setError('Terjadi kesalahan jaringan saat menambahkan Action Plan.')
                         return false
                       }
                     }}

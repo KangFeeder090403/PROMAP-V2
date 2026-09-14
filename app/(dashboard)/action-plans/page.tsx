@@ -5,7 +5,14 @@ import { ActionPlansClient } from '@/components/action-plans/ActionPlansClient'
 export default async function ActionPlansPage({
   searchParams,
 }: {
-  searchParams: { new?: string; open?: string; id?: string; highlight?: string }
+  searchParams: {
+    new?: string
+    open?: string
+    id?: string
+    highlight?: string
+    division?: string
+    status?: string
+  }
 }) {
   const user = await getSessionUser()
   if (!user) redirect('/login')
@@ -19,6 +26,8 @@ export default async function ActionPlansPage({
       openCreate={searchParams.new === '1'}
       initialOpenId={searchParams.open || searchParams.id}
       initialHighlightId={searchParams.highlight}
+      initialDivisionId={searchParams.division}
+      initialStatus={searchParams.status}
     />
   )
 }

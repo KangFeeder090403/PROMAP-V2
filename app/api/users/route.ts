@@ -129,6 +129,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // Whitelist role saat pembuatan user:
+    // ADMIN_OPERATIONAL hanya boleh buat ADMIN_OPERATIONAL, MANAGER, atau PIC.
+    // SUPER_ADMIN hanya boleh dibuat oleh SUPER_ADMIN.
+    const targetRole = body.role ?? 'PIC'
+    const ADMIN_OPERATIONAL_ASSIGNABLE = ['ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
+    if (user.role === 'ADMIN_OPERATIONAL' && !ADMIN_OPERATIONAL_ASSIGNABLE.includes(targetRole)) {
+      return NextResponse.json({ error: 'Role tidak diizinkan untuk Admin Operational' }, { status: 403 })
+    }
+    if (targetRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Hanya Super Admin yang bisa membuat Super Admin' }, { status: 403 })
+    }
+
     const hashed = await bcrypt.hash(body.password, 12)
 
     const result = await prisma.user.create({
@@ -137,7 +149,7 @@ export async function POST(req: Request) {
         name: body.name,
         phone: body.phone ?? null,
         password: hashed,
-        role: body.role ?? 'PIC',
+        role: targetRole,
         // status selalu PENDING saat dibuat — approval terpisah lewat /approve
         status: 'PENDING',
         companyId: targetCompanyId,

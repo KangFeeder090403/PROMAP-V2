@@ -30,19 +30,19 @@ interface Lead {
 
 const LEAD_STATUS_CONFIG = {
   NEW: {
-    label: 'New Lead',
+    label: 'Lead Baru',
     className: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
   },
   TRIAL_ACTIVE: {
-    label: 'Trial Active',
+    label: 'Trial Aktif',
     className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
   },
   CONVERTED: {
-    label: 'Converted',
-    className: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+    label: 'Menjadi Klien',
+    className: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
   },
   COLD: {
-    label: 'Cold Lead',
+    label: 'Tidak Aktif',
     className: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-400',
   },
 }
@@ -59,6 +59,7 @@ export function LeadSection() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null)
@@ -87,6 +88,7 @@ export function LeadSection() {
   async function handleStatusChange(id: string, newStatus: string) {
     try {
       setUpdatingId(id)
+      setActionError(null)
       const res = await fetch(`/api/leads/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -97,7 +99,7 @@ export function LeadSection() {
         prev.map((l) => (l.id === id ? { ...l, status: newStatus as any } : l))
       )
     } catch {
-      alert('Gagal memperbarui status lead')
+      setActionError('Gagal memperbarui status prospek. Coba lagi.')
     } finally {
       setUpdatingId(null)
     }
@@ -106,6 +108,7 @@ export function LeadSection() {
   async function handleSaveNotes(id: string) {
     try {
       setUpdatingId(id)
+      setActionError(null)
       const res = await fetch(`/api/leads/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -117,7 +120,7 @@ export function LeadSection() {
       )
       setEditingNotesId(null)
     } catch {
-      alert('Gagal menyimpan catatan lead')
+      setActionError('Gagal menyimpan catatan prospek. Coba lagi.')
     } finally {
       setUpdatingId(null)
     }
@@ -141,6 +144,13 @@ export function LeadSection() {
 
   return (
     <div className="space-y-4">
+      {actionError && (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="font-bold ml-2">×</button>
+        </div>
+      )}
+
       {/* Header card */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
