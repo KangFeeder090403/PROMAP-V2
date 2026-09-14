@@ -71,10 +71,10 @@ const DEFAULT_SORT_OPTIONS: SortOption[] = [
 ]
 
 const PRIORITY_OPTIONS = [
-  { value: 'LOW', label: 'LOW' },
-  { value: 'MEDIUM', label: 'MEDIUM' },
-  { value: 'HIGH', label: 'HIGH' },
-  { value: 'URGENT', label: 'URGENT' },
+  { value: 'LOW', label: 'Rendah' },
+  { value: 'MEDIUM', label: 'Sedang' },
+  { value: 'HIGH', label: 'Tinggi' },
+  { value: 'URGENT', label: 'Mendesak' },
 ]
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -95,9 +95,9 @@ const AVATAR_COLORS = [
   'bg-blue-600',
   'bg-emerald-600',
   'bg-indigo-600',
-  'bg-violet-600',
+  'bg-slate-600',
   'bg-amber-600',
-  'bg-rose-600',
+  'bg-sky-600',
   'bg-teal-600',
 ]
 
