@@ -53,9 +53,9 @@ const KANBAN_COLS = [
 ]
 
 const DONUT_SEGS = [
-  { pct: 86, color: 'var(--donut-done, #1E40AF)', label: 'Selesai' },
-  { pct: 8, color: 'var(--donut-progress, #BFDBFE)', label: 'Dikerjakan' },
-  { pct: 6, color: 'var(--donut-review, #EF4444)', label: 'Review & Revisi' },
+  { pct: 86, color: '#1E40AF', label: 'Selesai' },
+  { pct: 8, color: '#93C5FD', label: 'Dikerjakan' },
+  { pct: 6, color: '#EF4444', label: 'Review & Revisi' },
 ]
 
 export function DashboardPreview() {
@@ -91,13 +91,6 @@ export function DashboardPreview() {
 
   return (
     <section ref={containerRef} className="bg-slate-50 py-12 dark:bg-slate-950">
-      <style>{`
-        :root { --donut-done: #1E40AF; --donut-progress: #BFDBFE; --donut-review: #EF4444; --donut-text: #0F172A; }
-        @media (prefers-color-scheme: dark) {
-          :root:not([data-theme="light"]) { --donut-done: #3B82F6; --donut-progress: #1E3A5F; --donut-review: #F87171; --donut-text: #F8FAFC; }
-        }
-        :root[data-theme="dark"] { --donut-done: #3B82F6; --donut-progress: #1E3A5F; --donut-review: #F87171; --donut-text: #F8FAFC; }
-      `}</style>
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section label */}
         <div className="mb-6 flex items-center justify-center gap-2">
@@ -206,7 +199,7 @@ export function DashboardPreview() {
                         cy="40"
                         r="30"
                         fill="none"
-                        stroke="var(--donut-done, #1E40AF)"
+                        stroke="#1E40AF"
                         strokeWidth="14"
                         strokeDasharray={`${86 * 1.885} ${(100 - 86) * 1.885}`}
                         strokeDashoffset="47.1"
@@ -219,7 +212,7 @@ export function DashboardPreview() {
                         cy="40"
                         r="30"
                         fill="none"
-                        stroke="var(--donut-progress, #BFDBFE)"
+                        stroke="#93C5FD"
                         strokeWidth="14"
                         strokeDasharray={`${8 * 1.885} ${(100 - 8) * 1.885}`}
                         strokeDashoffset={`${-(86 * 1.885) + 47.1}`}
@@ -231,13 +224,13 @@ export function DashboardPreview() {
                         cy="40"
                         r="30"
                         fill="none"
-                        stroke="var(--donut-review, #EF4444)"
+                        stroke="#EF4444"
                         strokeWidth="14"
                         strokeDasharray={`${6 * 1.885} ${(100 - 6) * 1.885}`}
                         strokeDashoffset={`${-((86 + 8) * 1.885) + 47.1}`}
                         transform="rotate(-90 40 40)"
                       />
-                      <text x="40" y="43" textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--donut-text, #0F172A)">
+                      <text x="40" y="43" textAnchor="middle" fontSize="12" fontWeight="bold" className="fill-slate-900 dark:fill-white">
                         86%
                       </text>
                     </svg>
