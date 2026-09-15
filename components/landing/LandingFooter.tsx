@@ -1,111 +1,69 @@
 'use client'
 
-import { useRef } from 'react'
 import Link from 'next/link'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useGSAP } from '@gsap/react'
 import { ProMapLogo } from '@/components/ui/ProMapLogo'
 
-gsap.registerPlugin(ScrollTrigger)
-
-const FOOTER_LINKS = {
-  Produk: [
-    { label: 'Platform', href: '#fitur' },
-    { label: 'Fitur Unggulan', href: '#fitur' },
-    { label: 'Alur Persetujuan', href: '#alur' },
-    { label: 'Uji Coba Demo', href: '#demo' },
-  ],
-  Perusahaan: [
-    { label: 'Privasi & Ketentuan', href: '#' },
-    { label: 'Keamanan & Kepatuhan', href: '#' },
-    { label: 'Standar Layanan', href: '#' },
-  ],
-}
+const NAV_ITEMS = [
+  { label: 'Tur Produk', href: '#tur-produk' },
+  { label: 'Fitur', href: '#fitur' },
+  { label: 'Alur Kerja', href: '#alur' },
+  { label: 'Tanya Jawab', href: '#faq' },
+  { label: 'Uji Coba Demo', href: '#demo' },
+]
 
 export function LandingFooter() {
-  const containerRef = useRef<HTMLElement>(null)
-
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia()
-      mm.add('(prefers-reduced-motion: no-preference)', () => {
-        gsap.from('.footer-content', {
-          scrollTrigger: { trigger: '.footer-content', start: 'top 90%', once: true },
-          y: 20,
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power2.out',
-          clearProps: 'all',
-        })
-      })
-      return () => mm.revert()
-    },
-    { scope: containerRef }
-  )
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#')) {
+      e.preventDefault()
+      const id = href.slice(1)
+      const el = document.getElementById(id)
+      if (!el) return
+      const targetY = el.getBoundingClientRect().top + window.scrollY - 64
+      window.scrollTo({ top: targetY, behavior: 'smooth' })
+    }
+  }
 
   return (
-    <footer ref={containerRef} className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <div className="footer-content mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
-          {/* Brand */}
-          <div className="col-span-1">
-            <div className="flex items-center gap-2.5">
-              <ProMapLogo className="h-8 w-8" />
-              <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-                ProMaP
-              </span>
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Enterprise</span>
-            </div>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-              Platform eksekusi & tata kelola rencana kerja korporasi. Akuntabel, terstruktur, terbukti.
-            </p>
-            <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
-              © {new Date().getFullYear()} ProMaP Enterprise. Hak cipta dilindungi.
-            </p>
+    <footer className="border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-950">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 sm:flex-row sm:px-6">
+        {/* Brand & copyright */}
+        <div className="flex flex-col items-center gap-2 sm:items-start">
+          <div className="flex items-center gap-2">
+            <ProMapLogo className="h-6 w-6" />
+            <span className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">
+              ProMaP
+            </span>
           </div>
-
-          {/* Links */}
-          {Object.entries(FOOTER_LINKS).map(([group, links]) => (
-            <div key={group}>
-              <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                {group}
-              </h4>
-              <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Platform eksekusi dan pemantauan rencana kerja tim.
+          </p>
         </div>
 
-        {/* Bottom strip */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-8 sm:flex-row dark:border-slate-800">
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            Standar Audit · Kepatuhan · Keamanan · Kebijakan SaaS
-          </p>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-xs font-medium text-blue-600 transition-colors hover:underline dark:text-blue-400"
-            >
-              Masuk ke Workspace
-            </Link>
+        {/* In-page Nav links */}
+        <nav className="flex flex-wrap items-center justify-center gap-5 text-xs text-slate-600 dark:text-slate-400">
+          {NAV_ITEMS.map((item) => (
             <a
-              href="#demo"
-              className="inline-flex h-7 items-center rounded-md bg-blue-600 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+              key={item.label}
+              href={item.href}
+              onClick={(e) => handleScroll(e, item.href)}
+              className="transition-colors hover:text-slate-900 dark:hover:text-white"
             >
-              Coba Demo
+              {item.label}
             </a>
-          </div>
+          ))}
+        </nav>
+
+        {/* Actions & copyright */}
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-slate-400 dark:text-slate-500">
+            © {new Date().getFullYear()} ProMaP
+          </span>
+          <Link
+            href="/login"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-xs transition-all hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            Masuk ke Workspace
+          </Link>
         </div>
       </div>
     </footer>

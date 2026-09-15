@@ -8,8 +8,11 @@ import { useGSAP } from '@gsap/react'
 import { ProMapLogo } from '@/components/ui/ProMapLogo'
 
 const NAV_LINKS = [
-  { label: 'Fitur Utama', targetId: 'fitur' },
+  { label: 'Tur Produk', targetId: 'tur-produk' },
+  { label: 'Fitur', targetId: 'fitur' },
   { label: 'Alur Kerja', targetId: 'alur' },
+  { label: 'Keamanan', targetId: 'keamanan' },
+  { label: 'Tanya Jawab', targetId: 'faq' },
   { label: 'Uji Coba', targetId: 'demo' },
 ]
 
@@ -17,7 +20,7 @@ export function LandingNav() {
   const [open, setOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Smooth scroll handler menggunakan GSAP — URL tetap bersih tanpa hash (#)
+  // Smooth scroll native — URL tetap bersih tanpa hash (#), aman tanpa plugin tambahan
   const handleNavClick = (e: React.MouseEvent, targetId: string) => {
     e.preventDefault()
     setOpen(false)
@@ -27,14 +30,10 @@ export function LandingNav() {
     const navHeight = 64
     const targetY = el.getBoundingClientRect().top + window.scrollY - navHeight
 
-    gsap.to(window, {
-      scrollTo: targetY,
-      duration: 0.8,
-      ease: 'power3.inOut',
+    window.scrollTo({
+      top: targetY,
+      behavior: 'smooth',
     })
-
-    // Fallback jika gsap scrollTo plugin tidak aktif
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   // Animate mobile menu open

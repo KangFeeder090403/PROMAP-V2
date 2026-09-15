@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { BarChart3, CheckCircle, FileText } from 'lucide-react'
+import { BarChart3, CheckCircle2, FileSpreadsheet, ShieldCheck } from 'lucide-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
@@ -11,23 +11,26 @@ gsap.registerPlugin(ScrollTrigger)
 const FEATURES = [
   {
     icon: BarChart3,
-    badge: '📊 Pemantauan Real-time',
+    badgeIcon: BarChart3,
+    badgeText: 'Pemantauan Terpadu',
     title: 'Pantau Eksekusi Rencana',
     description:
       'Pantau progres rencana kerja secara langsung melalui Kanban Board dinamis dan Kalender jadwal — setiap eksekusi terpantau secara real-time.',
     cta: 'Project → Task → Action Plan',
   },
   {
-    icon: CheckCircle,
-    badge: '✅ Verifikasi & Persetujuan',
+    icon: ShieldCheck,
+    badgeIcon: CheckCircle2,
+    badgeText: 'Verifikasi & Kepatuhan',
     title: 'Alur Persetujuan dengan Bukti Kerja',
     description:
-      'Pengumpulan bukti kerja, alur tiga lapis persetujuan, dan pencatatan aksi tindak lanjut selama masa input berlangsung.',
-    cta: 'Action Plan → Unggah Bukti → Persetujuan 3 Lapis',
+      'Pengumpulan bukti kerja terverifikasi, alur validasi manajer divisi, dan pencatatan aksi tindak lanjut selama masa input berlangsung.',
+    cta: 'Action Plan → Unggah Bukti → Validasi Manajer',
   },
   {
-    icon: FileText,
-    badge: '📄 Analitik & Ekspor',
+    icon: FileSpreadsheet,
+    badgeIcon: FileSpreadsheet,
+    badgeText: 'Analitik & Ekspor',
     title: 'Laporan Siap Presentasi',
     description:
       'Ekspor PDF/Excel laporan performa eksekusi yang bisa langsung dipresentasikan ke Dewan Direksi. Transparan, akurat, siap audit.',
@@ -76,7 +79,7 @@ export function FeatureCards() {
   )
 
   return (
-    <section id="fitur" ref={containerRef} className="bg-white py-16 sm:py-20 dark:bg-slate-900">
+    <section id="fitur" ref={containerRef} className="bg-white/60 py-16 backdrop-blur-xs sm:py-20 dark:bg-slate-900/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section header */}
         <div className="feat-header mb-12 text-center">
@@ -109,9 +112,12 @@ export function FeatureCards() {
               </div>
 
               {/* Badge */}
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                {feat.badge}
-              </p>
+              <div className="mb-2.5 flex items-center gap-1.5">
+                <feat.badgeIcon className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  {feat.badgeText}
+                </span>
+              </div>
 
               {/* Title */}
               <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-white">
