@@ -1,5 +1,7 @@
 'use client'
 
+import { useRef } from 'react'
+import gsap from 'gsap'
 import { Calendar, GripVertical } from 'lucide-react'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL, AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
@@ -77,17 +79,32 @@ export function KanbanCard({
   const isOverdue = ap.status === 'OVERDUE' || new Date(ap.endDate) < new Date()
   const isPendingApproval = ap.status === 'PENDING_APPROVAL'
 
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  function handleDragStart(e: React.DragEvent) {
+    onDragStart(e, ap.id)
+    requestAnimationFrame(() => {
+      if (cardRef.current) gsap.to(cardRef.current, { opacity: 0.45, scale: 0.98, duration: 0.18 })
+    })
+  }
+
+  function handleDragEnd() {
+    if (cardRef.current) gsap.to(cardRef.current, { opacity: 1, scale: 1, duration: 0.2, clearProps: 'opacity,scale' })
+  }
+
   return (
     <div
+      ref={cardRef}
       data-kanban-card-id={ap.id}
       draggable={draggable}
-      onDragStart={(e) => draggable && onDragStart(e, ap.id)}
+      onDragStart={(e) => draggable && handleDragStart(e)}
+      onDragEnd={handleDragEnd}
       onClick={onClick}
       title={!draggable ? 'Lihat detail (tidak bisa dipindah oleh Anda)' : undefined}
       className={`group rounded-xl border shadow-sm p-3.5 transition-all duration-150 select-none ${
         isSelected
           ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 dark:border-blue-500'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
       } ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
     >
       {/* Row 1: Code + Category badge + drag handle */}

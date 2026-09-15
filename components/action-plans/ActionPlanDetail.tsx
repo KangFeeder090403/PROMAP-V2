@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import type { Role } from '@/lib/generated/prisma/client'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import {
@@ -114,6 +116,33 @@ export function ActionPlanDetail({
   const [inlineNote, setInlineNote] = useState('')
   const [savingEvidence, setSavingEvidence] = useState(false)
 
+  const panelRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  // ponytail: enter via GSAP, exit via Radix data-[state=closed]
+  useGSAP(() => {
+    if (!actionPlan) return
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      if (overlayRef.current) {
+        gsap.from(overlayRef.current, { opacity: 0, duration: 0.25, ease: 'power2.out' })
+      }
+      if (panelRef.current) {
+        gsap.from(panelRef.current, { x: 32, opacity: 0, duration: 0.38, ease: 'power3.out' })
+      }
+      gsap.from('[data-drawer-section]', {
+        y: 10,
+        opacity: 0,
+        duration: 0.35,
+        stagger: 0.05,
+        delay: 0.1,
+        ease: 'power2.out',
+        clearProps: 'all',
+      })
+    })
+    return () => mm.revert()
+  }, { scope: panelRef, dependencies: [actionPlan?.id] })
+
   if (!actionPlan) return null
 
   const ap = actionPlan
@@ -217,8 +246,8 @@ export function ActionPlanDetail({
   return (
     <DialogPrimitive.Root open={!!actionPlan} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-[1px]" />
-        <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[580px] flex-col border-l border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right">
+        <DialogPrimitive.Overlay ref={overlayRef} className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-[1px]" />
+        <DialogPrimitive.Content ref={panelRef} className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[580px] flex-col border-l border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-xl outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right">
           {/* ===== Header ===== */}
           <div className="border-b border-slate-200 dark:border-slate-800 px-5 py-3">
             <div className="flex items-center justify-between gap-2">
@@ -292,7 +321,7 @@ export function ActionPlanDetail({
             )}
 
             {/* Context: PIC / Priority & Due */}
-            <div className="grid grid-cols-2 gap-3">
+            <div data-drawer-section className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3">
                 <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   <UserCheck className="h-3.5 w-3.5" /> PIC Pengelola
@@ -344,7 +373,7 @@ export function ActionPlanDetail({
             </div>
 
             {/* Governed Outcome KPI */}
-            <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-4">
+            <div data-drawer-section className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-4">
               <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <Target className="h-3.5 w-3.5" /> Governed Outcome KPI
               </p>
@@ -352,7 +381,7 @@ export function ActionPlanDetail({
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-slate-200 dark:border-slate-800">
+            <div data-drawer-section className="border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-1">
                 <button
                   type="button"

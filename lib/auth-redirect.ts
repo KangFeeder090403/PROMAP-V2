@@ -4,7 +4,7 @@
  */
 
 /** Exact-match public pages (use `===`) */
-export const PUBLIC_PAGES = ['/login', '/register', '/demo', '/landing'] as const
+export const PUBLIC_PAGES = ['/login', '/register', '/demo', '/landing', '/'] as const
 
 /** Prefix-match public API routes (use `startsWith`, trailing slash required) */
 export const PUBLIC_PREFIX = ['/api/auth/', '/api/guest/'] as const

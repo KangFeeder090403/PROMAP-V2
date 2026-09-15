@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -222,6 +224,25 @@ export function KanbanClient({
     }
     return map
   }, [scoped])
+
+  // GSAP stagger-in animation for newly rendered kanban cards
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const cards = gsap.utils.toArray<HTMLElement>('[data-kanban-card-id]:not([data-animated])')
+      if (!cards.length) return
+      cards.forEach((c) => c.setAttribute('data-animated', ''))
+      gsap.from(cards, {
+        y: 12,
+        opacity: 0,
+        duration: 0.45,
+        ease: 'power3.out',
+        stagger: { each: 0.035, from: 'start' },
+        clearProps: 'all',
+      })
+    })
+    return () => mm.revert()
+  }, { scope: boardRef, dependencies: [scoped] })
 
   function canDrag(ap: ActionPlan) {
     return canDragKanbanCard(ap, { id: userId, role, divisionId })
