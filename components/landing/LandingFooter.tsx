@@ -2,10 +2,10 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { Check } from 'lucide-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
+import { ProMapLogo } from '@/components/ui/ProMapLogo'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -51,9 +51,7 @@ export function LandingFooter() {
           {/* Brand */}
           <div className="col-span-1">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-800">
-                <Check className="h-5 w-5 text-white" strokeWidth={2.5} aria-hidden="true" />
-              </div>
+              <ProMapLogo className="h-8 w-8" />
               <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
                 ProMaP
               </span>
