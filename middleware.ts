@@ -11,6 +11,19 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+
+  // Rute root '/'
+  if (pathname === '/') {
+    if (token) return NextResponse.next()
+    return NextResponse.rewrite(new URL('/landing', req.url))
+  }
+
+  // User sudah login tidak perlu akses halaman auth
+  if (token && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
   // Public pages — exact match
   if ((PUBLIC_PAGES as readonly string[]).includes(pathname)) {
     return NextResponse.next()
@@ -21,9 +34,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Cek JWT dari httpOnly cookie untuk rute terproteksi lainnya
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
-
+  // Proteksi rute privat lainnya
   if (!token) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
