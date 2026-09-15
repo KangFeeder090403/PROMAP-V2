@@ -238,7 +238,7 @@ export function ActionPlanFormModal({
             <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span className="truncate">
-                ✓ Tersimpan: &ldquo;{lastCreatedTitle}&rdquo; · #{createdCount} dibuat
+                Tersimpan: &ldquo;{lastCreatedTitle}&rdquo; · #{createdCount} dibuat
               </span>
             </div>
           )}

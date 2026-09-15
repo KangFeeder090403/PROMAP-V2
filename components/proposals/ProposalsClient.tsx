@@ -484,7 +484,7 @@ export function ProposalsClient({
                           ? 'text-blue-600 dark:text-blue-400'
                           : 'text-amber-600 dark:text-amber-400'
                       }`}>
-                        ❝ Catatan Review Manajer
+                        Catatan Review Manajer
                       </p>
                       <p className={`text-xs italic line-clamp-3 ${
                         p.status === 'APPROVED'

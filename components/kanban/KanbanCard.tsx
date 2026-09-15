@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import gsap from 'gsap'
-import { Calendar, GripVertical } from 'lucide-react'
+import { AlertTriangle, Calendar, GripVertical } from 'lucide-react'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL, AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 
@@ -131,7 +131,7 @@ export function KanbanCard({
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${AP_STATUS_STYLE[subStatusBadge]}`}
           >
-            {subStatusBadge === 'OVERDUE' && <span>⚠</span>}
+            {subStatusBadge === 'OVERDUE' && <AlertTriangle className="h-3 w-3" />}
             {AP_STATUS_LABEL[subStatusBadge]}
           </span>
         </div>
