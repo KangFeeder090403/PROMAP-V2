@@ -1,12 +1,20 @@
+'use client'
+
+import { useRef } from 'react'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const FOOTER_LINKS = {
   Produk: [
     { label: 'Platform', href: '#fitur' },
     { label: 'Fitur Unggulan', href: '#fitur' },
     { label: 'Alur Persetujuan', href: '#alur' },
-    { label: 'Untuk Siapa', href: '#alur' },
+    { label: 'Uji Coba Demo', href: '#demo' },
   ],
   Perusahaan: [
     { label: 'Privasi & Ketentuan', href: '#' },
@@ -16,9 +24,29 @@ const FOOTER_LINKS = {
 }
 
 export function LandingFooter() {
+  const containerRef = useRef<HTMLElement>(null)
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia()
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.from('.footer-content', {
+          scrollTrigger: { trigger: '.footer-content', start: 'top 90%', once: true },
+          y: 20,
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          clearProps: 'all',
+        })
+      })
+      return () => mm.revert()
+    },
+    { scope: containerRef }
+  )
+
   return (
-    <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <footer ref={containerRef} className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="footer-content mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           {/* Brand */}
           <div className="col-span-1">
@@ -35,7 +63,7 @@ export function LandingFooter() {
               Platform eksekusi & tata kelola rencana kerja korporasi. Akuntabel, terstruktur, terbukti.
             </p>
             <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
-              © {new Date().getFullYear()} ProMaP Enterprise. All rights reserved.
+              © {new Date().getFullYear()} ProMaP Enterprise. Hak cipta dilindungi.
             </p>
           </div>
 
@@ -64,7 +92,7 @@ export function LandingFooter() {
         {/* Bottom strip */}
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-8 sm:flex-row dark:border-slate-800">
           <p className="text-xs text-slate-400 dark:text-slate-500">
-            Audit Standards · Compliance · Security · SaaS Policy
+            Standar Audit · Kepatuhan · Keamanan · Kebijakan SaaS
           </p>
           <div className="flex items-center gap-4">
             <Link

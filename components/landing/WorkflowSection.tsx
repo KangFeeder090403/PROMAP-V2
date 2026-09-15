@@ -1,60 +1,109 @@
+'use client'
+
+import { useRef } from 'react'
 import { CheckCircle2, FileUp, UserCheck } from 'lucide-react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const STEPS = [
   {
     number: '01',
     icon: UserCheck,
-    title: 'Pendelegasian & Breakdown',
+    title: 'Pendelegasian & Penugasan',
     description:
-      'Dewan Direksi atau Manager mendelegasikan target kerja ke masing-masing PIC dengan scope, deadline, dan prioritas yang spesifik.',
+      'Dewan Direksi atau Manajer mendelegasikan target kerja ke masing-masing PIC dengan cakupan, tenggat, dan prioritas yang spesifik.',
   },
   {
     number: '02',
     icon: FileUp,
-    title: 'Unggah Dokumen / Bukti (Evidence)',
+    title: 'Unggah Bukti Kerja',
     description:
       'PIC mengerjakan rencana aksi dan mengunggah bukti penyelesaian (PDF, Excel, gambar) — sistem mencatat selama masa input berlangsung.',
   },
   {
     number: '03',
     icon: CheckCircle2,
-    title: 'Verifikasi & Pengesahan Manajer',
+    title: 'Verifikasi & Keputusan Manajer',
     description:
-      'Manajer mereview evidence yang diunggah, bisa menolak atau menyetujui. Setiap keputusan terekam dalam audit log otomatis.',
+      'Manajer mereview bukti yang diunggah, bisa menolak atau menyetujui. Setiap keputusan terekam dalam log audit otomatis.',
   },
 ]
 
-// Evidence panel preview data
+// Evidence panel preview data — nama contoh fiktif, bukan nama asli
 const EVIDENCE_ITEMS = [
-  { name: 'Kontrak Kerjasama Terbaru.pdf', type: 'PDF', size: '2.4 MB', status: 'Approved' },
-  { name: 'Bambang Wijaya Foto Pengesahan.jpg', type: 'IMG', size: '840 KB', status: 'Approved' },
-  { name: 'Akhir Durasi Kontrak.xlsx', type: 'XLS', size: '1.1 MB', status: 'Review' },
+  { name: 'Kontrak Kerjasama Terbaru.pdf', type: 'PDF', size: '2.4 MB', status: 'Disetujui' },
+  { name: 'Dokumentasi Pengesahan.jpg', type: 'IMG', size: '840 KB', status: 'Disetujui' },
+  { name: 'Laporan Akhir Kontrak.xlsx', type: 'XLS', size: '1.1 MB', status: 'Ditinjau' },
 ]
 
 export function WorkflowSection() {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia()
+      mm.add('(prefers-reduced-motion: no-preference)', () => {
+        // Header
+        gsap.from('.wf-header', {
+          scrollTrigger: { trigger: '.wf-header', start: 'top 85%', once: true },
+          y: 24,
+          opacity: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+        })
+
+        // Steps stagger
+        gsap.from('.wf-step', {
+          scrollTrigger: { trigger: '.wf-steps', start: 'top 80%', once: true },
+          x: -24,
+          opacity: 0,
+          duration: 0.6,
+          stagger: 0.15,
+          ease: 'power3.out',
+          clearProps: 'all',
+        })
+
+        // Evidence panel slide in from right
+        gsap.from('.wf-panel', {
+          scrollTrigger: { trigger: '.wf-panel', start: 'top 80%', once: true },
+          x: 32,
+          opacity: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+          clearProps: 'all',
+        })
+      })
+      return () => mm.revert()
+    },
+    { scope: containerRef }
+  )
+
   return (
-    <section id="alur" className="bg-slate-50 py-16 sm:py-20 dark:bg-slate-950">
+    <section id="alur" ref={containerRef} className="bg-slate-50 py-16 sm:py-20 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section header */}
-        <div className="mb-12">
+        <div className="wf-header mb-12">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-            Struktur Standar Korporasi
+            Alur Kerja Terstruktur
           </p>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-            Alur Terstruktur: Dari Arahan Dewan Direksi Menjadi Tindakan Nyata
+            Dari Arahan Pimpinan Menjadi Tindakan Nyata
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            Sistem pengawasan eksekusi berlangsung menyeluruh — recommendation target setiap satu
-            tingkat ke bawah, dan setiap langkah dapat diaudit. Tidak ada tugas yang hilang dari pengamatan.
+            Sistem pengawasan eksekusi menyeluruh — setiap arahan didelegasikan satu
+            tingkat ke bawah, dan setiap langkah dapat diaudit. Tidak ada tugas yang luput dari pengawasan.
           </p>
         </div>
 
         {/* 2-column layout */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
           {/* Left: Steps */}
-          <div className="flex flex-col gap-8">
+          <div className="wf-steps flex flex-col gap-8">
             {STEPS.map((step, idx) => (
-              <div key={step.number} className="flex gap-5">
+              <div key={step.number} className="wf-step flex gap-5">
                 {/* Step number + line */}
                 <div className="flex flex-col items-center">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-800 text-sm font-bold text-white">
@@ -86,19 +135,19 @@ export function WorkflowSection() {
 
           {/* Right: Evidence panel preview */}
           <div className="flex flex-col justify-center">
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
+            <div className="wf-panel overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
               {/* Panel header */}
               <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                    Panel Validasi Evidence
+                    Panel Validasi Bukti
                   </p>
                   <h4 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
                     AP-1142 · Pembaruan Kontrak
                   </h4>
                 </div>
                 <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                  Approval Pending
+                  Menunggu Persetujuan
                 </span>
               </div>
 
@@ -121,7 +170,7 @@ export function WorkflowSection() {
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        item.status === 'Approved'
+                        item.status === 'Disetujui'
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                           : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
                       }`}
@@ -132,19 +181,23 @@ export function WorkflowSection() {
                 ))}
               </div>
 
-              {/* Action buttons */}
+              {/* Action buttons — dekoratif, bukan fungsional */}
               <div className="flex gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-800">
                 <button
                   type="button"
-                  className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  className="flex-1 cursor-default rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                 >
                   Tolak & Minta Revisi
                 </button>
                 <button
                   type="button"
-                  className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                  aria-disabled="true"
+                  tabIndex={-1}
+                  className="flex-1 cursor-default rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white"
                 >
-                  Mulai & Verif Task
+                  Setujui & Verifikasi
                 </button>
               </div>
             </div>
