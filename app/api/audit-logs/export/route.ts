@@ -158,7 +158,7 @@ export async function GET(req: Request) {
       csvRows.push(row.join(','))
     }
 
-    const csvContent = '\uFEFF' + csvRows.join('\r\n') // with UTF-8 BOM for Excel compatibility
+    const csvContent = '\uFEFFsep=,\r\n' + csvRows.join('\r\n') // with UTF-8 BOM + sep=, for Excel compatibility
 
     return new NextResponse(csvContent, {
       headers: {
