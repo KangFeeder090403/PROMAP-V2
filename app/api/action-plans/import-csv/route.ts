@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
-import type { Priority } from '@/lib/generated/prisma/client'
+import type { Priority, Role } from '@/lib/generated/prisma/client'
 
 interface CsvImportPayloadItem {
   title: string
@@ -192,31 +192,37 @@ export async function POST(req: Request) {
       }
 
       // Tentukan target PIC secara cerdas
-      const targetUser = resolveTargetUser(item.picEmail)
-      if (!targetUser) {
-        const availableEmails = allCompanyUsers.slice(0, 5).map((u) => u.email).join(', ')
-        return NextResponse.json(
-          {
-            error: `Baris ke-${rowNum}: Pengguna "${item.picEmail}" tidak ditemukan di organisasi Anda. Contoh email yang aktif: ${availableEmails}`,
-          },
-          { status: 400 }
-        )
-      }
+      let targetUser: {
+        id: string
+        name: string
+        email: string
+        role: Role
+        companyId: string | null
+        divisionId: string | null
+      } | null = null
 
-      // Validasi scope PIC
-      if (user.role === 'PIC' && targetUser.id !== user.id) {
-        return NextResponse.json(
-          { error: `Baris ke-${rowNum}: PIC hanya boleh membuat Action Plan untuk diri sendiri.` },
-          { status: 403 }
-        )
-      }
-
-      if (user.role === 'MANAGER') {
-        if (targetUser.companyId !== user.companyId) {
+      if (user.role === 'PIC') {
+        // PIC selalu mengimpor action plan untuk diri sendiri
+        targetUser = user
+      } else {
+        targetUser = resolveTargetUser(item.picEmail) || defaultPicUser
+        if (!targetUser) {
+          const availableEmails = allCompanyUsers.slice(0, 5).map((u) => u.email).join(', ')
           return NextResponse.json(
-            { error: `Baris ke-${rowNum}: Target pengguna berada di luar perusahaan Anda.` },
-            { status: 403 }
+            {
+              error: `Baris ke-${rowNum}: Pengguna "${item.picEmail}" tidak ditemukan di organisasi Anda. Contoh email yang aktif: ${availableEmails}`,
+            },
+            { status: 400 }
           )
+        }
+
+        if (user.role === 'MANAGER') {
+          if (targetUser.companyId !== user.companyId) {
+            return NextResponse.json(
+              { error: `Baris ke-${rowNum}: Target pengguna berada di luar perusahaan Anda.` },
+              { status: 403 }
+            )
+          }
         }
       }
 
@@ -225,13 +231,13 @@ export async function POST(req: Request) {
       let divisionId: string | null
 
       if (isPersonal) {
-        if (!targetUser.companyId) {
+        if (!targetUser.companyId && !user.companyId) {
           return NextResponse.json(
-            { error: `Baris ke-${rowNum}: Target pengguna tidak terikat pada perusahaan.` },
+            { error: `Baris ke-${rowNum}: Pengguna tidak terikat pada perusahaan.` },
             { status: 400 }
           )
         }
-        companyId = targetUser.companyId
+        companyId = targetUser.companyId || user.companyId!
         divisionId =
           targetUser.role === 'SUPER_ADMIN' || targetUser.role === 'ADMIN_OPERATIONAL'
             ? null
@@ -255,30 +261,58 @@ export async function POST(req: Request) {
       })
     }
 
-    // Simpan semua secara atomik dalam satu transaksi
-    const createdPlans = await prisma.$transaction(
-      preparedList.map((p) =>
-        prisma.actionPlan.create({
-          data: {
-            title: p.title,
-            outcomeKpi: p.outcomeKpi,
-            priority: p.priority,
-            startDate: p.startDate,
-            endDate: p.endDate,
-            taskId: p.taskId,
-            picId: p.picId,
-            companyId: p.companyId,
-            divisionId: p.divisionId,
-            isPersonal: p.isPersonal,
-            status: 'NOT_STARTED',
-          },
-          include: {
-            pic: { select: { id: true, name: true, role: true } },
-            division: { select: { id: true, name: true } },
-          },
-        })
+    // Simpan semua ke database dengan createManyAndReturn (efisien, cepat, dan atomik)
+    let createdPlans: any[] = []
+    try {
+      createdPlans = await prisma.actionPlan.createManyAndReturn({
+        data: preparedList.map((p) => ({
+          title: p.title,
+          outcomeKpi: p.outcomeKpi,
+          priority: p.priority,
+          startDate: p.startDate,
+          endDate: p.endDate,
+          taskId: p.taskId,
+          picId: p.picId,
+          companyId: p.companyId,
+          divisionId: p.divisionId,
+          isPersonal: p.isPersonal,
+          status: 'NOT_STARTED',
+        })),
+        include: {
+          pic: { select: { id: true, name: true, role: true } },
+          division: { select: { id: true, name: true } },
+        },
+      })
+    } catch (batchErr) {
+      console.warn('[ACTION_PLANS_IMPORT_CSV] createManyAndReturn fallback to extended transaction:', batchErr)
+      createdPlans = await prisma.$transaction(
+        preparedList.map((p) =>
+          prisma.actionPlan.create({
+            data: {
+              title: p.title,
+              outcomeKpi: p.outcomeKpi,
+              priority: p.priority,
+              startDate: p.startDate,
+              endDate: p.endDate,
+              taskId: p.taskId,
+              picId: p.picId,
+              companyId: p.companyId,
+              divisionId: p.divisionId,
+              isPersonal: p.isPersonal,
+              status: 'NOT_STARTED',
+            },
+            include: {
+              pic: { select: { id: true, name: true, role: true } },
+              division: { select: { id: true, name: true } },
+            },
+          })
+        ),
+        {
+          timeout: 30000, // Timeout 30 detik untuk Neon Postgres latency
+          maxWait: 10000,
+        }
       )
-    )
+    }
 
     // Catat ke Audit Trail & Activity Log
     await logActivity({
@@ -311,8 +345,14 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('[ACTION_PLANS_IMPORT_CSV_POST]', error)
-    return NextResponse.json({ error: 'Terjadi kesalahan internal saat mengimpor CSV' }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: error?.message || 'Terjadi kesalahan internal saat mengimpor CSV',
+        detail: process.env.NODE_ENV === 'development' ? String(error?.stack || error) : undefined,
+      },
+      { status: 500 }
+    )
   }
 }
