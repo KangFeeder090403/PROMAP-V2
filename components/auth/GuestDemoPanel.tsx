@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -143,17 +142,12 @@ export function GuestDemoPanel() {
           Sesi Demo Berakhir
         </h2>
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-          Sesi demo Anda sudah habis. Mulai ulang atau daftarkan akun.
+          Sesi demo Anda sudah habis. Mulai ulang demo, atau hubungi Admin
+          Operasional perusahaan Anda untuk dibuatkan akun.
         </p>
         <Button onClick={handleRestart} disabled={loading} className={CTA}>
           Mulai Ulang Demo
         </Button>
-        <Link
-          href="/register"
-          className="mt-3 block text-center text-sm font-medium text-blue-500 transition-colors hover:underline"
-        >
-          Daftar Akun
-        </Link>
       </div>
     )
   }

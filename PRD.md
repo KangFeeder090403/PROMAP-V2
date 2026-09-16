@@ -238,10 +238,10 @@ Empty state **wajib memberikan next action** — bukan sekadar "No data".
 
 **Wajib dibuang dari semua mockup:**
 - Token Material 3, font Manrope/Hanken, Material Symbols, warna apapun dari Stitch
-- Field "Kode Unik Tenant" di login · Google SSO · blok "Quick Fill Akun Demo"
+- Field "Kode Unik Tenant" di login · blok "Quick Fill Akun Demo"
 - Search bar di header (ditunda V3) · Company switcher di header
 - Reports di navigation (baru muncul saat UI-12)
-- SLA badge, cryptographic hash, seat quota, label "Sprint W34" — semua tidak ada di schema
+- SLA badge, cryptographic hash, label "Sprint W34" — tidak ada di schema (seat quota sudah diimplementasi via QUOTA_MAP di POST /api/users)
 - Nama status karangan (DRAFT/SCHEDULED/REVISION/BLOCKED/ARCHIVED) → petakan ke 8 status §A4
 
 ---
@@ -261,7 +261,7 @@ Subcopy Project→Task→AP        Email · Password
   ADMIN_OPERATIONAL         ── tab Guest Demo ──
   MANAGER                      Nama · Email · Telepon · Perusahaan
   PIC                          CTA "Mulai Demo" (sesi 2 jam)
-Panel keamanan:             Footer strip: link Daftar Akun
+Panel keamanan:             Footer strip: "Hubungi Admin Operasional untuk dibuatkan akun"
   bcrypt 12 · JWT httpOnly
   no localStorage
   tenant isolation
@@ -604,7 +604,7 @@ model ActivityLog  { id userId actionPlanId? action oldValue? newValue? }
 
 ### Auth & Guest
 ```
-POST /api/auth/register          POST /api/guest/register
+POST /api/guest/register
 POST /api/auth/login             POST /api/guest/activate-trial
 GET  /api/auth/profile
 POST /api/auth/logout
@@ -801,9 +801,16 @@ DATABASE_URL         Neon pooled (runtime)
 DIRECT_URL           Neon direct (prisma migrate)
 NEXTAUTH_SECRET      openssl rand -base64 32
 NEXTAUTH_URL         localhost:3000 / URL Vercel
-GOOGLE_CLIENT_ID     opsional SSO
-GOOGLE_CLIENT_SECRET opsional SSO
+GOOGLE_CLIENT_ID     opsional SSO — kosong = tombol Google tidak dirender
+GOOGLE_CLIENT_SECRET opsional SSO — kosong = tombol Google tidak dirender
+CRON_SECRET          openssl rand -base64 32 (auth /api/cron/*)
 ```
+
+**Google SSO — batas perilaku.** Google hanya membuktikan kepemilikan email;
+seluruh claim diambil dari record `User` yang sudah ada. TIDAK ada auto-register:
+email yang belum terdaftar ditolak. Syarat lolos: `email_verified === true`,
+`deletedAt` null, `status === 'ACTIVE'`, bukan `isGuest`, dan company aktif
+(kecuali `SUPER_ADMIN`). Tanpa PrismaAdapter — `session.strategy` tetap `jwt`.
 
 ```json
 // vercel.json

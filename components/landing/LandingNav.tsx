@@ -88,19 +88,21 @@ export function LandingNav() {
         </nav>
 
         {/* CTA buttons */}
+        {/* Self-register dihapus — onboarding hanya lewat Admin Operasional.
+            Calon klien diarahkan ke Demo, karyawan ke Masuk. */}
         <div className="hidden items-center gap-3 lg:flex">
           <Link
-            href="/login"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            href="/demo"
+            className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
-            <LogIn className="h-4 w-4 text-slate-500" aria-hidden="true" />
-            Masuk
+            Coba Demo
           </Link>
           <Link
-            href="/register"
-            className="inline-flex h-9 items-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+            href="/login"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
           >
-            Daftar
+            <LogIn className="h-4 w-4" aria-hidden="true" />
+            Masuk
           </Link>
         </div>
 
@@ -135,19 +137,19 @@ export function LandingNav() {
             ))}
             <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
               <Link
-                href="/login"
+                href="/demo"
                 onClick={() => setOpen(false)}
-                className="mobile-nav-item inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                className="mobile-nav-item inline-flex h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
               >
-                <LogIn className="h-4 w-4 text-slate-500" aria-hidden="true" />
-                Masuk
+                Coba Demo
               </Link>
               <Link
-                href="/register"
+                href="/login"
                 onClick={() => setOpen(false)}
-                className="mobile-nav-item inline-flex h-9 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white"
+                className="mobile-nav-item inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 text-sm font-medium text-white"
               >
-                Daftar
+                <LogIn className="h-4 w-4" aria-hidden="true" />
+                Masuk
               </Link>
             </div>
           </nav>

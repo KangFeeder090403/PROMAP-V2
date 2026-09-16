@@ -46,8 +46,8 @@ check('rejects no leading slash', () => {
 
 // --- PUBLIC_PAGES ---
 
-check('PUBLIC_PAGES contains exactly /login, /register, /demo, /landing', () => {
-  assert.deepEqual([...PUBLIC_PAGES], ['/login', '/register', '/demo', '/landing'])
+check('PUBLIC_PAGES contains exactly /login, /demo, /landing', () => {
+  assert.deepEqual([...PUBLIC_PAGES], ['/login', '/demo', '/landing'])
 })
 
 // --- PUBLIC_PREFIX ---

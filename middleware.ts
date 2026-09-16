@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // User sudah login tidak perlu akses halaman auth
-  if (token && (pathname === '/login' || pathname === '/register')) {
+  if (token && pathname === '/login') {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
