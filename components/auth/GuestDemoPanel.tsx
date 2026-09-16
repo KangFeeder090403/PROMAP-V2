@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -85,6 +86,13 @@ export function GuestDemoPanel() {
         return
       }
 
+      // Otomatis autentikasi ke sesi demo NextAuth (Budi Santoso - Manager PT ProMaP Demo)
+      await signIn('credentials', {
+        email: 'budi@promapdemo.com',
+        password: 'Demo12345',
+        redirect: false,
+      })
+
       setPhase('active')
     } catch {
       if (gen === generation.current) {
@@ -112,10 +120,10 @@ export function GuestDemoPanel() {
           />
         </div>
         <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
-          Demo Aktif
+          Demo Aktif — PT ProMaP Demo
         </h2>
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-          Sesi demo Anda sedang berjalan. Jelajahi ProMaP dengan data contoh.
+          Sesi demo Anda aktif sebagai <strong className="font-semibold text-slate-800 dark:text-slate-200">Budi Santoso (Manager)</strong>. Anda dapat langsung menjelajahi dashboard dengan data contoh lengkap.
         </p>
         <Button
           onClick={() => {
@@ -127,7 +135,7 @@ export function GuestDemoPanel() {
           Masuk ke Dashboard
         </Button>
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-          Sesi berlaku 2 jam sejak pendaftaran.
+          Sesi demo terisolasi dan siap dieksplorasi.
         </p>
       </div>
     )

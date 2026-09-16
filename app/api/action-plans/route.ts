@@ -5,6 +5,11 @@ import { getSessionUser, apScope, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { shortRef } from '@/lib/dashboard-aggregate'
 import { logActivity } from '@/lib/activity-log'
+import {
+  getJakartaTodayRange,
+  getJakartaWeekRange,
+  getJakartaMonthRange,
+} from '@/lib/date-utils'
 
 export async function GET(req: Request) {
   try {
@@ -53,22 +58,16 @@ export async function GET(req: Request) {
     }
 
     if (dateRange) {
-      const now = new Date()
       if (dateRange === 'today') {
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+        const { start, end } = getJakartaTodayRange()
         where.startDate = { lte: end }
         where.endDate = { gte: start }
       } else if (dateRange === 'week') {
-        const day = now.getDay()
-        const diffToMon = (day + 6) % 7
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMon, 0, 0, 0, 0)
-        const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
+        const { start, end } = getJakartaWeekRange()
         where.startDate = { lte: end }
         where.endDate = { gte: start }
       } else if (dateRange === 'month') {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        const { start, end } = getJakartaMonthRange()
         where.startDate = { lte: end }
         where.endDate = { gte: start }
       }

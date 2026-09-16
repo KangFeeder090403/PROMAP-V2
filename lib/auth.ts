@@ -26,6 +26,7 @@ declare module 'next-auth' {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   // JWT di httpOnly cookie — bukan localStorage (PRD: Larangan Keras).

@@ -162,9 +162,37 @@ export function LoginForm() {
         </div>
         <div className="relative flex justify-center">
           <span className="bg-white px-3 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-            Atau
+            Akses Cepat Pengujian
           </span>
         </div>
+      </div>
+
+      {/* Quick Access Akun Demo */}
+      <div className="space-y-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true)
+            setError('')
+            const res = await signIn('credentials', {
+              email: 'budi@promapdemo.com',
+              password: 'Demo12345',
+              redirect: false,
+            })
+            setLoading(false)
+            if (res?.error) {
+              setError('Akun demo belum aktif atau database belum di-seed.')
+              return
+            }
+            router.push('/')
+            router.refresh()
+          }}
+          className="h-9 w-full rounded-md border-dashed border-blue-300 bg-blue-50/60 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/60"
+        >
+          ⚡ Masuk Cepat Akun Demo (Manager - PT ProMaP Demo)
+        </Button>
       </div>
 
       {/*
