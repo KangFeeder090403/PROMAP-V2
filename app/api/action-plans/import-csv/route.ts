@@ -75,12 +75,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Kumpulkan seluruh email dan user IDs yang terlibat
-    const emailsInCsv = Array.from(
-      new Set(items.map((it) => it.picEmail?.trim().toLowerCase()).filter((e): e is string => Boolean(e)))
-    )
-
-    // User lookup map: by ID and by Email
+    // Ambil seluruh user aktif di perusahaan
     const userWhere: Record<string, unknown> = {
       deletedAt: null,
       status: 'ACTIVE',
@@ -89,15 +84,18 @@ export async function POST(req: Request) {
       userWhere.companyId = user.companyId
     }
 
-    const [matchedUsers, defaultPicUser] = await Promise.all([
-      emailsInCsv.length > 0
-        ? prisma.user.findMany({
-            where: {
-              ...userWhere,
-              email: { in: emailsInCsv, mode: 'insensitive' },
-            },
-          })
-        : [],
+    const [allCompanyUsers, defaultPicUser] = await Promise.all([
+      prisma.user.findMany({
+        where: userWhere,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          companyId: true,
+          divisionId: true,
+        },
+      }),
       prisma.user.findFirst({
         where: { id: defaultPicId, deletedAt: null, status: 'ACTIVE' },
       }),
@@ -107,7 +105,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'PIC default tidak ditemukan atau tidak aktif' }, { status: 404 })
     }
 
-    const userByEmail = new Map(matchedUsers.map((u) => [u.email.toLowerCase(), u]))
+    // Helper pencarian pengguna cerdas (email, username, awalan, atau nama lengkap)
+    function resolveTargetUser(identifier: string | undefined) {
+      if (!identifier || !identifier.trim()) return defaultPicUser
+      const clean = identifier.trim().toLowerCase()
+
+      // 1. Exact email match (misal: dimas.sobat@promap.id)
+      const exactEmail = allCompanyUsers.find((u) => u.email.toLowerCase() === clean)
+      if (exactEmail) return exactEmail
+
+      // 2. Exact name match (misal: Dimas Setiawan)
+      const exactName = allCompanyUsers.find((u) => u.name.toLowerCase() === clean)
+      if (exactName) return exactName
+
+      // 3. Username / Email prefix match (misal: dimas atau dimas.sobat atau dimas@...)
+      const cleanPrefix = clean.includes('@') ? clean.split('@')[0] : clean
+      const prefixMatch = allCompanyUsers.find((u) => {
+        const uPrefix = u.email.split('@')[0].toLowerCase()
+        const uFirst = uPrefix.split('.')[0]
+        const cFirst = cleanPrefix.split('.')[0]
+        return uPrefix === cleanPrefix || uFirst === cFirst || cleanPrefix.startsWith(uFirst)
+      })
+      if (prefixMatch) return prefixMatch
+
+      // 4. Name contains (misal: "dimas" -> "Dimas Setiawan", "siti" -> "Siti Nurhaliza")
+      const namePart = allCompanyUsers.find((u) => u.name.toLowerCase().includes(cleanPrefix))
+      if (namePart) return namePart
+
+      return null
+    }
 
     // Validasi dan siapkan setiap baris Action Plan
     type PreparedItem = {
@@ -165,19 +191,16 @@ export async function POST(req: Request) {
         )
       }
 
-      // Tentukan target PIC
-      let targetUser = defaultPicUser
-      if (item.picEmail) {
-        const found = userByEmail.get(item.picEmail.trim().toLowerCase())
-        if (!found) {
-          return NextResponse.json(
-            {
-              error: `Baris ke-${rowNum}: Pengguna dengan email "${item.picEmail}" tidak ditemukan atau tidak aktif di organisasi Anda.`,
-            },
-            { status: 400 }
-          )
-        }
-        targetUser = found
+      // Tentukan target PIC secara cerdas
+      const targetUser = resolveTargetUser(item.picEmail)
+      if (!targetUser) {
+        const availableEmails = allCompanyUsers.slice(0, 5).map((u) => u.email).join(', ')
+        return NextResponse.json(
+          {
+            error: `Baris ke-${rowNum}: Pengguna "${item.picEmail}" tidak ditemukan di organisasi Anda. Contoh email yang aktif: ${availableEmails}`,
+          },
+          { status: 400 }
+        )
       }
 
       // Validasi scope PIC
@@ -189,11 +212,9 @@ export async function POST(req: Request) {
       }
 
       if (user.role === 'MANAGER') {
-        if (!taskId && targetUser.id !== user.id && targetUser.divisionId !== user.divisionId) {
+        if (targetUser.companyId !== user.companyId) {
           return NextResponse.json(
-            {
-              error: `Baris ke-${rowNum}: Manager hanya boleh menugaskan PIC pada divisinya sendiri.`,
-            },
+            { error: `Baris ke-${rowNum}: Target pengguna berada di luar perusahaan Anda.` },
             { status: 403 }
           )
         }
