@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, requireRole, canManageUsers } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { googleEnabled } from '@/lib/auth'
 
 // Password TIDAK PERNAH dikembalikan di response manapun.
 const SAFE_SELECT = {
@@ -62,8 +63,56 @@ export async function POST(req: Request) {
 
     const body = await req.json()
 
-    if (!body.email || !body.name || !body.password) {
-      return NextResponse.json({ error: 'email, name, password wajib diisi' }, { status: 400 })
+    if (!body.email || !body.name) {
+      return NextResponse.json({ error: 'email dan name wajib diisi' }, { status: 400 })
+    }
+
+    // Whitelist role saat pembuatan user:
+    // ADMIN_OPERATIONAL hanya boleh buat ADMIN_OPERATIONAL, MANAGER, atau PIC.
+    // SUPER_ADMIN hanya boleh dibuat oleh SUPER_ADMIN.
+    // Dihitung di sini (bukan setelah validasi relasi) karena guard password
+    // di bawah bergantung pada role target.
+    const targetRole = body.role ?? 'PIC'
+    const ADMIN_OPERATIONAL_ASSIGNABLE = ['ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
+    if (user.role === 'ADMIN_OPERATIONAL' && !ADMIN_OPERATIONAL_ASSIGNABLE.includes(targetRole)) {
+      return NextResponse.json({ error: 'Role tidak diizinkan untuk Admin Operational' }, { status: 403 })
+    }
+    if (targetRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Hanya Super Admin yang bisa membuat Super Admin' }, { status: 403 })
+    }
+
+    // Password opsional: kalau kosong, akun jadi SSO-only (password: null) dan
+    // hanya bisa masuk lewat Google — authorize() credentials menolak user tanpa password.
+    const rawPassword = typeof body.password === 'string' ? body.password : ''
+    const hasPassword = rawPassword.length > 0
+
+    // Role administratif wajib punya password: jalur masuk cadangan yang tidak
+    // bergantung pada ketersediaan / konfigurasi Google SSO.
+    if (!hasPassword && (targetRole === 'ADMIN_OPERATIONAL' || targetRole === 'SUPER_ADMIN')) {
+      return NextResponse.json(
+        {
+          error:
+            'Password wajib diisi untuk role Admin Operational dan Super Admin. Role administratif harus tetap bisa masuk walau Google SSO bermasalah.',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Tanpa password dan tanpa SSO = akun yang tidak bisa dipakai sama sekali.
+    if (!hasPassword && !googleEnabled) {
+      return NextResponse.json(
+        {
+          error:
+            'Password wajib diisi karena Google SSO belum aktif di instance ini. Akun tanpa password tidak akan bisa masuk.',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Lantai 8 karakter ditegakkan di server (NIST SP 800-63B).
+    // createUserSchema hanya berlaku di klien — route ini tidak memanggilnya.
+    if (hasPassword && rawPassword.length < 8) {
+      return NextResponse.json({ error: 'Password minimal 8 karakter' }, { status: 400 })
     }
 
     // companyId wajib dari session — Admin Ops = company sendiri.
@@ -129,19 +178,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // Whitelist role saat pembuatan user:
-    // ADMIN_OPERATIONAL hanya boleh buat ADMIN_OPERATIONAL, MANAGER, atau PIC.
-    // SUPER_ADMIN hanya boleh dibuat oleh SUPER_ADMIN.
-    const targetRole = body.role ?? 'PIC'
-    const ADMIN_OPERATIONAL_ASSIGNABLE = ['ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
-    if (user.role === 'ADMIN_OPERATIONAL' && !ADMIN_OPERATIONAL_ASSIGNABLE.includes(targetRole)) {
-      return NextResponse.json({ error: 'Role tidak diizinkan untuk Admin Operational' }, { status: 403 })
-    }
-    if (targetRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Hanya Super Admin yang bisa membuat Super Admin' }, { status: 403 })
-    }
-
-    const hashed = await bcrypt.hash(body.password, 12)
+    const hashed = hasPassword ? await bcrypt.hash(rawPassword, 12) : null
 
     const result = await prisma.user.create({
       data: {
@@ -167,7 +204,9 @@ export async function POST(req: Request) {
     await notify({
       userIds: admins.map((a) => a.id),
       title: 'User baru menunggu persetujuan',
-      message: `${result.name} (${result.email}) mendaftar dan menunggu approval.`,
+      message: hasPassword
+        ? `${result.name} (${result.email}) dibuat dengan email dan kata sandi, menunggu approval.`
+        : `${result.name} (${result.email}) dibuat tanpa kata sandi dan hanya bisa masuk lewat Google, menunggu approval.`,
       link: `/settings/users/${result.id}`,
       companyId: targetCompanyId,
     })

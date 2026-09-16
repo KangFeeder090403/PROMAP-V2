@@ -7,7 +7,9 @@ const roleEnum = z.enum(['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER', 'PIC'], 
 export const createUserSchema = z.object({
   email: z.string().email('Email tidak valid'),
   name: z.string().min(1, 'Nama wajib diisi'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  // Opsional: kosong = akun SSO-only (password null di DB, masuk lewat Google).
+  // Lantai 8 karakter mengikuti NIST SP 800-63B; backend menegakkan hal yang sama.
+  password: z.string().min(8, 'Password minimal 8 karakter').optional().or(z.literal('')),
   phone: z.string().optional(),
   role: roleEnum.optional(),
   companyId: z.string().optional(),
@@ -16,9 +18,11 @@ export const createUserSchema = z.object({
   supervisorId: z.string().nullable().optional(),
 })
 
-// Backend PUT /api/users/[id] hanya menerima role, divisionId, userLabelId,
-// supervisorId — JANGAN tambah field lain (email/password/name ditolak backend).
+// Backend PUT /api/users/[id] menerima name, phone, role, divisionId,
+// userLabelId, supervisorId.
 export const updateUserSchema = z.object({
+  name: z.string().min(2, 'Nama minimal 2 karakter').optional(),
+  phone: z.string().optional(),
   role: roleEnum.optional(),
   divisionId: z.string().nullable().optional(),
   userLabelId: z.string().nullable().optional(),
