@@ -78,6 +78,9 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items)
 /** Satu-satunya definisi "apakah href ini cocok dengan pathname sekarang". */
 export function matchesPath(href: string, pathname: string) {
   if (href === '/') return pathname === '/'
+  if (href === '/board' && (pathname === '/action-plans' || pathname.startsWith('/action-plans/'))) {
+    return true
+  }
   return pathname === href || pathname.startsWith(href + '/')
 }
 

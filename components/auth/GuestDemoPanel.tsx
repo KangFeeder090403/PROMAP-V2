@@ -86,9 +86,9 @@ export function GuestDemoPanel() {
         return
       }
 
-      // Otomatis autentikasi ke sesi demo NextAuth (Budi Santoso - Manager PT ProMaP Demo)
+      // Otomatis autentikasi ke sesi demo NextAuth (Hendra Wijaya - Manager SobatUMKM pro)
       await signIn('credentials', {
-        email: 'budi@promapdemo.com',
+        email: 'hendra.sobat@promap.id',
         password: 'Demo12345',
         redirect: false,
       })
@@ -120,10 +120,10 @@ export function GuestDemoPanel() {
           />
         </div>
         <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
-          Demo Aktif — PT ProMaP Demo
+          Demo Aktif — SobatUMKM pro
         </h2>
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-          Sesi demo Anda aktif sebagai <strong className="font-semibold text-slate-800 dark:text-slate-200">Budi Santoso (Manager)</strong>. Anda dapat langsung menjelajahi dashboard dengan data contoh lengkap.
+          Sesi demo Anda aktif sebagai <strong className="font-semibold text-slate-800 dark:text-slate-200">Hendra Wijaya (Manager IT Operasional)</strong>. Anda dapat langsung menjelajahi dashboard dengan data contoh lengkap.
         </p>
         <Button
           onClick={() => {

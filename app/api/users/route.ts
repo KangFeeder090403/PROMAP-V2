@@ -168,7 +168,7 @@ export async function POST(req: Request) {
       userIds: admins.map((a) => a.id),
       title: 'User baru menunggu persetujuan',
       message: `${result.name} (${result.email}) mendaftar dan menunggu approval.`,
-      link: `/settings/users/${result.id}`,
+      link: '/settings?tab=user',
       companyId: targetCompanyId,
     })
 
