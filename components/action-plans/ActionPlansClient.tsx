@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   X,
   FileSpreadsheet,
+  Upload,
   CheckCircle2,
   LayoutList,
   Kanban,
@@ -29,6 +30,7 @@ import {
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import { BulkCreateModal } from '@/components/action-plans/BulkCreateModal'
+import { ImportCsvModal } from '@/components/action-plans/ImportCsvModal'
 import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 
 export interface ActionPlan {
@@ -141,6 +143,7 @@ export function ActionPlansClient({
 
   const [formOpen, setFormOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
   const [successBanner, setSuccessBanner] = useState<string | null>(null)
@@ -162,7 +165,7 @@ export function ActionPlansClient({
           target?.tagName === 'TEXTAREA' ||
           target?.tagName === 'SELECT' ||
           target?.isContentEditable
-        if (!isInput && !formOpen && !bulkOpen && !selected) {
+        if (!isInput && !formOpen && !bulkOpen && !importOpen && !selected) {
           e.preventDefault()
           setEditing(null)
           setFormOpen(true)
@@ -174,7 +177,7 @@ export function ActionPlansClient({
       window.removeEventListener('keydown', handleKeyDown)
       if (bannerTimer.current) clearTimeout(bannerTimer.current)
     }
-  }, [formOpen, bulkOpen, selected])
+  }, [formOpen, bulkOpen, importOpen, selected])
 
   // Buka detail jika diakses lewat deep-link ?open=id
   useEffect(() => {
@@ -367,6 +370,15 @@ export function ActionPlansClient({
           >
             <FileSpreadsheet className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             Bulk Paste
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+            title="Import Action Plan dari file CSV (Maksimal 24 item / 6 hari kerja)"
+          >
+            <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            Import CSV
           </button>
           <button
             type="button"
@@ -813,6 +825,17 @@ export function ActionPlansClient({
         userRole={role}
         onSuccess={(count) => {
           showSuccess(`${count} Action Plan berhasil dibuat secara massal!`)
+          fetchData()
+        }}
+      />
+
+      <ImportCsvModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        currentUserId={userId}
+        userRole={role}
+        onSuccess={(count) => {
+          showSuccess(`${count} Action Plan berhasil diimpor dari CSV ke database!`)
           fetchData()
         }}
       />
