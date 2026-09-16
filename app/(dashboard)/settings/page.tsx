@@ -7,5 +7,5 @@ export default async function SettingsPage() {
   if (!user) redirect('/login')
   if (user.role === 'PIC' || user.role === 'GUEST') redirect('/')
 
-  return <SettingsClient role={user.role} companyId={user.companyId} />
+  return <SettingsClient role={user.role} companyId={user.companyId} sessionUserId={user.id} />
 }

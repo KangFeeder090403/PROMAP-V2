@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { UserFormModal } from '@/components/settings/UserFormModal'
 import { UserApproveDialog } from '@/components/settings/UserApproveDialog'
 import type { Company } from '@/components/settings/CompanySection'
@@ -34,7 +42,15 @@ const STATUS_LABEL: Record<ManagedUser['status'], string> = {
   INACTIVE: 'Nonaktif',
 }
 
-export function UserSection({ role, companyId }: { role: Role; companyId: string | null }) {
+export function UserSection({
+  role,
+  companyId,
+  sessionUserId,
+}: {
+  role: Role
+  companyId: string | null
+  sessionUserId?: string
+}) {
   const canManage = role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL'
   const isSuperAdmin = role === 'SUPER_ADMIN'
 
@@ -50,6 +66,10 @@ export function UserSection({ role, companyId }: { role: Role; companyId: string
   const [approveTarget, setApproveTarget] = useState<ManagedUser | null>(null)
   const [approveAction, setApproveAction] = useState<'approve' | 'reject' | null>(null)
   const [approveLoading, setApproveLoading] = useState(false)
+
+  const [statusTarget, setStatusTarget] = useState<ManagedUser | null>(null)
+  const [statusAction, setStatusAction] = useState<'deactivate' | 'reactivate' | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
 
   useEffect(() => {
     if (isSuperAdmin) fetchCompanies()
@@ -120,6 +140,29 @@ export function UserSection({ role, companyId }: { role: Role; companyId: string
       setError('Gagal memproses user')
     } finally {
       setApproveLoading(false)
+    }
+  }
+
+  async function handleStatusChange() {
+    if (!statusTarget || !statusAction) return
+    setStatusLoading(true)
+    try {
+      const res = await fetch(`/api/users/${statusTarget.id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: statusAction }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Gagal mengubah status user')
+      }
+      setStatusTarget(null)
+      setStatusAction(null)
+      fetchData()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal mengubah status user')
+    } finally {
+      setStatusLoading(false)
     }
   }
 
@@ -264,6 +307,30 @@ export function UserSection({ role, companyId }: { role: Role; companyId: string
                               </button>
                             </>
                           )}
+                          {u.status === 'ACTIVE' && u.id !== sessionUserId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStatusTarget(u)
+                                setStatusAction('deactivate')
+                              }}
+                              className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            >
+                              Nonaktifkan
+                            </button>
+                          )}
+                          {u.status === 'INACTIVE' && u.id !== sessionUserId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStatusTarget(u)
+                                setStatusAction('reactivate')
+                              }}
+                              className="text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                            >
+                              Aktifkan
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -306,6 +373,58 @@ export function UserSection({ role, companyId }: { role: Role; companyId: string
             onConfirm={handleApprove}
             loading={approveLoading}
           />
+
+          <Dialog
+            open={!!statusTarget}
+            onOpenChange={(open) => {
+              if (!open) {
+                setStatusTarget(null)
+                setStatusAction(null)
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="text-slate-900">
+                  {statusAction === 'deactivate' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'}
+                </DialogTitle>
+                <DialogDescription>
+                  {statusAction === 'deactivate'
+                    ? `Nonaktifkan akun "${statusTarget?.name}"? Pengguna tidak akan bisa login ke aplikasi.`
+                    : `Aktifkan kembali akun "${statusTarget?.name}"? Pengguna akan dapat login kembali.`}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusTarget(null)
+                    setStatusAction(null)
+                  }}
+                  disabled={statusLoading}
+                  className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStatusChange}
+                  disabled={statusLoading}
+                  className={`inline-flex items-center gap-2 h-9 px-4 rounded-md text-white text-sm font-medium transition-colors disabled:opacity-50 ${
+                    statusAction === 'deactivate'
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  {statusLoading
+                    ? 'Memproses...'
+                    : statusAction === 'deactivate'
+                    ? 'Nonaktifkan'
+                    : 'Aktifkan'}
+                </button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

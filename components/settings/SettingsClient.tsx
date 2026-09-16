@@ -65,7 +65,15 @@ const TAB_CONFIG: {
   },
 ]
 
-export function SettingsClient({ role, companyId }: { role: Role; companyId: string | null }) {
+export function SettingsClient({
+  role,
+  companyId,
+  sessionUserId,
+}: {
+  role: Role
+  companyId: string | null
+  sessionUserId?: string
+}) {
   const [tab, setTab] = useState<Tab>(() => defaultTabFor(role))
   const [auditLogOpen, setAuditLogOpen] = useState(false)
 
@@ -129,7 +137,7 @@ export function SettingsClient({ role, companyId }: { role: Role; companyId: str
             <DivisionSection role={role} companyId={companyId} />
           )}
           {tab === 'user' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER') && (
-            <UserSection role={role} companyId={companyId} />
+            <UserSection role={role} companyId={companyId} sessionUserId={sessionUserId} />
           )}
           {tab === 'userLabel' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER') && (
             <UserLabelSection role={role} companyId={companyId} />

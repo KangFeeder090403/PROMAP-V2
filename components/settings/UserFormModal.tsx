@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { AlertCircle } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { createUserSchema, updateUserSchema } from '@/lib/validations/user'
 import {
@@ -84,6 +85,8 @@ export function UserFormModal({
     setSubmitError('')
     if (mode === 'edit' && user) {
       reset({
+        name: user.name,
+        phone: user.phone ?? '',
         role: user.role,
         companyId: user.companyId ?? '',
         divisionId: user.divisionId ?? '',
@@ -106,6 +109,10 @@ export function UserFormModal({
   }, [open, mode, user, isSuperAdmin, defaultCompanyId, reset])
 
   const watchedCompanyId = watch('companyId')
+  // K-1: role administratif wajib punya password — harus tetap bisa masuk
+  // lewat email walau Google SSO bermasalah. Backend menegakkan aturan yang sama.
+  const watchedRole = watch('role')
+  const passwordRequired = watchedRole === 'ADMIN_OPERATIONAL' || watchedRole === 'SUPER_ADMIN'
   const effectiveCompanyId =
     mode === 'edit' ? user?.companyId ?? '' : isSuperAdmin ? watchedCompanyId : defaultCompanyId ?? ''
 
@@ -118,6 +125,14 @@ export function UserFormModal({
 
   async function onSubmit(values: FormValues) {
     setSubmitError('')
+
+    if (mode === 'create' && passwordRequired && !values.password) {
+      setError('password' as keyof FormValues, {
+        message: 'Password wajib diisi untuk role Admin Operational dan Super Admin',
+      })
+      return
+    }
+
     setLoading(true)
 
     const payload =
@@ -125,7 +140,8 @@ export function UserFormModal({
         ? {
             email: values.email,
             name: values.name,
-            password: values.password,
+            // String kosong dikirim sebagai undefined → backend membuat akun SSO-only.
+            password: values.password || undefined,
             phone: values.phone || undefined,
             role: values.role,
             companyId: isSuperAdmin ? values.companyId : undefined,
@@ -134,6 +150,8 @@ export function UserFormModal({
             supervisorId: values.supervisorId || null,
           }
         : {
+            name: values.name,
+            phone: values.phone || undefined,
             role: values.role,
             divisionId: values.divisionId || null,
             userLabelId: values.userLabelId || null,
@@ -174,59 +192,93 @@ export function UserFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          {mode === 'edit' && user && (
+            <div className="rounded-md bg-slate-50 dark:bg-slate-800/50 px-3 py-2 mb-2">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Email</p>
+              <p className="text-sm text-slate-800 dark:text-slate-200">{user.email}</p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-slate-700">
+              Nama
+            </Label>
+            <Input id="name" aria-invalid={!!errors.name} {...register('name')} />
+            {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+          </div>
+
           {mode === 'create' && (
             <>
-              <div className="space-y-1.5">
-                <Label htmlFor="name" className="text-slate-700">
-                  Nama
-                </Label>
-                <Input id="name" aria-invalid={!!errors.name} {...register('name')} />
-                {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-              </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-slate-700">
                   Email
                 </Label>
-                <Input id="email" type="email" aria-invalid={!!errors.email} {...register('email')} />
+                <Input
+                  id="email"
+                  type="email"
+                  aria-invalid={!!errors.email}
+                  aria-describedby="email-help"
+                  {...register('email')}
+                />
+                <p id="email-help" className="flex items-start gap-1.5 text-sm text-slate-500">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    Email tidak bisa diubah setelah akun dibuat. Periksa ejaannya sebelum menyimpan.
+                  </span>
+                </p>
                 {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-slate-700">
-                  Password
+                  Password{' '}
+                  <span className="font-normal text-slate-500">
+                    {passwordRequired ? '(wajib)' : '(opsional)'}
+                  </span>
                 </Label>
-                <Input id="password" type="password" aria-invalid={!!errors.password} {...register('password')} />
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  aria-invalid={!!errors.password}
+                  aria-describedby="password-help"
+                  {...register('password')}
+                />
+                <p id="password-help" className="text-sm text-slate-500">
+                  {passwordRequired
+                    ? 'Role administratif wajib punya password agar tetap bisa masuk jika Google bermasalah. Minimal 8 karakter.'
+                    : 'Kosongkan kalau user akan masuk lewat Google. Akun tanpa password hanya bisa masuk lewat Google. Minimal 8 karakter kalau diisi.'}
+                </p>
                 {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-slate-700">
-                  No HP
-                </Label>
-                <Input id="phone" {...register('phone')} />
-              </div>
-
-              {isSuperAdmin && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="companyId" className="text-slate-700">
-                    Perusahaan
-                  </Label>
-                  <select
-                    id="companyId"
-                    className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    {...register('companyId')}
-                  >
-                    <option value="">Pilih perusahaan</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="phone" className="text-slate-700">
+              No HP
+            </Label>
+            <Input id="phone" {...register('phone')} />
+          </div>
+
+          {mode === 'create' && isSuperAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="companyId" className="text-slate-700">
+                Perusahaan
+              </Label>
+              <select
+                id="companyId"
+                className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('companyId')}
+              >
+                <option value="">Pilih perusahaan</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           <div className="space-y-1.5">

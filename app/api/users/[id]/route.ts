@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, requireRole, canManageUsers } from '@/lib/rbac'
+import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 const SAFE_SELECT = {
   id: true,
@@ -73,6 +75,18 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const companyId = existing.companyId
     const updateData: Record<string, unknown> = {}
 
+    if (body.name !== undefined) {
+      const trimmed = String(body.name).trim()
+      if (trimmed.length < 2) {
+        return NextResponse.json({ error: 'Nama minimal 2 karakter' }, { status: 400 })
+      }
+      updateData.name = trimmed
+    }
+
+    if (body.phone !== undefined) {
+      updateData.phone = body.phone ? String(body.phone).trim() : null
+    }
+
     if (body.role !== undefined) {
       const ADMIN_OPERATIONAL_ASSIGNABLE = ['ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
       if (user.role === 'ADMIN_OPERATIONAL' && !ADMIN_OPERATIONAL_ASSIGNABLE.includes(body.role)) {
@@ -128,6 +142,24 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data: updateData,
       select: SAFE_SELECT,
     })
+
+    // Log perubahan
+    await logActivity({
+      userId: user.id,
+      action: 'UPDATED',
+      oldValue: JSON.stringify({ role: existing.role, divisionId: existing.divisionId, name: existing.name, phone: existing.phone }),
+      newValue: JSON.stringify(updateData),
+    })
+
+    // Notifikasi ke user yang diedit (kalau bukan diri sendiri)
+    if (id !== user.id) {
+      await notify({
+        userIds: [id],
+        title: 'Profil Anda diperbarui',
+        message: `Administrator telah memperbarui data profil Anda.`,
+        companyId: existing.companyId ?? undefined,
+      })
+    }
 
     return NextResponse.json(result)
   } catch (error) {
