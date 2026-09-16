@@ -19,32 +19,38 @@ const ROLE_LABEL: Record<Role, string> = {
   GUEST: 'Guest',
 }
 
+import {
+  getJakartaTimeGreeting,
+  getJakartaNow,
+  WIB_OFFSET_MS,
+} from '@/lib/date-utils'
+
 function timeGreeting() {
-  const h = new Date().getHours()
-  if (h >= 5 && h < 11) return 'Selamat Pagi'
-  if (h >= 11 && h < 15) return 'Selamat Siang'
-  if (h >= 15 && h < 18) return 'Selamat Sore'
-  return 'Selamat Malam'
+  return getJakartaTimeGreeting()
 }
 
 function startOfWindow(range: Range) {
-  const now = new Date()
-  const start = new Date(now)
-  if (range === 'today') start.setHours(0, 0, 0, 0)
+  const jNow = getJakartaNow()
+  const y = jNow.getUTCFullYear()
+  const m = jNow.getUTCMonth()
+  const d = jNow.getUTCDate()
+
+  if (range === 'today') {
+    return new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - WIB_OFFSET_MS)
+  }
   if (range === 'week') {
-    const dayFromMonday = (start.getDay() + 6) % 7
-    start.setDate(start.getDate() - dayFromMonday)
-    start.setHours(0, 0, 0, 0)
+    const dayOfWeek = jNow.getUTCDay()
+    const diffToMonday = (dayOfWeek + 6) % 7
+    return new Date(Date.UTC(y, m, d - diffToMonday, 0, 0, 0, 0) - WIB_OFFSET_MS)
   }
   if (range === 'month') {
-    start.setDate(1)
-    start.setHours(0, 0, 0, 0)
+    return new Date(Date.UTC(y, m, 1, 0, 0, 0, 0) - WIB_OFFSET_MS)
   }
   if (range === 'quarter') {
-    start.setMonth(Math.floor(start.getMonth() / 3) * 3, 1)
-    start.setHours(0, 0, 0, 0)
+    const qMonth = Math.floor(m / 3) * 3
+    return new Date(Date.UTC(y, qMonth, 1, 0, 0, 0, 0) - WIB_OFFSET_MS)
   }
-  return start
+  return new Date(Date.UTC(y, m, d, 0, 0, 0, 0) - WIB_OFFSET_MS)
 }
 
 function isRange(value: unknown): value is Range {

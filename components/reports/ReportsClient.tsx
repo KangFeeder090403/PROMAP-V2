@@ -232,16 +232,22 @@ function DownloadCard({
   fileType,
   loading,
   onDownload,
+  secondaryDownload,
 }: {
   icon: React.ElementType
   title: string
   description: string
-  fileType: 'PDF' | 'CSV'
+  fileType: string
   loading: boolean
   onDownload: () => void
+  secondaryDownload?: {
+    label: string
+    loading: boolean
+    onDownload: () => void
+  }
 }) {
   return (
-    <Card className="p-4 flex flex-col gap-3 min-w-0">
+    <Card className="p-4 flex flex-col gap-3 min-w-0 justify-between">
       <div className="flex items-start gap-3 min-w-0">
         <span className="shrink-0 inline-flex p-2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
           <Icon className="w-4 h-4" />
@@ -250,28 +256,62 @@ function DownloadCard({
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-medium text-slate-800 dark:text-slate-100">{title}</h3>
             <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-              {fileType}
+              {secondaryDownload ? `${fileType} & ${secondaryDownload.label}` : fileType}
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</p>
         </div>
       </div>
 
-      <button
-        onClick={onDownload}
-        disabled={loading}
-        className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors disabled:opacity-60"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" /> Menyiapkan…
-          </>
-        ) : (
-          <>
-            <Download className="w-4 h-4" /> Unduh
-          </>
-        )}
-      </button>
+      {secondaryDownload ? (
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={onDownload}
+            disabled={loading}
+            className="flex-1 inline-flex items-center justify-center gap-2 h-9 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium transition-colors disabled:opacity-60 shadow-sm"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyiapkan…
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" /> Unduh {fileType}
+              </>
+            )}
+          </button>
+          <button
+            onClick={secondaryDownload.onDownload}
+            disabled={secondaryDownload.loading}
+            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium transition-colors disabled:opacity-60"
+            title={`Unduh file format ${secondaryDownload.label}`}
+          >
+            {secondaryDownload.loading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5 text-slate-400" /> {secondaryDownload.label}
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onDownload}
+          disabled={loading}
+          className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Menyiapkan…
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" /> Unduh
+            </>
+          )}
+        </button>
+      )}
     </Card>
   )
 }
@@ -991,10 +1031,15 @@ export default function ReportsClient({ role }: { role: string }) {
           <DownloadCard
             icon={FileSpreadsheet}
             title="Daftar Bukti Kerja"
-            description="Seluruh action plan beserta link bukti dan catatan review."
-            fileType="CSV"
-            loading={!!downloading.evidence}
-            onDownload={() => handleDownload('evidence-csv', 'evidence')}
+            description="Seluruh action plan beserta link bukti kerja, catatan review, dan kepatuhan SLA."
+            fileType="Excel (.xlsx)"
+            loading={!!downloading.evidenceXlsx}
+            onDownload={() => handleDownload('evidence-xlsx', 'evidenceXlsx')}
+            secondaryDownload={{
+              label: 'CSV',
+              loading: !!downloading.evidenceCsv,
+              onDownload: () => handleDownload('evidence-csv', 'evidenceCsv'),
+            }}
           />
           <DownloadCard
             icon={Users}

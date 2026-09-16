@@ -207,7 +207,7 @@ export async function POST(req: Request) {
       message: hasPassword
         ? `${result.name} (${result.email}) dibuat dengan email dan kata sandi, menunggu approval.`
         : `${result.name} (${result.email}) dibuat tanpa kata sandi dan hanya bisa masuk lewat Google, menunggu approval.`,
-      link: `/settings/users/${result.id}`,
+      link: '/settings?tab=user',
       companyId: targetCompanyId,
     })
 

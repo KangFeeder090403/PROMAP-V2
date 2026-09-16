@@ -69,12 +69,22 @@ export function SettingsClient({
   role,
   companyId,
   sessionUserId,
+  initialTab,
 }: {
   role: Role
   companyId: string | null
   sessionUserId?: string
+  initialTab?: string
 }) {
-  const [tab, setTab] = useState<Tab>(() => defaultTabFor(role))
+  const [tab, setTab] = useState<Tab>(() => {
+    if (
+      initialTab &&
+      TAB_CONFIG.some((t) => t.key === initialTab && (t.roles as string[]).includes(role))
+    ) {
+      return initialTab as Tab
+    }
+    return defaultTabFor(role)
+  })
   const [auditLogOpen, setAuditLogOpen] = useState(false)
 
   const visibleTabs = TAB_CONFIG.filter((t) => (t.roles as string[]).includes(role))

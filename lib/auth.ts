@@ -70,6 +70,7 @@ const SSO_SELECT = {
 } as const
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: 'jwt' },
   // error diarahkan balik ke /login?error=... supaya pesan tampil dalam bahasa
   // Indonesia di panel login, bukan halaman bawaan NextAuth.

@@ -94,7 +94,7 @@ export async function GET(req: Request) {
         userIds: [ap.picId],
         title: 'Deadline besok',
         message: `"${ap.title}" jatuh tempo besok`,
-        link: `/action-plans/${ap.id}`,
+        link: `/action-plans?open=${ap.id}`,
         companyId: ap.companyId,
       })
       h1Count++

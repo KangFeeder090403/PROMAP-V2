@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import {
@@ -12,7 +13,11 @@ import {
   MoreHorizontal,
   X,
   FileSpreadsheet,
+  Upload,
   CheckCircle2,
+  LayoutList,
+  Kanban,
+  Calendar as CalendarIcon,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
@@ -25,6 +30,7 @@ import {
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import { BulkCreateModal } from '@/components/action-plans/BulkCreateModal'
+import { ImportCsvModal } from '@/components/action-plans/ImportCsvModal'
 import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 
 export interface ActionPlan {
@@ -137,6 +143,7 @@ export function ActionPlansClient({
 
   const [formOpen, setFormOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
   const [successBanner, setSuccessBanner] = useState<string | null>(null)
@@ -158,7 +165,7 @@ export function ActionPlansClient({
           target?.tagName === 'TEXTAREA' ||
           target?.tagName === 'SELECT' ||
           target?.isContentEditable
-        if (!isInput && !formOpen && !bulkOpen && !selected) {
+        if (!isInput && !formOpen && !bulkOpen && !importOpen && !selected) {
           e.preventDefault()
           setEditing(null)
           setFormOpen(true)
@@ -170,7 +177,7 @@ export function ActionPlansClient({
       window.removeEventListener('keydown', handleKeyDown)
       if (bannerTimer.current) clearTimeout(bannerTimer.current)
     }
-  }, [formOpen, bulkOpen, selected])
+  }, [formOpen, bulkOpen, importOpen, selected])
 
   // Buka detail jika diakses lewat deep-link ?open=id
   useEffect(() => {
@@ -310,15 +317,52 @@ export function ActionPlansClient({
 
   return (
     <div className="space-y-4">
-      {/* ===== Judul hal ===== */}
+      {/* ===== Breadcrumb & Header ===== */}
+      <nav className="text-xs text-slate-400 flex items-center gap-1.5">
+        <span>Workspace</span>
+        <span>/</span>
+        <span>Execution</span>
+        <span>/</span>
+        <span className="text-blue-500 font-medium">Action Plans (Table)</span>
+      </nav>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-            Eksekusi Operasional
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Program &amp; Action Plan
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Tampilan tabel ledger alur kerja operasional • {totalCount} Action Plans
           </p>
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-50">Program &amp; Action Plan</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* View Switcher: Table | Board | Calendar (PRD §B1, §B8) */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200 dark:border-slate-700"
+              title="Tampilan Tabel (Aktif)"
+            >
+              <LayoutList size={13} />
+              Table
+            </button>
+            <Link
+              href="/board"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="Pindah ke Tampilan Board (Kanban)"
+            >
+              <Kanban size={13} />
+              Board
+            </Link>
+            <Link
+              href="/calendar"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="Pindah ke Tampilan Kalender"
+            >
+              <CalendarIcon size={13} />
+              Calendar
+            </Link>
+          </div>
+
           <button
             type="button"
             onClick={() => setBulkOpen(true)}
@@ -326,6 +370,15 @@ export function ActionPlansClient({
           >
             <FileSpreadsheet className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             Bulk Paste
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+            title="Import Action Plan dari file CSV (Maksimal 24 item / 6 hari kerja)"
+          >
+            <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            Import CSV
           </button>
           <button
             type="button"
@@ -772,6 +825,17 @@ export function ActionPlansClient({
         userRole={role}
         onSuccess={(count) => {
           showSuccess(`${count} Action Plan berhasil dibuat secara massal!`)
+          fetchData()
+        }}
+      />
+
+      <ImportCsvModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        currentUserId={userId}
+        userRole={role}
+        onSuccess={(count) => {
+          showSuccess(`${count} Action Plan berhasil diimpor dari CSV ke database!`)
           fetchData()
         }}
       />
