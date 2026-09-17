@@ -37,11 +37,11 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const ROLE_BADGE: Record<string, string> = {
-  SUPER_ADMIN: 'bg-red-950/80 text-red-300 border border-red-800/60',
-  ADMIN_OPERATIONAL: 'bg-blue-950/80 text-blue-300 border border-blue-800/60',
-  MANAGER: 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60',
-  PIC: 'bg-slate-800 text-slate-300 border border-slate-700',
-  GUEST: 'bg-slate-800 text-slate-400 border border-slate-700',
+  SUPER_ADMIN: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/80 dark:text-red-300 dark:border-red-800/60',
+  ADMIN_OPERATIONAL: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800/60',
+  MANAGER: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/60',
+  PIC: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  GUEST: 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
 }
 
 export function Sidebar({
@@ -95,42 +95,71 @@ export function Sidebar({
   return (
     <>
       <aside
-        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-slate-900 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
+        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
           isCollapsed ? 'md:w-16 w-64' : 'w-64'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Header Tenant / Logo */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-800 px-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
-              {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+        <div
+          className={`flex h-14 items-center border-b border-slate-200 dark:border-slate-800 ${
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+          }`}
+        >
+          {isCollapsed ? (
+            /* Compact mode: Logo tenant di tengah ber-hover icon expand */
+            <div className="relative group flex items-center justify-center">
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-label="Perluas sidebar (Ctrl+B)"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <span className="group-hover:opacity-0 transition-opacity">
+                  {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+                </span>
+                <PanelLeftOpen className="absolute h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-white" />
+              </button>
+
+              {/* Tooltip melayang expand di mode compact */}
+              <div
+                role="tooltip"
+                className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2.5 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
+              >
+                Perluas sidebar (Ctrl+B)
+              </div>
             </div>
-            {!isCollapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-white leading-tight">
-                  {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
-                </p>
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
-                    {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
+          ) : (
+            /* Expanded mode: Logo + Nama Tenant + Tombol Collapse */
+            <>
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
+                  {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-white leading-tight">
+                    {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
                   </p>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <p className="truncate text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-none">
+                      {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Toggle Collapse button (hanya desktop) */}
-          {onToggleCollapse && (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              aria-label={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
-              title={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
-              className="hidden md:flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-            </button>
+              {onToggleCollapse && (
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  aria-label="Kecilkan sidebar (Ctrl+B)"
+                  title="Kecilkan sidebar (Ctrl+B)"
+                  className="hidden md:flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -140,14 +169,14 @@ export function Sidebar({
             <div key={group.label ?? `group-${gi}`} className="space-y-1">
               {group.label ? (
                 !isCollapsed ? (
-                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {group.label}
                   </p>
                 ) : (
-                  <div className="my-2 border-t border-slate-800" />
+                  <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
                 )
               ) : (
-                <div className="mb-2 border-t border-slate-800" />
+                <div className="mb-2 border-t border-slate-200 dark:border-slate-800" />
               )}
               {group.items.map((item) => {
                 const Icon = item.icon
@@ -165,8 +194,8 @@ export function Sidebar({
                           : 'gap-3 px-3 py-2'
                       } ${
                         active
-                          ? 'bg-slate-800 text-blue-400 font-medium border-l-2 border-blue-500'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                          ? 'bg-blue-50 text-blue-600 font-medium border-l-2 border-blue-500 dark:bg-slate-800 dark:text-blue-400 dark:border-blue-500'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -180,7 +209,7 @@ export function Sidebar({
                         </span>
                       )}
                       {isCollapsed && badge > 0 && (
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900" />
+                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                       )}
                     </Link>
 
@@ -188,7 +217,7 @@ export function Sidebar({
                     {isCollapsed && (
                       <div
                         role="tooltip"
-                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white shadow-lg ring-1 ring-slate-700/50"
+                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
                       >
                         {item.label}
                         {badge > 0 && (
@@ -206,7 +235,7 @@ export function Sidebar({
         </nav>
 
         {/* Footer Profil User & Account Switcher */}
-        <div className="relative border-t border-slate-800 p-2">
+        <div className="relative border-t border-slate-200 dark:border-slate-800 p-2">
           {/* Popover Dropup Profil User */}
           {profileOpen && (
             <>
@@ -219,46 +248,46 @@ export function Sidebar({
               <div
                 role="menu"
                 aria-label="Menu Pengguna"
-                className={`fixed z-50 w-72 rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-md p-1.5 shadow-2xl ring-1 ring-slate-700/40 text-slate-200 transition-all ${
+                className={`fixed z-50 w-72 rounded-xl border border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/95 backdrop-blur-md p-1.5 shadow-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/40 text-slate-800 dark:text-slate-200 transition-all ${
                   isCollapsed ? 'left-16 bottom-3 ml-2' : 'left-3 bottom-16'
                 }`}
               >
                 {/* Header Info Akun */}
-                <div className="px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/40 mb-1.5">
+                <div className="px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200/80 dark:bg-slate-800/60 dark:border-slate-700/40 mb-1.5">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
                       {initials(user.name)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-white leading-tight">{user.name}</p>
-                      <p className="truncate text-[11px] text-slate-400 mt-0.5">{user.email}</p>
+                      <p className="truncate text-xs font-semibold text-slate-900 dark:text-white leading-tight">{user.name}</p>
+                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{user.email}</p>
                     </div>
                   </div>
 
-                  <div className="mt-2.5 space-y-1 pt-2 border-t border-slate-700/50 text-[11px]">
-                    <div className="flex items-center justify-between gap-2 text-slate-400">
+                  <div className="mt-2.5 space-y-1 pt-2 border-t border-slate-200 dark:border-slate-700/50 text-[11px]">
+                    <div className="flex items-center justify-between gap-2 text-slate-600 dark:text-slate-400">
                       <span className="flex items-center gap-1 shrink-0 text-slate-500">
                         <Building2 className="h-3 w-3" />
                         Perusahaan:
                       </span>
-                      <span className="font-medium text-slate-300 truncate text-right">
+                      <span className="font-medium text-slate-800 dark:text-slate-300 truncate text-right">
                         {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : '-')}
                       </span>
                     </div>
                     {user.divisionName && (
-                      <div className="flex items-center justify-between gap-2 text-slate-400">
+                      <div className="flex items-center justify-between gap-2 text-slate-600 dark:text-slate-400">
                         <span className="flex items-center gap-1 shrink-0 text-slate-500">
                           <Briefcase className="h-3 w-3" />
                           Divisi:
                         </span>
-                        <span className="font-medium text-slate-300 truncate text-right">
+                        <span className="font-medium text-slate-800 dark:text-slate-300 truncate text-right">
                           {user.divisionName}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2 pt-1">
                       <span className="text-slate-500">Hak Akses:</span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE[user.role] || 'bg-slate-800 text-slate-300'}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE[user.role] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
                         {ROLE_LABEL[user.role] || user.role}
                       </span>
                     </div>
@@ -267,14 +296,14 @@ export function Sidebar({
 
                 {/* Navigasi Pengaturan & Audit Log */}
                 {(canAccessSettings || canAccessAuditLog) && (
-                  <div className="px-1 py-1 space-y-0.5 border-b border-slate-800/80 mb-1">
+                  <div className="px-1 py-1 space-y-0.5 border-b border-slate-200 dark:border-slate-800/80 mb-1">
                     {canAccessSettings && (
                       <Link
                         href="/settings"
                         onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
                       >
-                        <Settings className="h-3.5 w-3.5 text-slate-400" />
+                        <Settings className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                         <span>Pengaturan &amp; Tata Kelola</span>
                       </Link>
                     )}
@@ -285,9 +314,9 @@ export function Sidebar({
                           setProfileOpen(false)
                           setAuditLogOpen(true)
                         }}
-                        className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white text-left transition-colors cursor-pointer"
                       >
-                        <History className="h-3.5 w-3.5 text-slate-400" />
+                        <History className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                         <span>Audit Log Aktivitas</span>
                       </button>
                     )}
@@ -298,7 +327,7 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={() => signOut({ callbackUrl: '/login' })}
-                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
+                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-colors"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Keluar / Logout</span>
@@ -314,9 +343,9 @@ export function Sidebar({
               aria-haspopup="menu"
               aria-expanded={profileOpen}
               onClick={() => setProfileOpen((v) => !v)}
-              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
-              } ${profileOpen ? 'bg-slate-800' : ''}`}
+              } ${profileOpen ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
             >
               <div
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm"
@@ -327,8 +356,8 @@ export function Sidebar({
               {!isCollapsed && (
                 <>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-white">{user.name}</p>
-                    <p className="truncate text-[11px] text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
+                    <p className="truncate text-xs font-medium text-slate-900 dark:text-white">{user.name}</p>
+                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
                   </div>
                   <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 </>
