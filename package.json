@@ -15,10 +15,11 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts && tsx scripts/seed-two-tenants.ts",
+    "db:seed:tenants": "tsx scripts/seed-two-tenants.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts && tsx scripts/seed-two-tenants.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
