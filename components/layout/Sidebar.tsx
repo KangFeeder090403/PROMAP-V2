@@ -5,8 +5,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
   ChevronsUpDown,
   Settings,
   History,
@@ -49,13 +47,11 @@ export function Sidebar({
   isOpen,
   onClose,
   isCollapsed = false,
-  onToggleCollapse,
 }: {
   user: SessionUser
   isOpen: boolean
   onClose: () => void
   isCollapsed?: boolean
-  onToggleCollapse?: () => void
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -95,6 +91,7 @@ export function Sidebar({
   return (
     <>
       <aside
+        id="app-sidebar"
         className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
           isCollapsed ? 'md:w-16 w-64' : 'w-64'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
@@ -102,39 +99,31 @@ export function Sidebar({
         {/* Header Tenant / Logo */}
         <div
           className={`flex h-14 items-center border-b border-slate-200 dark:border-slate-800 ${
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
+            isCollapsed ? 'justify-center px-2' : 'px-3'
           }`}
         >
           {isCollapsed ? (
-            /* Compact mode: Logo tenant di tengah ber-hover icon expand */
-            <div className="relative group flex items-center justify-center">
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                aria-label="Perluas sidebar (Ctrl+B)"
-                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span className="group-hover:opacity-0 transition-opacity">
-                  {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
-                </span>
-                <PanelLeftOpen className="absolute h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-white" />
-              </button>
-
-              {/* Tooltip melayang expand di mode compact */}
-              <div
-                role="tooltip"
-                className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2.5 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
-              >
-                Perluas sidebar (Ctrl+B)
-              </div>
-            </div>
+            /* Compact mode: Logo tenant sebagai link ke beranda */
+            <Link
+              href="/"
+              onClick={onClose}
+              aria-label="Beranda ProMaP"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+            </Link>
           ) : (
-            /* Expanded mode: Logo + Nama Tenant + Tombol Collapse */
+            /* Expanded mode: Logo (link beranda) + Nama Tenant */
             <>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
+                <Link
+                  href="/"
+                  onClick={onClose}
+                  aria-label="Beranda ProMaP"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
                   {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
-                </div>
+                </Link>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-slate-900 dark:text-white leading-tight">
                     {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
@@ -147,18 +136,6 @@ export function Sidebar({
                   </div>
                 </div>
               </div>
-
-              {onToggleCollapse && (
-                <button
-                  type="button"
-                  onClick={onToggleCollapse}
-                  aria-label="Kecilkan sidebar (Ctrl+B)"
-                  title="Kecilkan sidebar (Ctrl+B)"
-                  className="hidden md:flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                </button>
-              )}
             </>
           )}
         </div>
@@ -188,6 +165,13 @@ export function Sidebar({
                       href={item.href}
                       onClick={onClose}
                       aria-current={active ? 'page' : undefined}
+                      aria-label={
+                        isCollapsed
+                          ? badge > 0
+                            ? `${item.label}, ${badge} item butuh aksi`
+                            : item.label
+                          : undefined
+                      }
                       className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         isCollapsed
                           ? 'justify-center p-2.5 h-10 w-full'
@@ -217,7 +201,7 @@ export function Sidebar({
                     {isCollapsed && (
                       <div
                         role="tooltip"
-                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
+                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex group-focus-within:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
                       >
                         {item.label}
                         {badge > 0 && (
@@ -342,6 +326,7 @@ export function Sidebar({
               type="button"
               aria-haspopup="menu"
               aria-expanded={profileOpen}
+              aria-label={`Menu profil: ${user.name} (${ROLE_LABEL[user.role] || user.role})`}
               onClick={() => setProfileOpen((v) => !v)}
               className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
@@ -349,7 +334,6 @@ export function Sidebar({
             >
               <div
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm"
-                title={`${user.name} (${user.role})`}
               >
                 {initials(user.name)}
               </div>

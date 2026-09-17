@@ -73,7 +73,6 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         isCollapsed={isCollapsed}
-        onToggleCollapse={handleToggleCollapse}
       />
 
       {sidebarOpen && (
@@ -86,7 +85,12 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
       )}
 
       <div className={`transition-[margin] duration-200 ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-        <Header onMenuClick={() => setSidebarOpen(true)} user={user} />
+        <Header
+          onMenuClick={() => setSidebarOpen(true)}
+          user={user}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={handleToggleCollapse}
+        />
         <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">{children}</main>
       </div>
     </div>

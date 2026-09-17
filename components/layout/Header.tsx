@@ -1,13 +1,23 @@
 'use client'
 
-import { Menu, Building2 } from 'lucide-react'
+import { Menu, Building2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Breadcrumb } from '@/components/layout/Breadcrumb'
 import { NewButton } from '@/components/layout/NewButton'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotifBell } from '@/components/layout/NotifBell'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 
-export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: SessionUser }) {
+export function Header({
+  onMenuClick,
+  user,
+  isCollapsed = false,
+  onToggleCollapse,
+}: {
+  onMenuClick: () => void
+  user: SessionUser
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
+}) {
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 md:px-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex min-w-0 items-center gap-3">
@@ -19,6 +29,18 @@ export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: S
         >
           <Menu className="h-5 w-5" />
         </button>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
+            aria-expanded={!isCollapsed}
+            aria-controls="app-sidebar"
+            className="hidden md:flex shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          >
+            {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+          </button>
+        )}
         <Breadcrumb />
       </div>
 
