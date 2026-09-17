@@ -1,7 +1,7 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
-import { useState } from 'react'
+import { signIn, signOut } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -43,6 +43,16 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   const [showPassword, setShowPassword] = useState(false)
 
   const isSignedOut = searchParams.get('signout') === '1'
+
+  // Hapus cookie sesi lama saat layout dashboard menolak sesi (redirect ke
+  // /login?signout=1). Tanpa ini, cookie tanpa uid tetap hidup dan login
+  // berikutnya bisa terbaca sebagai "tidak login" oleh middleware — user
+  // malah diarahkan ke landing, bukan dashboard.
+  useEffect(() => {
+    if (isSignedOut) {
+      signOut({ redirect: false })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     register,

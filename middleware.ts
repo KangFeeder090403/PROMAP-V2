@@ -13,14 +13,24 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
+  // jwt callback mengembalikan {} saat tenant ditolak (lib/auth.ts). Objek kosong
+  // itu masih truthy, jadi cek keberadaan token saja meloloskan sesi mati:
+  // middleware meneruskan ke '/', layout dashboard menolaknya karena
+  // getSessionUser() null, lalu redirect balik ke '/login' — loop 307 tak henti.
+  // Sesi sah = token yang membawa uid, definisi yang sama dipakai getSessionUser().
+  const authed = Boolean(token?.uid)
+
   // Rute root '/'
   if (pathname === '/') {
-    if (token) return NextResponse.next()
+    if (authed) return NextResponse.next()
     return NextResponse.rewrite(new URL('/landing', req.url))
   }
 
-  // User sudah login tidak perlu akses halaman auth
-  if (token && pathname === '/login') {
+  // User sudah login tidak perlu akses halaman auth.
+  // Kecuali '?signout=1': itu datang dari layout dashboard yang baru saja menolak
+  // sesi ini (mis. user kehilangan companyId atau dinonaktifkan setelah token
+  // terbit). Melempar balik ke '/' akan memantul ke sini lagi — loop 307.
+  if (authed && pathname === '/login' && req.nextUrl.searchParams.get('signout') !== '1') {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
@@ -35,7 +45,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Proteksi rute privat lainnya
-  if (!token) {
+  if (!authed) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)

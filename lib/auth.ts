@@ -165,7 +165,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: String(token.email).toLowerCase().trim() },
           select: SSO_SELECT,
         })
-        if (!db || !tenantAllows(db)) return {}
+        if (!db || !tenantAllows(db)) return { ...token, uid: null }
         token.uid = db.id
         token.role = db.role
         token.status = db.status
