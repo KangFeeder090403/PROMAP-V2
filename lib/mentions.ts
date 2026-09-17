@@ -104,3 +104,35 @@ export async function resolveMentionsForAp(ids: string[], ap: MentionableApConte
   const validIds = new Set(valid.map((u) => u.id))
   return { valid, rejectedIds: ids.filter((id) => !validIds.has(id)) }
 }
+
+/**
+ * K8 — pesan penolakan mention yang menyebut SIAPA yang ditolak. Dipakai POST
+ * dan PATCH komentar.
+ *
+ * Tinggal di sini, bukan di route.ts: App Router hanya mengizinkan export HTTP
+ * handler + config dari route.ts, jadi helper non-handler di sana akan gagal.
+ * Menyalin blok ini ke dua route = dua teks pesan yang pelan-pelan berbeda.
+ */
+export async function buildMentionRejectionMessage(
+  rejectedIds: string[],
+  companyId: string
+): Promise<string> {
+  const known = await prisma.user.findMany({
+    where: { id: { in: rejectedIds }, companyId, deletedAt: null },
+    select: { id: true, name: true },
+  })
+  const namedList = known.map((u) => u.name)
+  const unknownCount = rejectedIds.length - known.length
+
+  const parts: string[] = []
+  if (namedList.length > 0) {
+    parts.push(
+      `${namedList.join(', ')} tidak bisa di-mention di Action Plan ini karena berada di luar divisi atau jangkauan aksesnya`
+    )
+  }
+  if (unknownCount > 0) {
+    parts.push(`${unknownCount} mention tidak dikenali atau sudah tidak aktif`)
+  }
+
+  return `${parts.join('. ')}. Hapus mention tersebut lalu kirim ulang — isi komentar Anda tidak terhapus.`
+}

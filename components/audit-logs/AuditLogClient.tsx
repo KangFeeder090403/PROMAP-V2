@@ -140,6 +140,11 @@ const ACTION_CONFIG: Record<
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
     btnLabel: 'Detail Komentar',
   },
+  COMMENT_EDITED: {
+    label: 'Sunting Komentar',
+    badgeClass: 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
+    btnLabel: 'Detail Perubahan',
+  },
   REMINDER_SENT: {
     label: 'Pengingat',
     badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800',
@@ -487,6 +492,7 @@ export function AuditLogClient() {
             <option value="TASK_CREATED">Create Task</option>
             <option value="AUTO_ESCALATION">Auto Escalation</option>
             <option value="COMMENT_ADDED">Komentar</option>
+            <option value="COMMENT_EDITED">Sunting Komentar</option>
           </select>
         </div>
 

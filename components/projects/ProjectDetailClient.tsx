@@ -138,6 +138,7 @@ const ACTIVITY_ICON: Record<string, { icon: LucideIcon; className: string }> = {
   STATUS_CHANGED: { icon: RefreshCw, className: 'bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400' },
   EVIDENCE_SUBMITTED: { icon: Paperclip, className: 'bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400' },
   COMMENT_ADDED: { icon: MessageSquare, className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+  COMMENT_EDITED: { icon: MessageSquare, className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
   REASSIGNED: { icon: UserCheck, className: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400' },
   CREATED: { icon: FolderPlus, className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
   DEFAULT: { icon: Activity, className: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
@@ -151,6 +152,8 @@ function actionPhrase(action: string): string {
       return 'mengunggah bukti kerja'
     case 'COMMENT_ADDED':
       return 'menambahkan komentar'
+    case 'COMMENT_EDITED':
+      return 'menyunting komentar'
     case 'REASSIGNED':
       return 'mengalihkan penugasan'
     case 'CREATED':

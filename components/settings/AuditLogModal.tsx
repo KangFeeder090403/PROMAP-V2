@@ -64,6 +64,10 @@ const ACTION_BADGE: Record<string, { label: string; className: string }> = {
     label: 'Komentar',
     className: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   },
+  COMMENT_EDITED: {
+    label: 'Sunting Komentar',
+    className: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+  },
   REASSIGNED: {
     label: 'Alihkan PIC',
     className: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',

@@ -284,8 +284,9 @@ model Comment {
   actionPlanId String
   authorId     String
   content      String // Mendukung @mention dengan format @userId
-  createdAt    DateTime @default(now())
-  // Tidak ada updatedAt/deletedAt — komentar tidak bisa dihapus (audit trail)
+  createdAt    DateTime  @default(now())
+  editedAt     DateTime? // NULL = belum pernah diedit
+  // Komentar tidak bisa dihapus (audit trail). Edit diizinkan penulis dalam 15 menit — editedAt menandai.
 
   actionPlan ActionPlan @relation(fields: [actionPlanId], references: [id])
   author     User       @relation(fields: [authorId], references: [id])
@@ -346,7 +347,7 @@ model ActivityLog {
   id           String   @id @default(cuid())
   userId       String
   actionPlanId String?
-  action       String // STATUS_CHANGED | EVIDENCE_SUBMITTED | COMMENT_ADDED | REASSIGNED
+  action       String // STATUS_CHANGED | EVIDENCE_SUBMITTED | COMMENT_ADDED | COMMENT_EDITED | REASSIGNED
   oldValue     String?
   newValue     String?
   createdAt    DateTime @default(now())

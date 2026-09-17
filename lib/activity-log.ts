@@ -4,6 +4,7 @@ export type ActivityAction =
   | 'STATUS_CHANGED'
   | 'EVIDENCE_SUBMITTED'
   | 'COMMENT_ADDED'
+  | 'COMMENT_EDITED'
   | 'REASSIGNED'
   | 'REMINDER_SENT'
   | 'CREATED'

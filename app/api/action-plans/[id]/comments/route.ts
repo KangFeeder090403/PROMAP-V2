@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, apScope } from '@/lib/rbac'
-import { extractMentionIds, resolveMentionsForAp } from '@/lib/mentions'
+import {
+  buildMentionRejectionMessage,
+  extractMentionIds,
+  resolveMentionsForAp,
+} from '@/lib/mentions'
 import { COMMENT_MAX_LENGTH } from '@/lib/mention-parse'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
 
-// Comment tidak bisa dihapus/diedit — hanya GET (list thread) & POST (tambah).
+// Komentar tidak bisa dihapus (audit trail). Route ini GET (list thread) & POST
+// (tambah); edit dalam jendela 15 menit ada di [commentId]/route.ts (PATCH).
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
@@ -80,26 +85,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (rejectedIds.length > 0) {
       // K8 — sebut siapa yang ditolak. User menulis panjang; "Bad request"
       // membuat kerjanya hilang tanpa penjelasan.
-      const known = await prisma.user.findMany({
-        where: { id: { in: rejectedIds }, companyId: ap.companyId, deletedAt: null },
-        select: { id: true, name: true },
-      })
-      const namedList = known.map((u) => u.name)
-      const unknownCount = rejectedIds.length - known.length
-
-      const parts: string[] = []
-      if (namedList.length > 0) {
-        parts.push(
-          `${namedList.join(', ')} tidak bisa di-mention di Action Plan ini karena berada di luar divisi atau jangkauan aksesnya`
-        )
-      }
-      if (unknownCount > 0) {
-        parts.push(`${unknownCount} mention tidak dikenali atau sudah tidak aktif`)
-      }
-
       return NextResponse.json(
         {
-          error: `${parts.join('. ')}. Hapus mention tersebut lalu kirim ulang — isi komentar Anda tidak terhapus.`,
+          error: await buildMentionRejectionMessage(rejectedIds, ap.companyId),
           rejectedIds,
         },
         { status: 400 }

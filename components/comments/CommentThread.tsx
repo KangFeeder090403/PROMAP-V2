@@ -1,15 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, Lock, MessageSquarePlus, RefreshCw } from 'lucide-react'
+import { AlertCircle, Lock, MessageSquarePlus, Pencil, RefreshCw } from 'lucide-react'
 import { MentionTextarea } from '@/components/comments/MentionTextarea'
 import { tokenizeMentions, COMMENT_MAX_LENGTH } from '@/lib/mention-parse'
 import { timeAgo } from '@/lib/date-utils'
+import { editDeadline, isWithinEditWindow } from '@/lib/comment-edit'
 
 interface Comment {
   id: string
   content: string
   createdAt: string
+  editedAt: string | null
   author: { id: string; name: string }
 }
 
@@ -85,9 +87,11 @@ function ThreadSkeleton() {
 
 export function CommentThread({
   actionPlanId,
+  currentUserId,
   canComment = true,
 }: {
   actionPlanId: string
+  currentUserId?: string
   canComment?: boolean
 }) {
   const [thread, setThread] = useState<ThreadResponse | null>(null)
@@ -95,9 +99,17 @@ export function CommentThread({
   const [sendError, setSendError] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
   // now dioper eksplisit ke timeAgo — diambil sekali saat mount supaya render
   // tidak berubah di tengah jalan dan tidak memicu mismatch hidrasi.
   const [now] = useState(() => new Date())
+  // nowTick TERPISAH dari now. `now` beku sejak mount dan fetchComments() tidak
+  // memperbaruinya; drawer AP bisa terbuka berjam-jam, jadi tanpa tick tombol
+  // Edit tetap terlihat untuk komentar yang jendelanya sudah habis.
+  const [nowTick, setNowTick] = useState(() => new Date())
 
   const fetchComments = useCallback(async () => {
     try {
@@ -145,8 +157,71 @@ export function CommentThread({
     }
   }
 
+  /** Komentar milik user yang MASIH dalam jendela edit, dievaluasi pada nowTick. */
+  function canEdit(c: Comment): boolean {
+    return !!currentUserId && c.author.id === currentUserId && isWithinEditWindow(c.createdAt, nowTick)
+  }
+
+  const hasEditable = (thread?.comments ?? []).some(canEdit)
+
+  // Interval hidup HANYA selama masih ada komentar yang bisa diedit — bukan
+  // ticking global tanpa syarat. Begitu komentar terakhir lewat 15 menit,
+  // hasEditable jadi false dan interval berhenti sendiri.
+  useEffect(() => {
+    if (!hasEditable) return
+    const t = setInterval(() => setNowTick(new Date()), 30_000)
+    return () => clearInterval(t)
+  }, [hasEditable])
+
+  function startEdit(c: Comment) {
+    setEditingId(c.id)
+    setEditDraft(c.content)
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditDraft('')
+    setEditError(null)
+  }
+
+  async function handleSaveEdit(commentId: string) {
+    const content = editDraft.trim()
+    if (!content) return
+    setSavingEdit(true)
+    setEditError(null)
+    try {
+      const res = await fetch(`/api/action-plans/${actionPlanId}/comments/${commentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        // Draft TIDAK dibuang dan mode edit TIDAK ditutup paksa — konsisten
+        // dengan handleSend. Pada 409 user masih bisa menyalin tulisannya ke
+        // komentar baru lewat tombol sekunder di bawah.
+        throw new Error(data.error || 'Gagal menyimpan perubahan')
+      }
+      setEditingId(null)
+      setEditDraft('')
+      await fetchComments()
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Gagal menyimpan perubahan')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  /** Pindahkan tulisan yang gagal disimpan ke kotak komentar baru. */
+  function moveEditToNewComment() {
+    setDraft(editDraft)
+    cancelEdit()
+  }
+
   const overLimit = draft.length > COMMENT_MAX_LENGTH
   const remaining = COMMENT_MAX_LENGTH - draft.length
+  const editOverLimit = editDraft.length > COMMENT_MAX_LENGTH
 
   function renderList() {
     if (loadError === 'FORBIDDEN') {
@@ -220,10 +295,81 @@ export function CommentThread({
             >
               {timeAgo(c.createdAt, now)}
             </span>
+            {c.editedAt && (
+              // Teks polos, bukan badge berwarna — warna dicadangkan untuk 8 status AP.
+              <span
+                className="text-xs text-slate-400 dark:text-slate-500"
+                title={`Disunting ${new Date(c.editedAt).toLocaleString('id-ID')}`}
+              >
+                (diedit)
+              </span>
+            )}
+            {editingId !== c.id && canEdit(c) && (
+              <button
+                type="button"
+                onClick={() => startEdit(c)}
+                aria-label="Edit komentar"
+                title={`Bisa diedit sampai ${editDeadline(c.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
+                className="ml-auto inline-flex items-center gap-1 rounded text-xs font-medium text-slate-500 transition-colors hover:text-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-blue-400"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            )}
           </div>
-          <p className="whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-300">
-            {renderContent(c.content, thread.mentionNames)}
-          </p>
+
+          {editingId === c.id ? (
+            <div className="space-y-2">
+              <MentionTextarea
+                value={editDraft}
+                onChange={setEditDraft}
+                actionPlanId={actionPlanId}
+                maxLength={COMMENT_MAX_LENGTH}
+                disabled={savingEdit}
+                placeholder="Perbaiki komentar..."
+              />
+              {editError && (
+                <p
+                  role="alert"
+                  className="flex items-start gap-1.5 text-sm text-red-600 dark:text-red-400"
+                >
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{editError}</span>
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {editError && (
+                  <button
+                    type="button"
+                    onClick={moveEditToNewComment}
+                    className="inline-flex h-8 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Salin ke komentar baru
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  disabled={savingEdit}
+                  className="ml-auto inline-flex h-8 items-center rounded-md border border-slate-300 px-3 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveEdit(c.id)}
+                  disabled={savingEdit || !editDraft.trim() || editOverLimit}
+                  className="inline-flex h-8 items-center rounded-md bg-blue-500 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-400"
+                >
+                  {savingEdit ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-sm text-slate-700 dark:text-slate-300">
+              {renderContent(c.content, thread.mentionNames)}
+            </p>
+          )}
         </div>
       </div>
     ))

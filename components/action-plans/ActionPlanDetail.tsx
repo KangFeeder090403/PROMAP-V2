@@ -723,7 +723,7 @@ export function ActionPlanDetail({
             )}
 
             {tab === 'activity' && (
-              <CommentThread actionPlanId={ap.id} />
+              <CommentThread actionPlanId={ap.id} currentUserId={userId} />
             )}
           </div>
 
