@@ -206,11 +206,11 @@ function CardKebabMenu({
   refCode,
   id,
   onOpenDetail,
-}: {
+}: Readonly<{
   refCode: string
   id: string
   onOpenDetail?: (id: string) => void
-}) {
+}>) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -248,8 +248,10 @@ function CardKebabMenu({
 
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-20"
+          <button
+            type="button"
+            aria-label="Tutup menu aksi"
+            className="fixed inset-0 z-20 cursor-default bg-transparent border-0"
             onClick={() => setOpen(false)}
           />
           <div className="absolute right-0 top-8 z-30 w-44 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-1 shadow-lg text-xs animate-in fade-in zoom-in-95 duration-100">
@@ -295,16 +297,24 @@ function ActionRow({
   showStatus,
   highlighted,
   onSelect,
-}: {
+}: Readonly<{
   row: MyWorkItem
   now: Date
   showStatus?: boolean
   highlighted?: boolean
   onSelect?: (id: string) => void
-}) {
+}>) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect?.(row.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect?.(row.id)
+        }
+      }}
       className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-4 transition-all cursor-pointer ${
         highlighted
           ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40 shadow-sm'
@@ -345,15 +355,23 @@ function ReviewRow({
   now,
   highlighted,
   onSelect,
-}: {
+}: Readonly<{
   row: MyWorkItem
   now: Date
   highlighted?: boolean
   onSelect?: (id: string) => void
-}) {
+}>) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect?.(row.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect?.(row.id)
+        }
+      }}
       className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-4 transition-all cursor-pointer ${
         highlighted
           ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40 shadow-sm'
@@ -400,14 +418,22 @@ function CompleteRow({
   row,
   highlighted,
   onSelect,
-}: {
+}: Readonly<{
   row: MyWorkItem
   highlighted?: boolean
   onSelect?: (id: string) => void
-}) {
+}>) {
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect?.(row.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect?.(row.id)
+        }
+      }}
       className={`flex flex-wrap items-center gap-x-4 gap-y-2 py-3 px-2 rounded-lg transition-all cursor-pointer ${
         highlighted
           ? 'ring-2 ring-blue-500 bg-blue-50/80 dark:bg-blue-950/40'
@@ -460,12 +486,12 @@ function PipelineGroups({
   now,
   highlightedId,
   onSelect,
-}: {
+}: Readonly<{
   rows: MyWorkItem[]
   now: Date
   highlightedId: string | null
   onSelect: (id: string) => void
-}) {
+}>) {
   const [openComplete, setOpenComplete] = useState(false)
 
   const needsAction = byUrgency(
@@ -573,11 +599,11 @@ function GroupHeader({
   icon,
   label,
   count,
-}: {
+}: Readonly<{
   icon: 'progress' | 'review' | 'action'
   label: string
   count: number
-}) {
+}>) {
   const iconNode =
     icon === 'progress' ? (
       <CircleDashed className="h-4 w-4 text-blue-500" aria-hidden="true" />
@@ -600,6 +626,72 @@ const BANNER_ICON: Record<string, { wrap: string; icon: React.ReactNode }> = {
   EVIDENCE_REQUIRED: { wrap: 'bg-amber-50 dark:bg-amber-950/40', icon: <Paperclip className="h-4 w-4 text-amber-500" aria-hidden="true" /> },
   OVERDUE: { wrap: 'bg-orange-50', icon: <Clock className="h-4 w-4 text-orange-500" aria-hidden="true" /> },
   PROPOSAL: { wrap: 'bg-slate-100 dark:bg-slate-800', icon: <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" aria-hidden="true" /> },
+}
+
+function computeMyWorkCounts(rows: MyWorkItem[], proposals: MyWorkProposal[]) {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const weekEnd = new Date(todayStart.getTime() + 7 * DAY_MS)
+  return {
+    semua: rows.length,
+    aksi: rows.filter((r) => (AKSI_STATUSES as readonly string[]).includes(r.status)).length + proposals.length,
+    minggu: rows.filter(
+      (r) =>
+        !(DONE_STATUSES as readonly string[]).includes(r.status) &&
+        new Date(r.endDate).getTime() >= todayStart.getTime() &&
+        new Date(r.endDate) <= weekEnd
+    ).length,
+    selesai: rows.filter((r) => (DONE_STATUSES as readonly string[]).includes(r.status)).length,
+  }
+}
+
+function computeUpcomingWork(rows: MyWorkItem[], selectedDateKey: string | null): MyWorkItem[] {
+  const active = rows.filter((r) => !(DONE_STATUSES as readonly string[]).includes(r.status))
+  if (selectedDateKey) {
+    return active
+      .filter((r) => dateKey(new Date(r.endDate)) === selectedDateKey)
+      .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
+  }
+  return active.sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate)).slice(0, 5)
+}
+
+function filterMyWorkRows(rows: MyWorkItem[], tab: Tab, todayStart: Date): MyWorkItem[] {
+  if (tab === 'selesai') {
+    return rows.filter((r) => (DONE_STATUSES as readonly string[]).includes(r.status))
+  }
+  if (tab === 'minggu') {
+    const weekEndTime = todayStart.getTime() + 7 * DAY_MS
+    return rows
+      .filter(
+        (r) =>
+          !(DONE_STATUSES as readonly string[]).includes(r.status) &&
+          new Date(r.endDate).getTime() >= todayStart.getTime() &&
+          new Date(r.endDate).getTime() <= weekEndTime
+      )
+      .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
+  }
+  if (tab === 'aksi') {
+    return rows.filter((r) => (AKSI_STATUSES as readonly string[]).includes(r.status))
+  }
+  return rows
+}
+
+function MyWorkErrorState({ error, onRetry }: { error: string | null; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center shadow-sm">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
+        <AlertTriangle className="h-5 w-5 text-red-500" />
+      </div>
+      <p className="mt-4 text-sm font-medium text-slate-800 dark:text-slate-200">{error ?? 'Data tidak tersedia.'}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+      >
+        Coba Lagi
+      </button>
+    </div>
+  )
 }
 
 export function MyWorkClient() {
@@ -657,22 +749,7 @@ export function MyWorkClient() {
   const rows = useMemo(() => data?.actionPlans ?? [], [data])
   const proposals = useMemo(() => data?.proposals ?? [], [data])
 
-  const counts = useMemo(() => {
-    const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
-    const weekEnd = new Date(todayStart.getTime() + 7 * DAY_MS)
-    return {
-      semua: rows.length,
-      aksi: rows.filter((r) => AKSI_STATUSES.includes(r.status)).length + proposals.length,
-      minggu: rows.filter(
-        (r) =>
-          !DONE_STATUSES.includes(r.status) &&
-          new Date(r.endDate).getTime() >= todayStart.getTime() &&
-          new Date(r.endDate) <= weekEnd
-      ).length,
-      selesai: rows.filter((r) => DONE_STATUSES.includes(r.status)).length,
-    }
-  }, [rows, proposals])
+  const counts = useMemo(() => computeMyWorkCounts(rows, proposals), [rows, proposals])
 
   const todayStart = useMemo(() => {
     const d = new Date()
@@ -706,15 +783,7 @@ export function MyWorkClient() {
     [rows, stripKeys]
   )
 
-  const upcoming = useMemo(() => {
-    const active = rows.filter((r) => !DONE_STATUSES.includes(r.status))
-    if (selectedDateKey) {
-      return active
-        .filter((r) => dateKey(new Date(r.endDate)) === selectedDateKey)
-        .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
-    }
-    return active.sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate)).slice(0, 5)
-  }, [rows, selectedDateKey])
+  const upcoming = useMemo(() => computeUpcomingWork(rows, selectedDateKey), [rows, selectedDateKey])
 
   const completeCount = useMemo(() => rows.filter((r) => DONE_STATUSES.includes(r.status)).length, [rows])
   const inFlight = rows.length - completeCount
@@ -729,44 +798,12 @@ export function MyWorkClient() {
   const evidenceTotal = evidenceScope.length
   const evidencePct = evidenceTotal > 0 ? Math.round((withEvidence.length / evidenceTotal) * 100) : 0
 
-  const filteredRows = useMemo(() => {
-    if (tab === 'selesai') {
-      return rows.filter((r) => DONE_STATUSES.includes(r.status))
-    }
-    if (tab === 'minggu') {
-      return rows
-        .filter(
-          (r) =>
-            !DONE_STATUSES.includes(r.status) &&
-            new Date(r.endDate).getTime() >= todayStart.getTime() &&
-            new Date(r.endDate) <= new Date(todayStart.getTime() + 7 * DAY_MS)
-        )
-        .sort((a, b) => +new Date(a.endDate) - +new Date(b.endDate))
-    }
-    if (tab === 'aksi') {
-      return rows.filter((r) => AKSI_STATUSES.includes(r.status))
-    }
-    return rows
-  }, [rows, tab, todayStart])
+  const filteredRows = useMemo(() => filterMyWorkRows(rows, tab, todayStart), [rows, tab, todayStart])
 
   if (loading) return <MyWorkSkeleton />
 
   if (error || !data) {
-    return (
-      <div className="flex flex-col items-center rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center shadow-sm">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
-        </div>
-        <p className="mt-4 text-sm font-medium text-slate-800 dark:text-slate-200">{error ?? 'Data tidak tersedia.'}</p>
-        <button
-          type="button"
-          onClick={() => load()}
-          className="mt-4 inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-        >
-          Coba Lagi
-        </button>
-      </div>
-    )
+    return <MyWorkErrorState error={error} onRetry={() => load()} />
   }
 
   return (

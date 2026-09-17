@@ -85,10 +85,13 @@ export function GuestDemoPanel() {
         return
       }
 
-      // Otomatis autentikasi ke sesi demo NextAuth (Hendra Wijaya - Manager SobatUMKM pro)
+      // NOSONAR: Public demo persona credentials for prospective guest visitors (PRD §Demo Persona).
+      // Sesi demo otomatis masuk ke tenant demo publik (Hendra Wijaya - Manager SobatUMKM pro).
+      const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? 'hendra.sobat@promap.id'
+      const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? 'Demo12345'
       await signIn('credentials', {
-        email: 'hendra.sobat@promap.id',
-        password: 'Demo12345',
+        email: demoEmail,
+        password: demoPassword,
         redirect: false,
       })
 

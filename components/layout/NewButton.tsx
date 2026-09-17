@@ -41,7 +41,7 @@ for (const item of CREATE_ITEMS) {
 
 export { CREATE_ITEMS }
 
-export function NewButton({ role }: { role: Role }) {
+export function NewButton({ role }: Readonly<{ role: Role }>) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const items = CREATE_ITEMS.filter((item) => item.roles.includes(role))
@@ -63,7 +63,12 @@ export function NewButton({ role }: { role: Role }) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label="Tutup menu pembuatan"
+            className="fixed inset-0 z-10 cursor-default bg-transparent border-0"
+            onClick={() => setOpen(false)}
+          />
           <div
             role="menu"
             className="absolute right-0 top-full z-20 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-md"

@@ -305,8 +305,15 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                     return (
                       <tr
                         key={p.id}
-                        className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"
+                        tabIndex={0}
+                        className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60"
                         onClick={() => router.push(`/projects/${p.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            router.push(`/projects/${p.id}`)
+                          }
+                        }}
                       >
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-0.5">
@@ -410,8 +417,10 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                             </button>
                             {menuOpenFor === p.id && (
                               <>
-                                <div
-                                  className="fixed inset-0 z-10"
+                                <button
+                                  type="button"
+                                  aria-label="Tutup menu project"
+                                  className="fixed inset-0 z-10 cursor-default bg-transparent border-0"
                                   onClick={() => setMenuOpenFor(null)}
                                 />
                                 <div

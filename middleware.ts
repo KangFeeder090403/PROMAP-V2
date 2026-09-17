@@ -13,11 +13,11 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
-  // jwt callback mengembalikan {} saat tenant ditolak (lib/auth.ts). Objek kosong
-  // itu masih truthy, jadi cek keberadaan token saja meloloskan sesi mati:
-  // middleware meneruskan ke '/', layout dashboard menolaknya karena
-  // getSessionUser() null, lalu redirect balik ke '/login' — loop 307 tak henti.
-  // Sesi sah = token yang membawa uid, definisi yang sama dipakai getSessionUser().
+  // jwt callback mengembalikan { ...token, uid: null } saat tenant ditolak (lib/auth.ts).
+  // Sesi sah = token yang membawa uid (cuid user di DB).
+  // JANGAN gunakan token.email / token.sub karena token OAuth Google dari akun
+  // non-aktif / belum terdaftar tetap memiliki email dan sub, yang bisa memicu
+  // bouncing loop 307 jika diloloskan oleh middleware ke layout dashboard.
   const authed = Boolean(token?.uid)
 
   // Rute root '/'
@@ -26,12 +26,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.rewrite(new URL('/landing', req.url))
   }
 
-  // User sudah login tidak perlu akses halaman auth.
-  // Kecuali '?signout=1': itu datang dari layout dashboard yang baru saja menolak
-  // sesi ini (mis. user kehilangan companyId atau dinonaktifkan setelah token
-  // terbit). Melempar balik ke '/' akan memantul ke sini lagi — loop 307.
-  if (authed && pathname === '/login' && req.nextUrl.searchParams.get('signout') !== '1') {
-    return NextResponse.redirect(new URL('/', req.url))
+  // Halaman login
+  if (pathname === '/login') {
+    // Jika ada sinyal signout / sesi berakhir / error auth, bersihkan cookie sesi
+    // di response header agar sesi stale tidak mengunci browser.
+    if (req.nextUrl.searchParams.has('signout') || req.nextUrl.searchParams.has('error')) {
+      const res = NextResponse.next()
+      res.cookies.set('next-auth.session-token', '', { maxAge: 0, path: '/' })
+      res.cookies.set('__Secure-next-auth.session-token', '', { maxAge: 0, path: '/' })
+      return res
+    }
+
+    // User yang benar-benar aktif login tidak perlu akses halaman auth
+    if (authed) {
+      return NextResponse.redirect(new URL('/', req.url))
+    }
+    return NextResponse.next()
   }
 
   // Public pages — exact match

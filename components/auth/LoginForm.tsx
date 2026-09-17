@@ -50,9 +50,9 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   // malah diarahkan ke landing, bukan dashboard.
   useEffect(() => {
     if (isSignedOut) {
-      signOut({ redirect: false })
+      void signOut({ redirect: false })
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isSignedOut])
 
   const {
     register,

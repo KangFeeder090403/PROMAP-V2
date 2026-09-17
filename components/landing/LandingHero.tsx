@@ -13,6 +13,74 @@ const STATS = [
   { target: 2, prefix: '< ', suffix: ' Detik', label: 'Ekspor Data', decimals: 0, icon: Clock },
 ]
 
+function animateStatCounter(stat: (typeof STATS)[number], idx: number) {
+  const el = document.getElementById(`hero-stat-num-${idx}`)
+  if (!el) return
+  const obj = { val: 0 }
+  gsap.to(obj, {
+    val: stat.target,
+    duration: 1.4,
+    delay: 0.6 + idx * 0.1,
+    ease: 'power2.out',
+    onUpdate: () => {
+      const formatted = stat.decimals > 0 ? obj.val.toFixed(stat.decimals) : Math.round(obj.val).toString()
+      el.textContent = `${stat.prefix ?? ''}${formatted}${stat.suffix ?? ''}`
+    },
+  })
+}
+
+function runHeroEntranceTimeline() {
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+
+  tl.from('.hero-badge', {
+    y: -16,
+    opacity: 0,
+    duration: 0.6,
+  })
+    .from(
+      '.hero-headline',
+      {
+        y: 24,
+        opacity: 0,
+        duration: 0.8,
+      },
+      '-=0.3'
+    )
+    .from(
+      '.hero-subtext',
+      {
+        y: 20,
+        opacity: 0,
+        duration: 0.7,
+      },
+      '-=0.4'
+    )
+    .from(
+      '.hero-cta',
+      {
+        y: 16,
+        opacity: 0,
+        duration: 0.6,
+      },
+      '-=0.4'
+    )
+    .from(
+      '.hero-stat-card',
+      {
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+      },
+      '-=0.3'
+    )
+
+  // Count-up animasi angka
+  STATS.forEach((stat, idx) => {
+    animateStatCounter(stat, idx)
+  })
+}
+
 export function LandingHero() {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -20,68 +88,7 @@ export function LandingHero() {
     () => {
       const mm = gsap.matchMedia()
       mm.add('(prefers-reduced-motion: no-preference)', () => {
-        // Timeline fluid entrance
-        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-
-        tl.from('.hero-badge', {
-          y: -16,
-          opacity: 0,
-          duration: 0.6,
-        })
-          .from(
-            '.hero-headline',
-            {
-              y: 24,
-              opacity: 0,
-              duration: 0.8,
-            },
-            '-=0.3'
-          )
-          .from(
-            '.hero-subtext',
-            {
-              y: 20,
-              opacity: 0,
-              duration: 0.7,
-            },
-            '-=0.4'
-          )
-          .from(
-            '.hero-cta',
-            {
-              y: 16,
-              opacity: 0,
-              duration: 0.6,
-            },
-            '-=0.4'
-          )
-          .from(
-            '.hero-stat-card',
-            {
-              y: 20,
-              opacity: 0,
-              duration: 0.6,
-              stagger: 0.1,
-            },
-            '-=0.3'
-          )
-
-        // Count-up animasi angka
-        STATS.forEach((stat, idx) => {
-          const el = document.getElementById(`hero-stat-num-${idx}`)
-          if (!el) return
-          const obj = { val: 0 }
-          gsap.to(obj, {
-            val: stat.target,
-            duration: 1.4,
-            delay: 0.6 + idx * 0.1,
-            ease: 'power2.out',
-            onUpdate: () => {
-              const formatted = stat.decimals > 0 ? obj.val.toFixed(stat.decimals) : Math.round(obj.val).toString()
-              el.textContent = `${stat.prefix ?? ''}${formatted}${stat.suffix ?? ''}`
-            },
-          })
-        })
+        runHeroEntranceTimeline()
       })
       return () => mm.revert()
     },

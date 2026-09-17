@@ -86,6 +86,156 @@ function buildMondayAlignedWeeks(from: Date, to: Date): Date[][] {
   return weeks
 }
 
+function renderCalendarDayCell(
+  doc: any,
+  date: Date,
+  di: number,
+  cx: number,
+  gy: number,
+  colW: number,
+  cellH: number,
+  from: Date,
+  to: Date
+) {
+  const isWeekend = di >= 5
+  const isOutOfMonth = date.getMonth() !== from.getMonth() && date.getMonth() !== to.getMonth()
+
+  // Background sel kalender
+  doc.setFillColor(isWeekend ? 248 : 255, isWeekend ? 250 : 255, isWeekend ? 252 : 255)
+  doc.setDrawColor(226, 232, 240)
+  doc.rect(cx, gy, colW, cellH, 'FD')
+
+  // Header nomor tanggal (strip atas sel agar nomor tidak tertimpa bar)
+  doc.setFillColor(isWeekend ? 241 : 248, isWeekend ? 245 : 250, isWeekend ? 249 : 252)
+  doc.rect(cx, gy, colW, 4, 'F')
+
+  // Nomor tanggal
+  const dateNum = String(date.getDate())
+  const isFirst = date.getDate() === 1
+  doc.setFont('helvetica', isFirst ? 'bold' : 'normal')
+  doc.setFontSize(6.5)
+
+  if (isOutOfMonth) {
+    doc.setTextColor(160, 174, 192)
+  } else if (isFirst) {
+    doc.setTextColor(37, 99, 235)
+  } else {
+    doc.setTextColor(71, 85, 105)
+  }
+
+  const dateText = isFirst ? `${dateNum} ${formatIndoShort(date).split(' ')[1]}` : dateNum
+  doc.text(dateText, cx + colW - 1.5, gy + 3, { align: 'right' })
+}
+
+function renderWeekGanttBars(
+  doc: any,
+  segments: any[],
+  gy: number,
+  margin: number,
+  colW: number,
+  cellH: number
+) {
+  const maxLanes = Math.floor((cellH - 5) / 4.2)
+  segments.forEach((seg) => {
+    if (seg.lane >= maxLanes) return // Batasi agar tidak meluap keluar sel
+    const bx = margin + (seg.colStart - 1) * colW + 0.8
+    const bw = seg.colSpan * colW - 1.6
+    const by = gy + 4.6 + seg.lane * 4.2
+    const barH = 3.6
+
+    const [r, g, b] = STATUS_FILL[seg.event.status] ?? [100, 116, 139]
+    doc.setFillColor(r, g, b)
+    doc.roundedRect(bx, by, bw, barH, 0.8, 0.8, 'F')
+
+    // Teks label di dalam bar
+    const codePrefix = seg.event.code ? `[${seg.event.code}] ` : ''
+    const fullLabel = `${codePrefix}${seg.event.title}`
+    const maxChars = Math.max(6, Math.floor(bw / 1.7))
+    const displayLabel = fullLabel.length > maxChars ? fullLabel.slice(0, maxChars - 1) + '…' : fullLabel
+
+    doc.setTextColor(255, 255, 255)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(5.5)
+    doc.text(displayLabel, bx + 1.2, by + 2.5)
+  })
+}
+
+function renderExecutionSummaryRow(
+  doc: any,
+  ap: any,
+  tableY: number,
+  rowHeight: number,
+  margin: number,
+  contentW: number,
+  isEven: boolean
+) {
+  doc.setFillColor(isEven ? 248 : 255, isEven ? 250 : 255, isEven ? 252 : 255)
+  doc.rect(margin, tableY, contentW, rowHeight, 'F')
+  doc.setDrawColor(241, 245, 249)
+  doc.line(margin, tableY + rowHeight, margin + contentW, tableY + rowHeight)
+
+  let tx = margin + 2
+
+  // 1. Kode
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor(71, 85, 105)
+  doc.text(shortRef(ap.id, 'AP'), tx, tableY + 5)
+  tx += 18
+
+  // 2. Nama Action Plan
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(15, 23, 42)
+  const safeTitle = ap.title.length > 55 ? ap.title.slice(0, 52) + '…' : ap.title
+  doc.text(safeTitle, tx, tableY + 4.8)
+  tx += 90
+
+  // 3. PIC
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(30, 41, 59)
+  const safePic = ap.pic.name.length > 22 ? ap.pic.name.slice(0, 20) + '…' : ap.pic.name
+  doc.text(safePic, tx, tableY + 4.8)
+  tx += 38
+
+  // 4. Divisi / Project
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(71, 85, 105)
+  const projectOrDiv = ap.division?.name ?? ap.task?.project?.name ?? 'Umum'
+  const safeDiv = projectOrDiv.length > 24 ? projectOrDiv.slice(0, 22) + '…' : projectOrDiv
+  doc.text(safeDiv, tx, tableY + 4.8)
+  tx += 42
+
+  // 5. Prioritas (Badge)
+  const [pr, pg, pb] = PRIORITY_COLOR[ap.priority] ?? [100, 116, 139]
+  doc.setFillColor(pr, pg, pb)
+  doc.circle(tx + 2, tableY + 4.2, 1.2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(6.5)
+  doc.setTextColor(pr, pg, pb)
+  doc.text(AP_PRIORITY_LABEL[ap.priority] ?? ap.priority, tx + 5, tableY + 4.8)
+  tx += 22
+
+  // 6. Jadwal Kerja
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(71, 85, 105)
+  const dateRangeStr = `${formatIndoShort(ap.startDate)} - ${formatIndoShort(ap.endDate)}`
+  doc.text(dateRangeStr, tx, tableY + 4.8)
+  tx += 35
+
+  // 7. Status Badge
+  const [sr, sg, sb] = STATUS_FILL[ap.status] ?? [100, 116, 139]
+  doc.setFillColor(sr, sg, sb)
+  doc.roundedRect(tx, tableY + 1.8, 25, 4.2, 1, 1, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(6)
+  doc.text(AP_STATUS_LABEL[ap.status] ?? ap.status, tx + 12.5, tableY + 4.6, { align: 'center' })
+}
+
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser()
@@ -281,57 +431,10 @@ export async function GET(req: Request) {
 
       week.forEach((date, di) => {
         const cx = margin + di * colW
-        const isWeekend = di >= 5
-        const isOutOfMonth = date.getMonth() !== from.getMonth() && date.getMonth() !== to.getMonth()
-
-        // Background sel kalender
-        if (isWeekend) {
-          doc.setFillColor(248, 250, 252)
-        } else {
-          doc.setFillColor(255, 255, 255)
-        }
-        doc.setDrawColor(226, 232, 240)
-        doc.rect(cx, gy, colW, cellH, 'FD')
-
-        // Header nomor tanggal (strip atas sel agar nomor tidak tertimpa bar)
-        doc.setFillColor(isWeekend ? 241 : 248, isWeekend ? 245 : 250, isWeekend ? 249 : 252)
-        doc.rect(cx, gy, colW, 4, 'F')
-
-        // Nomor tanggal
-        const dateNum = String(date.getDate())
-        const isFirst = date.getDate() === 1
-        doc.setFont('helvetica', isFirst ? 'bold' : 'normal')
-        doc.setFontSize(6.5)
-        doc.setTextColor(isOutOfMonth ? 160 : isFirst ? 37 : 71, isOutOfMonth ? 174 : isFirst ? 99 : 85, isOutOfMonth ? 192 : isFirst ? 235 : 105)
-        const dateText = isFirst ? `${dateNum} ${formatIndoShort(date).split(' ')[1]}` : dateNum
-        doc.text(dateText, cx + colW - 1.5, gy + 3, { align: 'right' })
+        renderCalendarDayCell(doc, date, di, cx, gy, colW, cellH, from, to)
       })
 
-      // Gambar Gantt Bars di minggu ini
-      const maxLanes = Math.floor((cellH - 5) / 4.2)
-      segments.forEach((seg) => {
-        if (seg.lane >= maxLanes) return // Batasi agar tidak meluap keluar sel
-        const bx = margin + (seg.colStart - 1) * colW + 0.8
-        const bw = seg.colSpan * colW - 1.6
-        const by = gy + 4.6 + seg.lane * 4.2
-        const barH = 3.6
-
-        const [r, g, b] = STATUS_FILL[seg.event.status] ?? [100, 116, 139]
-        doc.setFillColor(r, g, b)
-        doc.roundedRect(bx, by, bw, barH, 0.8, 0.8, 'F')
-
-        // Teks label di dalam bar
-        const codePrefix = seg.event.code ? `[${seg.event.code}] ` : ''
-        const fullLabel = `${codePrefix}${seg.event.title}`
-        // Perkirakan panjang teks yang muat di dalam bw
-        const maxChars = Math.max(6, Math.floor(bw / 1.7))
-        const displayLabel = fullLabel.length > maxChars ? fullLabel.slice(0, maxChars - 1) + '…' : fullLabel
-
-        doc.setTextColor(255, 255, 255)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(5.5)
-        doc.text(displayLabel, bx + 1.2, by + 2.5)
-      })
+      renderWeekGanttBars(doc, segments, gy, margin, colW, cellH)
     })
 
     // 4. Status Legend Box di Bawah Halaman 1
@@ -420,73 +523,8 @@ export async function GET(req: Request) {
           tableY = 32
         }
 
-        // Background Zebra
         const isEven = idx % 2 === 0
-        doc.setFillColor(isEven ? 248 : 255, isEven ? 250 : 255, isEven ? 252 : 255)
-        doc.rect(margin, tableY, contentW, rowHeight, 'F')
-        doc.setDrawColor(241, 245, 249)
-        doc.line(margin, tableY + rowHeight, margin + contentW, tableY + rowHeight)
-
-        let tx = margin + 2
-
-        // 1. Kode
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7)
-        doc.setTextColor(71, 85, 105)
-        doc.text(shortRef(ap.id, 'AP'), tx, tableY + 5)
-        tx += 18
-
-        // 2. Nama Action Plan
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(7.5)
-        doc.setTextColor(15, 23, 42)
-        const safeTitle = ap.title.length > 55 ? ap.title.slice(0, 52) + '…' : ap.title
-        doc.text(safeTitle, tx, tableY + 4.8)
-        tx += 90
-
-        // 3. PIC
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7)
-        doc.setTextColor(30, 41, 59)
-        const safePic = ap.pic.name.length > 22 ? ap.pic.name.slice(0, 20) + '…' : ap.pic.name
-        doc.text(safePic, tx, tableY + 4.8)
-        tx += 38
-
-        // 4. Divisi / Project
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7)
-        doc.setTextColor(71, 85, 105)
-        const projectOrDiv = ap.division?.name ?? ap.task?.project?.name ?? 'Umum'
-        const safeDiv = projectOrDiv.length > 24 ? projectOrDiv.slice(0, 22) + '…' : projectOrDiv
-        doc.text(safeDiv, tx, tableY + 4.8)
-        tx += 42
-
-        // 5. Prioritas (Badge)
-        const [pr, pg, pb] = PRIORITY_COLOR[ap.priority] ?? [100, 116, 139]
-        doc.setFillColor(pr, pg, pb)
-        doc.circle(tx + 2, tableY + 4.2, 1.2, 'F')
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(6.5)
-        doc.setTextColor(pr, pg, pb)
-        doc.text(AP_PRIORITY_LABEL[ap.priority] ?? ap.priority, tx + 5, tableY + 4.8)
-        tx += 22
-
-        // 6. Jadwal Kerja
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(6.5)
-        doc.setTextColor(71, 85, 105)
-        const dateRangeStr = `${formatIndoShort(ap.startDate)} - ${formatIndoShort(ap.endDate)}`
-        doc.text(dateRangeStr, tx, tableY + 4.8)
-        tx += 35
-
-        // 7. Status Badge
-        const [sr, sg, sb] = STATUS_FILL[ap.status] ?? [100, 116, 139]
-        doc.setFillColor(sr, sg, sb)
-        doc.roundedRect(tx, tableY + 1.8, 25, 4.2, 1, 1, 'F')
-        doc.setTextColor(255, 255, 255)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(6)
-        doc.text(AP_STATUS_LABEL[ap.status] ?? ap.status, tx + 12.5, tableY + 4.6, { align: 'center' })
+        renderExecutionSummaryRow(doc, ap, tableY, rowHeight, margin, contentW, isEven)
 
         tableY += rowHeight
       })

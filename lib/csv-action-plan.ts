@@ -111,12 +111,115 @@ function normalizePriority(val: string | undefined): 'HIGH' | 'MEDIUM' | 'LOW' {
   return 'MEDIUM'
 }
 
+type CsvColumnMapping = {
+  title: number
+  outcomeKpi: number
+  priority: number
+  startDate: number
+  endDate: number
+  picEmail: number
+}
+
+function resolveCsvHeaderAndDelimiter(lines: string[]): {
+  delimiter: string
+  colIndex: CsvColumnMapping
+  startLineIdx: number
+  generalError?: string
+} {
+  let lineIdx = 0
+
+  // Lewati baris direktif "sep=..." jika ada
+  if (lines[lineIdx]?.toLowerCase().startsWith('sep=')) {
+    lineIdx++
+  }
+
+  if (lineIdx >= lines.length) {
+    return {
+      delimiter: ',',
+      colIndex: { title: -1, outcomeKpi: -1, priority: -1, startDate: -1, endDate: -1, picEmail: -1 },
+      startLineIdx: lineIdx,
+      generalError: 'Tidak ada baris data dalam file',
+    }
+  }
+
+  const headerLine = lines[lineIdx]
+  const delimiter = headerLine.includes(';') && !headerLine.includes(',') ? ';' : ','
+  const rawHeaders = parseCsvLine(headerLine, delimiter).map((h) =>
+    h.toLowerCase().replace(/[\s_-]/g, '')
+  )
+  lineIdx++
+
+  const colIndex: CsvColumnMapping = {
+    title: rawHeaders.findIndex((h) => ['title', 'judul', 'judulactionplan', 'actionplan', 'nama'].includes(h)),
+    outcomeKpi: rawHeaders.findIndex((h) => ['outcomekpi', 'targetkpi', 'kpi', 'target', 'hasil'].includes(h)),
+    priority: rawHeaders.findIndex((h) => ['priority', 'prioritas', 'tingkatprioritas'].includes(h)),
+    startDate: rawHeaders.findIndex((h) => ['startdate', 'tanggalmulai', 'tglmulai', 'mulai'].includes(h)),
+    endDate: rawHeaders.findIndex((h) => ['enddate', 'deadline', 'tenggatwaktu', 'tgldeadline', 'selesai'].includes(h)),
+    picEmail: rawHeaders.findIndex((h) => ['picemail', 'emailpic', 'email'].includes(h)),
+  }
+
+  if (colIndex.title === -1) {
+    return {
+      delimiter,
+      colIndex,
+      startLineIdx: lineIdx,
+      generalError: 'Kolom "title" (atau "Judul") tidak ditemukan di baris header CSV.',
+    }
+  }
+
+  return { delimiter, colIndex, startLineIdx: lineIdx }
+}
+
+function parseSingleCsvRow(
+  cells: string[],
+  colIndex: CsvColumnMapping,
+  today: Date,
+  rowIndex: number
+): ActionPlanCsvRow {
+  const titleVal = cells[colIndex.title]?.trim() || ''
+
+  // Default fallback dates
+  const rowDate = new Date(today)
+  rowDate.setDate(today.getDate() + Math.floor(rowIndex / 4)) // geser hari tiap 4 task
+
+  const startNorm = normalizeDate(colIndex.startDate !== -1 ? cells[colIndex.startDate] : undefined, rowDate)
+  const endNorm = normalizeDate(colIndex.endDate !== -1 ? cells[colIndex.endDate] : undefined, rowDate)
+
+  const priorityVal = normalizePriority(colIndex.priority !== -1 ? cells[colIndex.priority] : undefined)
+  const outcomeVal = (colIndex.outcomeKpi !== -1 ? cells[colIndex.outcomeKpi]?.trim() : '') || titleVal
+  const emailVal = colIndex.picEmail !== -1 ? cells[colIndex.picEmail]?.trim() : undefined
+
+  let errorMsg: string | undefined
+
+  if (!titleVal) {
+    errorMsg = 'Judul action plan wajib diisi'
+  } else if (startNorm.error) {
+    errorMsg = startNorm.error
+  } else if (endNorm.error) {
+    errorMsg = endNorm.error
+  } else if (new Date(endNorm.dateStr) < new Date(startNorm.dateStr)) {
+    errorMsg = 'Tenggat waktu (endDate) tidak boleh lebih awal dari tanggal mulai (startDate)'
+  }
+
+  return {
+    index: rowIndex + 1,
+    title: titleVal,
+    outcomeKpi: outcomeVal,
+    priority: priorityVal,
+    startDate: startNorm.dateStr,
+    endDate: endNorm.dateStr,
+    picEmail: emailVal || undefined,
+    isValid: !errorMsg,
+    error: errorMsg,
+  }
+}
+
 /**
  * Parsing file CSV Action Plan
  */
 export function parseActionPlanCsv(csvContent: string): ParseCsvResult {
   // Hapus UTF-8 BOM jika ada
-  let content = csvContent.replace(/^\uFEFF/, '').trim()
+  const content = csvContent.replace(/^\uFEFF/, '').trim()
 
   if (!content) {
     return { rows: [], totalValid: 0, totalErrors: 0, exceedsLimit: false, generalError: 'File CSV kosong' }
@@ -127,91 +230,27 @@ export function parseActionPlanCsv(csvContent: string): ParseCsvResult {
     return { rows: [], totalValid: 0, totalErrors: 0, exceedsLimit: false, generalError: 'File CSV kosong' }
   }
 
-  let lineIdx = 0
-
-  // Lewati baris direktif "sep=..." jika ada
-  if (lines[lineIdx]?.toLowerCase().startsWith('sep=')) {
-    lineIdx++
-  }
-
-  if (lineIdx >= lines.length) {
-    return { rows: [], totalValid: 0, totalErrors: 0, exceedsLimit: false, generalError: 'Tidak ada baris data dalam file' }
-  }
-
-  // Tentukan delimiter: koma atau titik koma
-  const headerLine = lines[lineIdx]
-  const delimiter = headerLine.includes(';') && !headerLine.includes(',') ? ';' : ','
-
-  const rawHeaders = parseCsvLine(headerLine, delimiter).map((h) =>
-    h.toLowerCase().replace(/[\s_-]/g, '')
-  )
-  lineIdx++
-
-  // Pemetaan kolom
-  const colIndex = {
-    title: rawHeaders.findIndex((h) => ['title', 'judul', 'judulactionplan', 'actionplan', 'nama'].includes(h)),
-    outcomeKpi: rawHeaders.findIndex((h) => ['outcomekpi', 'targetkpi', 'kpi', 'target', 'hasil'].includes(h)),
-    priority: rawHeaders.findIndex((h) => ['priority', 'prioritas', 'tingkatprioritas'].includes(h)),
-    startDate: rawHeaders.findIndex((h) => ['startdate', 'tanggalmulai', 'tglmulai', 'mulai'].includes(h)),
-    endDate: rawHeaders.findIndex((h) => ['enddate', 'deadline', 'tenggatwaktu', 'tgldeadline', 'selesai'].includes(h)),
-    picEmail: rawHeaders.findIndex((h) => ['picemail', 'emailpic', 'email'].includes(h)),
-  }
-
-  // Jika header title tidak ditemukan
-  if (colIndex.title === -1) {
+  const headerInfo = resolveCsvHeaderAndDelimiter(lines)
+  if (headerInfo.generalError) {
     return {
       rows: [],
       totalValid: 0,
       totalErrors: 0,
       exceedsLimit: false,
-      generalError: 'Kolom "title" (atau "Judul") tidak ditemukan di baris header CSV.',
+      generalError: headerInfo.generalError,
     }
   }
 
+  const { delimiter, colIndex, startLineIdx } = headerInfo
   const rows: ActionPlanCsvRow[] = []
   const today = new Date()
 
-  for (let i = lineIdx; i < lines.length; i++) {
+  for (let i = startLineIdx; i < lines.length; i++) {
     const raw = lines[i]?.trim()
     if (!raw) continue // lewati baris kosong
 
     const cells = parseCsvLine(raw, delimiter)
-    const titleVal = cells[colIndex.title]?.trim() || ''
-
-    // Default fallback dates
-    const rowDate = new Date(today)
-    rowDate.setDate(today.getDate() + Math.floor(rows.length / 4)) // geser hari tiap 4 task
-
-    const startNorm = normalizeDate(colIndex.startDate !== -1 ? cells[colIndex.startDate] : undefined, rowDate)
-    const endNorm = normalizeDate(colIndex.endDate !== -1 ? cells[colIndex.endDate] : undefined, rowDate)
-
-    const priorityVal = normalizePriority(colIndex.priority !== -1 ? cells[colIndex.priority] : undefined)
-    const outcomeVal = (colIndex.outcomeKpi !== -1 ? cells[colIndex.outcomeKpi]?.trim() : '') || titleVal
-    const emailVal = colIndex.picEmail !== -1 ? cells[colIndex.picEmail]?.trim() : undefined
-
-    let errorMsg: string | undefined
-
-    if (!titleVal) {
-      errorMsg = 'Judul action plan wajib diisi'
-    } else if (startNorm.error) {
-      errorMsg = startNorm.error
-    } else if (endNorm.error) {
-      errorMsg = endNorm.error
-    } else if (new Date(endNorm.dateStr) < new Date(startNorm.dateStr)) {
-      errorMsg = 'Tenggat waktu (endDate) tidak boleh lebih awal dari tanggal mulai (startDate)'
-    }
-
-    rows.push({
-      index: rows.length + 1,
-      title: titleVal,
-      outcomeKpi: outcomeVal,
-      priority: priorityVal,
-      startDate: startNorm.dateStr,
-      endDate: endNorm.dateStr,
-      picEmail: emailVal || undefined,
-      isValid: !errorMsg,
-      error: errorMsg,
-    })
+    rows.push(parseSingleCsvRow(cells, colIndex, today, rows.length))
   }
 
   const totalValid = rows.filter((r) => r.isValid).length

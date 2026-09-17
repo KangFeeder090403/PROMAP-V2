@@ -17,7 +17,7 @@ export interface SessionUser {
   isImpersonating?: boolean
 }
 
-export function DashboardShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
+export function DashboardShell({ user, children }: Readonly<{ user: SessionUser; children: React.ReactNode }>) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -25,8 +25,10 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
       <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 md:hidden"
+        <button
+          type="button"
+          aria-label="Tutup sidebar"
+          className="fixed inset-0 z-20 bg-black/40 md:hidden border-0 cursor-default"
           onClick={() => setSidebarOpen(false)}
         />
       )}

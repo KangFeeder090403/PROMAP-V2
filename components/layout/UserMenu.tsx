@@ -40,7 +40,12 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label="Tutup menu pengguna"
+            className="fixed inset-0 z-10 cursor-default bg-transparent border-0"
+            onClick={() => setOpen(false)}
+          />
           <div className="absolute right-0 top-full z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-1 shadow-md dark:border-slate-800 dark:bg-slate-900">
             <div className="px-3 py-2.5">
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{user.name}</p>

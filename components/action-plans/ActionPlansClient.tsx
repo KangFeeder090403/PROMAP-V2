@@ -107,6 +107,206 @@ function pageWindow(current: number, pages: number) {
   return [1, '…', current - 1, current, current + 1, '…', pages]
 }
 
+function isCreateHotkeyTriggered(e: KeyboardEvent, isModalOpen: boolean): boolean {
+  if (e.key.toLowerCase() !== 'c' || e.metaKey || e.ctrlKey || e.altKey) {
+    return false
+  }
+  const target = e.target as HTMLElement | null
+  const isInput =
+    target?.tagName === 'INPUT' ||
+    target?.tagName === 'TEXTAREA' ||
+    target?.tagName === 'SELECT' ||
+    Boolean(target?.isContentEditable)
+  return !isInput && !isModalOpen
+}
+
+function buildActionPlansQueryString(params: {
+  statusFilter?: string
+  priorityFilter?: string
+  divisionFilter?: string
+  search?: string
+  page: number
+  pageSize: number
+}): string {
+  const qs = new URLSearchParams()
+  if (params.statusFilter) qs.set('status', params.statusFilter)
+  if (params.priorityFilter) qs.set('priority', params.priorityFilter)
+  if (params.divisionFilter) qs.set('divisionId', params.divisionFilter)
+  if (params.search) qs.set('search', params.search)
+  qs.set('page', String(params.page))
+  qs.set('pageSize', String(params.pageSize))
+  return qs.toString() ? `?${qs.toString()}` : ''
+}
+
+function ActionPlansDeniedState({ onBack }: Readonly<{ onBack: () => void }>) {
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto">
+      <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Anda tidak memiliki izin untuk melihat Action Plan ini.
+      </p>
+      <button
+        onClick={onBack}
+        className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+      >
+        Kembali ke Beranda
+      </button>
+    </div>
+  )
+}
+
+function ActionPlansLoadingState() {
+  return (
+    <div className="space-y-4">
+      <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ActionPlansErrorState({ error, onRetry }: Readonly<{ error: string; onRetry: () => void }>) {
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+      <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
+      <button
+        onClick={onRetry}
+        className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+      >
+        Coba lagi
+      </button>
+    </div>
+  )
+}
+
+interface ActionPlanTableRowProps {
+  ap: ActionPlan
+  userId: string
+  isSelected: boolean
+  isHighlighted: boolean
+  onSelect: (ap: ActionPlan) => void
+  onEdit: (ap: ActionPlan) => void
+}
+
+function ActionPlanTableRow({
+  ap,
+  userId,
+  isSelected,
+  isHighlighted,
+  onSelect,
+  onEdit,
+}: Readonly<ActionPlanTableRowProps>) {
+  const isOverdue =
+    ap.status !== 'COMPLETE' &&
+    new Date(ap.endDate).getTime() < Date.now() - 86400000
+  const pct =
+    ap.checklistTotal === 0
+      ? ap.status === 'COMPLETE'
+        ? 100
+        : 0
+      : Math.round((ap.checklistDone / ap.checklistTotal) * 100)
+
+  return (
+    <tr
+      key={ap.id}
+      onClick={() => onSelect(ap)}
+      className={`border-b border-slate-100 dark:border-slate-800 last:border-0 cursor-pointer transition-colors ${
+        isHighlighted
+          ? 'bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500 ring-inset'
+          : isSelected
+            ? 'bg-blue-50/60 dark:bg-blue-500/10'
+            : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+      }`}
+    >
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`w-1 self-stretch rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'}`}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-slate-900 dark:text-slate-50">{ap.title}</p>
+            <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{ap.code}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <p className="font-medium text-slate-700 dark:text-slate-300">
+          {ap.task?.project?.name ?? (ap.isPersonal ? 'Personal' : '—')}
+        </p>
+        <p className="max-w-[220px] truncate text-xs text-slate-500 dark:text-slate-400">
+          {ap.task?.title ?? ap.division?.name ?? '—'}
+        </p>
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/15 text-xs font-semibold text-blue-700 dark:text-blue-300">
+            {initials(ap.pic?.name)}
+          </span>
+          <span className="text-slate-700 dark:text-slate-300">{ap.picId === userId ? 'Anda' : ap.pic?.name ?? '—'}</span>
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <StatusBadge status={ap.priority} styleMap={AP_PRIORITY_STYLE} labelMap={AP_PRIORITY_LABEL} />
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'} ${
+              ap.status === 'PENDING_APPROVAL' ? 'animate-pulse' : ''
+            }`}
+          />
+          <StatusBadge status={ap.status} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <p
+          className={`font-mono text-sm ${
+            isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'
+          }`}
+        >
+          {formatDate(ap.endDate)}
+        </p>
+      </td>
+      <td className="px-5 py-3">
+        <div className="w-32">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-mono">
+              {ap.checklistDone}/{ap.checklistTotal}
+            </span>
+            <span className="text-slate-700 dark:text-slate-300">{pct}%</span>
+          </div>
+          <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+            <div
+              className={`h-1.5 rounded-full ${
+                pct >= 100 ? 'bg-emerald-500' : 'bg-blue-500'
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3">
+        <div className="flex items-center justify-end">
+          <button
+            type="button"
+            title="Edit"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(ap)
+            }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export function ActionPlansClient({
   role,
   userId,
@@ -115,7 +315,7 @@ export function ActionPlansClient({
   initialHighlightId,
   initialDivisionId,
   initialStatus,
-}: {
+}: Readonly<{
   role: Role
   userId: string
   openCreate?: boolean
@@ -123,7 +323,7 @@ export function ActionPlansClient({
   initialHighlightId?: string
   initialDivisionId?: string
   initialStatus?: string
-}) {
+}>) {
   const router = useRouter()
   const [data, setData] = useState<Ledger | null>(null)
   const [loading, setLoading] = useState(true)
@@ -158,18 +358,11 @@ export function ActionPlansClient({
   // Global Hotkey: 'c' or 'C' opens create modal when not typing in inputs
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key.toLowerCase() === 'c' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const target = e.target as HTMLElement | null
-        const isInput =
-          target?.tagName === 'INPUT' ||
-          target?.tagName === 'TEXTAREA' ||
-          target?.tagName === 'SELECT' ||
-          target?.isContentEditable
-        if (!isInput && !formOpen && !bulkOpen && !importOpen && !selected) {
-          e.preventDefault()
-          setEditing(null)
-          setFormOpen(true)
-        }
+      const isModalOpen = formOpen || bulkOpen || importOpen || Boolean(selected)
+      if (isCreateHotkeyTriggered(e, isModalOpen)) {
+        e.preventDefault()
+        setEditing(null)
+        setFormOpen(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -219,14 +412,15 @@ export function ActionPlansClient({
     try {
       setLoading(true)
       setError(null)
-      const qs = new URLSearchParams()
-      if (statusFilter) qs.set('status', statusFilter)
-      if (priorityFilter) qs.set('priority', priorityFilter)
-      if (divisionFilter) qs.set('divisionId', divisionFilter)
-      if (search) qs.set('search', search)
-      qs.set('page', String(page))
-      qs.set('pageSize', String(PAGE_SIZE))
-      const res = await fetch(`/api/action-plans${qs.toString() ? `?${qs}` : ''}`)
+      const queryString = buildActionPlansQueryString({
+        statusFilter,
+        priorityFilter,
+        divisionFilter,
+        search,
+        page,
+        pageSize: PAGE_SIZE,
+      })
+      const res = await fetch(`/api/action-plans${queryString}`)
       if (res.status === 401 || res.status === 403) {
         setDenied(true)
         return
@@ -265,47 +459,15 @@ export function ActionPlansClient({
   }
 
   if (denied) {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Anda tidak memiliki izin untuk melihat Action Plan ini.
-        </p>
-        <button
-          onClick={() => router.push('/')}
-          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
-        >
-          Kembali ke Beranda
-        </button>
-      </div>
-    )
+    return <ActionPlansDeniedState onBack={() => router.push('/')} />
   }
 
   if (loading && !data) {
-    return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-          ))}
-        </div>
-      </div>
-    )
+    return <ActionPlansLoadingState />
   }
 
   if (error && !data) {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-        <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
-        <button
-          onClick={fetchData}
-          className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
-        >
-          Coba lagi
-        </button>
-      </div>
-    )
+    return <ActionPlansErrorState error={error} onRetry={fetchData} />
   }
 
   if (!data) return null
@@ -498,6 +660,7 @@ export function ActionPlansClient({
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
+              aria-label="Cari judul, PIC, atau kode action plan"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Cari judul, PIC, kode..."
@@ -537,8 +700,9 @@ export function ActionPlansClient({
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Status</label>
+                    <label htmlFor="filter-status-select" className="text-xs font-medium text-slate-500 dark:text-slate-400">Status</label>
                     <select
+                      id="filter-status-select"
                       value={statusFilter}
                       onChange={(e) => applyFilter('statusFilter', e.target.value)}
                       className="h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -552,8 +716,9 @@ export function ActionPlansClient({
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Prioritas</label>
+                    <label htmlFor="filter-priority-select" className="text-xs font-medium text-slate-500 dark:text-slate-400">Prioritas</label>
                     <select
+                      id="filter-priority-select"
                       value={priorityFilter}
                       onChange={(e) => applyFilter('priorityFilter', e.target.value)}
                       className="h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -644,118 +809,23 @@ export function ActionPlansClient({
                   />
                 </td>
               </tr>
-              {data.items.map((ap) => {
-                const isOverdue =
-                  ap.status !== 'COMPLETE' &&
-                  new Date(ap.endDate).getTime() < Date.now() - 86400000
-                const pct =
-                  ap.checklistTotal === 0
-                    ? ap.status === 'COMPLETE'
-                      ? 100
-                      : 0
-                    : Math.round((ap.checklistDone / ap.checklistTotal) * 100)
-                const isHighlighted = highlightedId === ap.id
-                return (
-                  <tr
-                    key={ap.id}
-                    onClick={() => {
-                      setSelected(ap)
-                      setHighlightedId(ap.id)
-                    }}
-                    className={`border-b border-slate-100 dark:border-slate-800 last:border-0 cursor-pointer transition-colors ${
-                      isHighlighted
-                        ? 'bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500 ring-inset'
-                        : selected?.id === ap.id
-                          ? 'bg-blue-50/60 dark:bg-blue-500/10'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`w-1 self-stretch rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'}`}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate font-medium text-slate-900 dark:text-slate-50">{ap.title}</p>
-                          <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{ap.code}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-slate-700 dark:text-slate-300">
-                        {ap.task?.project?.name ?? (ap.isPersonal ? 'Personal' : '—')}
-                      </p>
-                      <p className="max-w-[220px] truncate text-xs text-slate-500 dark:text-slate-400">
-                        {ap.task?.title ?? ap.division?.name ?? '—'}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/15 text-xs font-semibold text-blue-700 dark:text-blue-300">
-                          {initials(ap.pic?.name)}
-                        </span>
-                        <span className="text-slate-700 dark:text-slate-300">{ap.picId === userId ? 'Anda' : ap.pic?.name ?? '—'}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={ap.priority} styleMap={AP_PRIORITY_STYLE} labelMap={AP_PRIORITY_LABEL} />
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'} ${
-                            ap.status === 'PENDING_APPROVAL' ? 'animate-pulse' : ''
-                          }`}
-                        />
-                        <StatusBadge status={ap.status} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <p
-                        className={`font-mono text-sm ${
-                          isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        {formatDate(ap.endDate)}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="w-32">
-                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                          <span className="font-mono">
-                            {ap.checklistDone}/{ap.checklistTotal}
-                          </span>
-                          <span className="text-slate-700 dark:text-slate-300">{pct}%</span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
-                          <div
-                            className={`h-1.5 rounded-full ${
-                              pct >= 100 ? 'bg-emerald-500' : 'bg-blue-500'
-                            }`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end">
-                        <button
-                          type="button"
-                          title="Edit"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setEditing(ap)
-                            setFormOpen(true)
-                          }}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
+              {data.items.map((ap) => (
+                <ActionPlanTableRow
+                  key={ap.id}
+                  ap={ap}
+                  userId={userId}
+                  isSelected={selected?.id === ap.id}
+                  isHighlighted={highlightedId === ap.id}
+                  onSelect={(selectedAp) => {
+                    setSelected(selectedAp)
+                    setHighlightedId(selectedAp.id)
+                  }}
+                  onEdit={(editingAp) => {
+                    setEditing(editingAp)
+                    setFormOpen(true)
+                  }}
+                />
+              ))}
             </tbody>
           </table>
         )}
