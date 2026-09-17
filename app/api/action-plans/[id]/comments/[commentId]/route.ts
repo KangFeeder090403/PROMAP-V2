@@ -114,11 +114,15 @@ export async function PATCH(
     })
 
     // INI yang menjaga audit trail: teks asli tidak hilang, ia pindah ke oldValue.
+    // oldValue SENGAJA tidak dipotong — Comment.content sudah ditimpa di atas,
+    // jadi baris ini satu-satunya salinan teks lama. ActivityLog.oldValue bertipe
+    // TEXT, nol batas panjang. newValue boleh dipotong: teks penuhnya hidup di
+    // Comment.content.
     await logActivity({
       userId: user.id,
       actionPlanId: ap.id,
       action: 'COMMENT_EDITED',
-      oldValue: comment.content.slice(0, 200),
+      oldValue: comment.content,
       newValue: content.slice(0, 200),
     })
 
