@@ -191,7 +191,15 @@ export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: Cale
             return (
               <div
                 key={ev.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectEvent(ev)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onSelectEvent(ev)
+                  }
+                }}
                 className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1.5 flex-1 min-w-0">

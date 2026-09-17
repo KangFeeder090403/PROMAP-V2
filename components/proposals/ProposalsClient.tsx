@@ -444,7 +444,15 @@ export function ProposalsClient({
             return (
               <div
                 key={p.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedProposal(p)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedProposal(p)
+                  }
+                }}
                 className="flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 overflow-hidden cursor-pointer group"
               >
                 {/* Card body */}

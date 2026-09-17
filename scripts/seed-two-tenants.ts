@@ -510,7 +510,7 @@ async function run() {
       await prisma.checklist.createMany({
         data: [
           { actionPlanId: createdAp.id, title: 'Kajian kebutuhan & alokasi anggaran', isDone: true },
-          { actionPlanId: createdAp.id, title: 'Implementasi langkah teknis', isDone: ap.status !== 'NOT_STARTED' },
+          { actionPlanId: createdAp.id, title: 'Implementasi langkah teknis', isDone: (ap.status as string) !== 'NOT_STARTED' },
           { actionPlanId: createdAp.id, title: 'Validasi & penyerahan hasil kerja', isDone: ap.status === 'COMPLETE' },
         ],
       })

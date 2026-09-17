@@ -86,6 +86,213 @@ function getServiceIcon(url: string) {
   return <Globe className="h-4 w-4 shrink-0 text-blue-500" />
 }
 
+function computeDetailPermissions(ap: ActionPlan, userId: string, role: Role) {
+  const isOwner = ap.picId === userId
+  const isPersonal = ap.isPersonal || !ap.taskId
+  const editableChecklist =
+    isOwner && ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+
+  const canStart =
+    isOwner &&
+    STATUS_TRANSITIONS[ap.status as keyof typeof STATUS_TRANSITIONS]?.includes('IN_PROGRESS') &&
+    ['NOT_STARTED', 'REJECTED', 'OVERDUE'].includes(ap.status)
+  const canSubmit = !isPersonal && isOwner && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+  const canCompleteDirectly =
+    isOwner &&
+    isPersonal &&
+    ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED', 'REJECTED', 'OVERDUE'].includes(ap.status)
+  const canReview =
+    !isOwner &&
+    ap.status === 'PENDING_APPROVAL' &&
+    (role === 'SUPER_ADMIN' ||
+      role === 'ADMIN_OPERATIONAL' ||
+      (role === 'MANAGER' && ap.divisionId !== null))
+  const canReassign =
+    ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'].includes(role) &&
+    ap.divisionId !== null &&
+    ['NOT_STARTED', 'IN_PROGRESS', 'REJECTED'].includes(ap.status)
+
+  return {
+    isOwner,
+    isPersonal,
+    editableChecklist,
+    canStart,
+    canSubmit,
+    canCompleteDirectly,
+    canReview,
+    canReassign,
+  }
+}
+
+interface EvidenceContentDisplayProps {
+  evidenceLink: string | null
+  evaluationNote: string | null
+}
+
+function EvidenceContentDisplay({ evidenceLink, evaluationNote }: Readonly<EvidenceContentDisplayProps>) {
+  return (
+    <>
+      {evidenceLink ? (
+        <a
+          href={evidenceLink}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+        >
+          {getServiceIcon(evidenceLink)}
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
+            {evidenceLink}
+          </span>
+          <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+        </a>
+      ) : (
+        <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-500 dark:text-slate-400">
+          Belum ada bukti yang dikirim.
+        </p>
+      )}
+      {evaluationNote && (
+        <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-3">
+          <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+          <p className="text-sm italic text-slate-600 dark:text-slate-400">
+            “{evaluationNote}” — PIC
+          </p>
+        </div>
+      )}
+    </>
+  )
+}
+
+interface ManagerReviewSectionProps {
+  evaluationNote: string | null
+  onReview: (action: PresetReview) => void
+}
+
+function ManagerReviewSection({ evaluationNote, onReview }: Readonly<ManagerReviewSectionProps>) {
+  return (
+    <section className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        Persetujuan &amp; Keputusan Manager
+      </h3>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        {evaluationNote
+          ? 'PIC sudah menyerahkan bukti. Tinjau sebelum memberi keputusan.'
+          : 'PIC belum menyerahkan bukti — pertimbangkan Minta Revisi.'}
+      </p>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => onReview('COMPLETE')}
+          className="inline-flex h-9 items-center justify-center rounded-md bg-green-600 px-2 text-xs font-medium text-white hover:bg-green-700"
+        >
+          Setujui
+        </button>
+        <button
+          type="button"
+          onClick={() => onReview('EVIDENCE_REQUIRED')}
+          className="inline-flex h-9 items-center justify-center rounded-md bg-amber-500 px-2 text-xs font-medium text-white hover:bg-amber-600"
+        >
+          Minta Revisi
+        </button>
+        <button
+          type="button"
+          onClick={() => onReview('REJECTED')}
+          className="inline-flex h-9 items-center justify-center rounded-md bg-red-500 px-2 text-xs font-medium text-white hover:bg-red-600"
+        >
+          Tolak
+        </button>
+      </div>
+    </section>
+  )
+}
+
+interface DetailFooterActionsProps {
+  isOwner: boolean
+  canStart: boolean
+  canCompleteDirectly: boolean
+  canSubmit: boolean
+  canReview: boolean
+  startLoading: boolean
+  completeLoading: boolean
+  onEdit: () => void
+  onStart: () => void
+  onCompletePersonal: () => void
+  onSubmit: () => void
+  onReview: () => void
+}
+
+function DetailFooterActions({
+  isOwner,
+  canStart,
+  canCompleteDirectly,
+  canSubmit,
+  canReview,
+  startLoading,
+  completeLoading,
+  onEdit,
+  onStart,
+  onCompletePersonal,
+  onSubmit,
+  onReview,
+}: Readonly<DetailFooterActionsProps>) {
+  return (
+    <div className="flex items-center gap-2">
+      <DialogPrimitive.Close
+        aria-label="Tutup"
+        className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+      >
+        Tutup
+      </DialogPrimitive.Close>
+      {isOwner && (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          Edit
+        </button>
+      )}
+      {canStart && (
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={startLoading}
+          className="inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+        >
+          {startLoading ? 'Memproses...' : 'Mulai Kerjakan'}
+        </button>
+      )}
+      {canCompleteDirectly && (
+        <button
+          type="button"
+          onClick={onCompletePersonal}
+          disabled={completeLoading}
+          className="inline-flex h-9 items-center rounded-md bg-emerald-600 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {completeLoading ? 'Memproses...' : 'Tandai Selesai'}
+        </button>
+      )}
+      {canSubmit && (
+        <button
+          type="button"
+          onClick={onSubmit}
+          className="inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+        >
+          Submit untuk Review
+        </button>
+      )}
+      {canReview && (
+        <button
+          type="button"
+          onClick={onReview}
+          className="inline-flex h-9 items-center rounded-md bg-indigo-500 px-4 text-sm font-medium text-white transition-colors hover:bg-indigo-600"
+        >
+          Tinjau &amp; Beri Keputusan
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function ActionPlanDetail({
   actionPlan,
   role,
@@ -93,14 +300,14 @@ export function ActionPlanDetail({
   onOpenChange,
   onChanged,
   onEdit,
-}: {
+}: Readonly<{
   actionPlan: ActionPlan | null
   role: Role
   userId: string
   onOpenChange: (open: boolean) => void
   onChanged: () => void
   onEdit: () => void
-}) {
+}>) {
   const [tab, setTab] = useState<Tab>('work')
   const [submitOpen, setSubmitOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
@@ -149,33 +356,17 @@ export function ActionPlanDetail({
   const currentCounts = checklistCounts?.id === ap.id ? checklistCounts : null
   const doneCount = currentCounts?.done ?? ap.checklistDone
   const totalCount = currentCounts?.total ?? ap.checklistTotal
-  const isOwner = ap.picId === userId
-  const isPersonal = ap.isPersonal || !ap.taskId
-  const editableChecklist =
-    isOwner && ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
 
-  const canStart =
-    isOwner &&
-    STATUS_TRANSITIONS[ap.status as keyof typeof STATUS_TRANSITIONS]?.includes('IN_PROGRESS') &&
-    ['NOT_STARTED', 'REJECTED', 'OVERDUE'].includes(ap.status)
-  const canSubmit = !isPersonal && isOwner && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
-  const canCompleteDirectly =
-    isOwner &&
-    isPersonal &&
-    ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED', 'REJECTED', 'OVERDUE'].includes(ap.status)
-  // Logika sama seperti lib/rbac.ts canReviewActionPlan — diinline di sini (bukan diimpor)
-  // karena file ini 'use client', dan lib/rbac.ts menarik lib/prisma.ts (driver pg,
-  // node-only) yang gagal di-bundle untuk client. Server tetap sumber kebenaran final.
-  const canReview =
-    !isOwner &&
-    ap.status === 'PENDING_APPROVAL' &&
-    (role === 'SUPER_ADMIN' ||
-      role === 'ADMIN_OPERATIONAL' ||
-      (role === 'MANAGER' && ap.divisionId !== null))
-  const canReassign =
-    ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'].includes(role) &&
-    ap.divisionId !== null &&
-    ['NOT_STARTED', 'IN_PROGRESS', 'REJECTED'].includes(ap.status)
+  const {
+    isOwner,
+    isPersonal,
+    editableChecklist,
+    canStart,
+    canSubmit,
+    canCompleteDirectly,
+    canReview,
+    canReassign,
+  } = computeDetailPermissions(ap, userId, role)
 
   async function handleStart() {
     setActionError('')
@@ -518,82 +709,23 @@ export function ActionPlanDetail({
                         </div>
                       </div>
                     ) : (
-                      <>
-                        {ap.evidenceLink ? (
-                          <a
-                            href={ap.evidenceLink}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                          >
-                            {getServiceIcon(ap.evidenceLink)}
-                            <span className="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
-                              {ap.evidenceLink}
-                            </span>
-                            <ExternalLink className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                          </a>
-                        ) : (
-                          <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-800 p-3 text-sm text-slate-500 dark:text-slate-400">
-                            Belum ada bukti yang dikirim.
-                          </p>
-                        )}
-                        {ap.evaluationNote && (
-                          <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 p-3">
-                            <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-                            <p className="text-sm italic text-slate-600 dark:text-slate-400">
-                              “{ap.evaluationNote}” — PIC
-                            </p>
-                          </div>
-                        )}
-                      </>
+                      <EvidenceContentDisplay
+                        evidenceLink={ap.evidenceLink}
+                        evaluationNote={ap.evaluationNote}
+                      />
                     )}
                   </div>
                 </section>
 
                 {/* Keputusan Manager */}
                 {canReview && (
-                  <section className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Persetujuan &amp; Keputusan Manager
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {ap.evaluationNote
-                        ? 'PIC sudah menyerahkan bukti. Tinjau sebelum memberi keputusan.'
-                        : 'PIC belum menyerahkan bukti — pertimbangkan Minta Revisi.'}
-                    </p>
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPresetReview('COMPLETE')
-                          setReviewOpen(true)
-                        }}
-                        className="inline-flex h-9 items-center justify-center rounded-md bg-green-600 px-2 text-xs font-medium text-white hover:bg-green-700"
-                      >
-                        Setujui
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPresetReview('EVIDENCE_REQUIRED')
-                          setReviewOpen(true)
-                        }}
-                        className="inline-flex h-9 items-center justify-center rounded-md bg-amber-500 px-2 text-xs font-medium text-white hover:bg-amber-600"
-                      >
-                        Minta Revisi
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPresetReview('REJECTED')
-                          setReviewOpen(true)
-                        }}
-                        className="inline-flex h-9 items-center justify-center rounded-md bg-red-500 px-2 text-xs font-medium text-white hover:bg-red-600"
-                      >
-                        Tolak
-                      </button>
-                    </div>
-                  </section>
+                  <ManagerReviewSection
+                    evaluationNote={ap.evaluationNote}
+                    onReview={(preset) => {
+                      setPresetReview(preset)
+                      setReviewOpen(true)
+                    }}
+                  />
                 )}
               </div>
             )}
@@ -606,64 +738,23 @@ export function ActionPlanDetail({
           {/* ===== Sticky footer ===== */}
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 px-5 py-3">
             <span className="text-xs text-slate-400 dark:text-slate-500">Terakhir diperbarui {timeAgo(ap.updatedAt)}</span>
-            <div className="flex items-center gap-2">
-              <DialogPrimitive.Close
-                aria-label="Tutup"
-                className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                Tutup
-              </DialogPrimitive.Close>
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  Edit
-                </button>
-              )}
-              {canStart && (
-                <button
-                  type="button"
-                  onClick={handleStart}
-                  disabled={startLoading}
-                  className="inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {startLoading ? 'Memproses...' : 'Mulai Kerja'}
-                </button>
-              )}
-              {canCompleteDirectly && (
-                <button
-                  type="button"
-                  onClick={handleCompletePersonal}
-                  disabled={completeLoading}
-                  className="inline-flex h-9 items-center rounded-md bg-emerald-600 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {completeLoading ? 'Memproses...' : 'Tandai Selesai'}
-                </button>
-              )}
-              {canSubmit && (
-                <button
-                  type="button"
-                  onClick={() => setSubmitOpen(true)}
-                  className="inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-                >
-                  Submit untuk Review
-                </button>
-              )}
-              {canReview && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPresetReview('COMPLETE')
-                    setReviewOpen(true)
-                  }}
-                  className="inline-flex h-9 items-center rounded-md bg-indigo-500 px-4 text-sm font-medium text-white transition-colors hover:bg-indigo-600"
-                >
-                  Tinjau &amp; Beri Keputusan
-                </button>
-              )}
-            </div>
+            <DetailFooterActions
+              isOwner={isOwner}
+              canStart={canStart}
+              canCompleteDirectly={canCompleteDirectly}
+              canSubmit={canSubmit}
+              canReview={canReview}
+              startLoading={startLoading}
+              completeLoading={completeLoading}
+              onEdit={onEdit}
+              onStart={handleStart}
+              onCompletePersonal={handleCompletePersonal}
+              onSubmit={() => setSubmitOpen(true)}
+              onReview={() => {
+                setPresetReview('COMPLETE')
+                setReviewOpen(true)
+              }}
+            />
           </div>
 
           <SubmitDialog

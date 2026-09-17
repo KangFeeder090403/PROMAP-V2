@@ -120,7 +120,7 @@ const GOVERNANCE_DOT: Record<GovernanceIndex, string> = {
 
 // ─── Komponen kecil ───────────────────────────────────────────────────────────
 
-function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
+function Card({ className = '', children }: Readonly<{ className?: string; children: React.ReactNode }>) {
   return (
     <div
       className={`bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm ${className}`}
@@ -130,7 +130,7 @@ function Card({ className = '', children }: { className?: string; children: Reac
   )
 }
 
-function GovernanceBadge({ level }: { level: GovernanceIndex }) {
+function GovernanceBadge({ level }: Readonly<{ level: GovernanceIndex }>) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-medium whitespace-nowrap ${GOVERNANCE_STYLE[level]}`}
@@ -141,7 +141,7 @@ function GovernanceBadge({ level }: { level: GovernanceIndex }) {
   )
 }
 
-function Bar({ pct, tone = 'auto' }: { pct: number; tone?: 'auto' | 'warning' }) {
+function Bar({ pct, tone = 'auto' }: Readonly<{ pct: number; tone?: 'auto' | 'warning' }>) {
   const color =
     tone === 'warning'
       ? 'bg-amber-500'
@@ -171,7 +171,7 @@ function StatCard({
   context,
   footer,
   accent,
-}: {
+}: Readonly<{
   icon: React.ElementType
   label: string
   value: string
@@ -179,7 +179,7 @@ function StatCard({
   context: string
   footer?: React.ReactNode
   accent: string
-}) {
+}>) {
   const numRef = useRef<HTMLSpanElement>(null)
 
   useGSAP(() => {
@@ -233,7 +233,7 @@ function DownloadCard({
   loading,
   onDownload,
   secondaryDownload,
-}: {
+}: Readonly<{
   icon: React.ElementType
   title: string
   description: string
@@ -245,7 +245,7 @@ function DownloadCard({
     loading: boolean
     onDownload: () => void
   }
-}) {
+}>) {
   return (
     <Card className="p-4 flex flex-col gap-3 min-w-0 justify-between">
       <div className="flex items-start gap-3 min-w-0">
@@ -352,6 +352,7 @@ function Dropdown({
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm transition-colors max-w-full"
@@ -376,13 +377,14 @@ function DropdownItem({
   active,
   onClick,
   children,
-}: {
+}: Readonly<{
   active: boolean
   onClick: () => void
   children: React.ReactNode
-}) {
+}>) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`w-full text-left px-3 py-2 text-sm transition-colors ${
         active
@@ -399,11 +401,11 @@ function SectionHead({
   title,
   subtitle,
   action,
-}: {
+}: Readonly<{
   title: string
   subtitle: string
   action?: React.ReactNode
-}) {
+}>) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 p-5 border-b border-slate-200 dark:border-slate-800">
       <div className="min-w-0">
@@ -443,13 +445,13 @@ function StateCard({
   title,
   message,
   children,
-}: {
+}: Readonly<{
   icon: React.ElementType
   tone: 'danger' | 'neutral'
   title: string
   message: string
   children?: React.ReactNode
-}) {
+}>) {
   return (
     <Card className="max-w-lg mx-auto mt-12 p-8 text-center">
       <span
@@ -473,9 +475,264 @@ const btnPrimary =
 const btnSecondary =
   'inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors'
 
-// ─── Halaman ──────────────────────────────────────────────────────────────────
+interface ReportsKpiSectionProps {
+  kpi: ReportsData['kpi']
+  trend: number | null
+}
 
-export default function ReportsClient({ role }: { role: string }) {
+function ReportsKpiSection({ kpi, trend }: Readonly<ReportsKpiSectionProps>) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <StatCard
+        icon={TrendingUp}
+        accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+        label="Penyelesaian Action Plan"
+        value={String(kpi.goalRealization.value)}
+        unit="%"
+        context={`${kpi.goalRealization.completed} dari ${kpi.goalRealization.total} selesai`}
+        footer={
+          trend === null ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Tidak ada data pembanding di {kpi.goalRealization.prevQuarter}
+            </p>
+          ) : (
+            <p
+              className={`inline-flex items-center gap-1 text-xs font-medium ${
+                trend > 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : trend < 0
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {trend > 0 ? (
+                <TrendingUp className="w-3.5 h-3.5" />
+              ) : trend < 0 ? (
+                <TrendingDown className="w-3.5 h-3.5" />
+              ) : null}
+              <span className="tabular-nums">
+                {trend > 0 ? '+' : ''}
+                {trend} poin
+              </span>
+              <span className="text-slate-400 dark:text-slate-500 font-normal">
+                vs {kpi.goalRealization.prevQuarter}
+              </span>
+            </p>
+          )
+        }
+      />
+
+      <StatCard
+        icon={Clock}
+        accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+        label="Rata-rata Waktu Selesai"
+        value={String(kpi.resolutionSLA.value)}
+        unit={kpi.resolutionSLA.unit}
+        context="Dihitung dari tanggal mulai hingga selesai (Action Plan COMPLETE)"
+      />
+
+      <StatCard
+        icon={ShieldCheck}
+        accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+        label="Bukti Kerja Lengkap"
+        value={String(kpi.evidenceCompliance.value)}
+        unit="%"
+        context={`${kpi.evidenceCompliance.audited} dari ${kpi.evidenceCompliance.total} action plan memiliki bukti valid`}
+        footer={
+          kpi.evidenceCompliance.pendingSignOff > 0 ? (
+            <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">
+              {kpi.evidenceCompliance.pendingSignOff} menunggu persetujuan
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400">Tidak ada yang menunggu persetujuan</p>
+          )
+        }
+      />
+
+      <StatCard
+        icon={AlertTriangle}
+        accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
+        label="Tidak Terlambat"
+        value={String(kpi.overdueRisk.value)}
+        unit="%"
+        context={
+          kpi.overdueRisk.activeOverdue > 0
+            ? `${kpi.overdueRisk.activeOverdue} action plan saat ini lewat tenggat`
+            : 'Tidak ada action plan yang lewat tenggat'
+        }
+        footer={
+          kpi.overdueRisk.activeOverdue > 0 ? (
+            <Link
+              href="/action-plans?status=OVERDUE"
+              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Lihat yang terlambat <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          ) : undefined
+        }
+      />
+    </div>
+  )
+}
+
+interface ReportsDivisionSectionProps {
+  sortedDivisions: ReportsData['divisionDistribution']
+  totalDivisionAP: number
+  selectedDivision: string
+  viewMode: 'table' | 'chart'
+  setViewMode: (mode: 'table' | 'chart') => void
+  onDivisionChange: (d: string) => void
+}
+
+function ReportsDivisionSection({
+  sortedDivisions,
+  totalDivisionAP,
+  selectedDivision,
+  viewMode,
+  setViewMode,
+  onDivisionChange,
+}: Readonly<ReportsDivisionSectionProps>) {
+  return (
+    <Card className="xl:col-span-7 min-w-0">
+      <SectionHead
+        title="Kinerja per Divisi"
+        subtitle="Tingkat penyelesaian action plan per divisi"
+        action={
+          <div className="inline-flex rounded-md border border-slate-300 dark:border-slate-700 overflow-hidden shrink-0">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Table2 className="w-3.5 h-3.5" /> Tabel
+            </button>
+            <button
+              onClick={() => setViewMode('chart')}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
+                viewMode === 'chart'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5" /> Grafik
+            </button>
+          </div>
+        }
+      />
+
+      {sortedDivisions.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Tidak ada data untuk divisi ini di periode terpilih.
+          </p>
+          {selectedDivision !== 'ALL' && (
+            <button
+              onClick={() => onDivisionChange('ALL')}
+              className="mt-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Tampilkan semua divisi
+            </button>
+          )}
+        </div>
+      ) : viewMode === 'table' ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <th className="text-left font-medium px-5 py-2.5">Divisi</th>
+                <th className="text-right font-medium px-3 py-2.5">Jumlah</th>
+                <th className="text-right font-medium px-3 py-2.5">Selesai</th>
+                <th className="text-right font-medium px-3 py-2.5">Terlambat</th>
+                <th className="text-left font-medium px-3 py-2.5 w-32">% Selesai</th>
+                <th className="text-left font-medium px-3 py-2.5">Indeks Tata Kelola</th>
+                <th className="px-5 py-2.5 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {sortedDivisions.map((div) => (
+                <tr key={div.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                  <td className="px-5 py-3 font-medium text-slate-800 dark:text-slate-100 min-w-0">
+                    <span className="truncate block max-w-[200px]" title={div.name}>
+                      {div.name}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                    {div.totalAPs}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                    {div.completedAPs}
+                  </td>
+                  <td
+                    className={`px-3 py-3 text-right tabular-nums ${
+                      div.overdueAPs > 0
+                        ? 'text-red-600 dark:text-red-400 font-medium'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {div.overdueAPs}
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Bar pct={div.completionPct} />
+                      <span className="shrink-0 w-9 text-right text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                        {div.completionPct}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3">
+                    <GovernanceBadge level={div.governanceIndex} />
+                  </td>
+                  <td className="px-5 py-3">
+                    <Link
+                      href={`/action-plans?division=${div.id}`}
+                      className="inline-flex text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                      aria-label={`Lihat action plan divisi ${div.name}`}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="p-5 space-y-4">
+          {sortedDivisions.map((div) => (
+            <Link key={div.id} href={`/action-plans?division=${div.id}`} className="block group min-w-0">
+              <div className="flex items-center justify-between gap-3 mb-1.5 min-w-0">
+                <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  {div.name}
+                </span>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                  {div.completionPct}%
+                </span>
+              </div>
+              <Bar pct={div.completionPct} />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                {div.completedAPs} dari {div.totalAPs} selesai
+                {div.overdueAPs > 0 && ` · ${div.overdueAPs} terlambat`}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {sortedDivisions.length > 0 && (
+        <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+            Total {totalDivisionAP} action plan di {sortedDivisions.length} divisi pada periode ini
+          </p>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+export default function ReportsClient({ role }: Readonly<{ role: string }>) {
   const [data, setData] = useState<ReportsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -547,7 +804,9 @@ export default function ReportsClient({ role }: { role: string }) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'laporan'
+      const cd = res.headers.get('Content-Disposition')
+      const match = cd ? /filename="(.+)"/.exec(cd) : null
+      a.download = match?.[1] ?? 'laporan'
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) {
@@ -710,250 +969,19 @@ export default function ReportsClient({ role }: { role: string }) {
       {toolbar}
 
       {/* ─── Angka utama ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          icon={TrendingUp}
-          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-          label="Penyelesaian Action Plan"
-          value={String(kpi.goalRealization.value)}
-          unit="%"
-          context={`${kpi.goalRealization.completed} dari ${kpi.goalRealization.total} selesai`}
-          footer={
-            trend === null ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                Tidak ada data pembanding di {kpi.goalRealization.prevQuarter}
-              </p>
-            ) : (
-              <p
-                className={`inline-flex items-center gap-1 text-xs font-medium ${
-                  trend > 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : trend < 0
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                {trend > 0 ? (
-                  <TrendingUp className="w-3.5 h-3.5" />
-                ) : trend < 0 ? (
-                  <TrendingDown className="w-3.5 h-3.5" />
-                ) : null}
-                <span className="tabular-nums">
-                  {trend > 0 ? '+' : ''}
-                  {trend} poin
-                </span>
-                <span className="text-slate-400 dark:text-slate-500 font-normal">
-                  vs {kpi.goalRealization.prevQuarter}
-                </span>
-              </p>
-            )
-          }
-        />
-
-        <StatCard
-          icon={Clock}
-          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-          label="Rata-rata Waktu Selesai"
-          value={String(kpi.resolutionSLA.value)}
-          unit={kpi.resolutionSLA.unit}
-          context="Dihitung dari tanggal mulai hingga selesai (Action Plan COMPLETE)"
-        />
-
-        <StatCard
-          icon={ShieldCheck}
-          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-          label="Bukti Kerja Lengkap"
-          value={String(kpi.evidenceCompliance.value)}
-          unit="%"
-          context={`${kpi.evidenceCompliance.audited} dari ${kpi.evidenceCompliance.total} action plan memiliki bukti valid`}
-          footer={
-            kpi.evidenceCompliance.pendingSignOff > 0 ? (
-              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">
-                {kpi.evidenceCompliance.pendingSignOff} menunggu persetujuan
-              </p>
-            ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">Tidak ada yang menunggu persetujuan</p>
-            )
-          }
-        />
-
-        <StatCard
-          icon={AlertTriangle}
-          accent="bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-          label="Tidak Terlambat"
-          value={String(kpi.overdueRisk.value)}
-          unit="%"
-          context={
-            kpi.overdueRisk.activeOverdue > 0
-              ? `${kpi.overdueRisk.activeOverdue} action plan saat ini lewat tenggat`
-              : 'Tidak ada action plan yang lewat tenggat'
-          }
-          footer={
-            kpi.overdueRisk.activeOverdue > 0 ? (
-              <Link
-                href="/action-plans?status=OVERDUE"
-                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Lihat yang terlambat <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            ) : undefined
-          }
-        />
-      </div>
+      <ReportsKpiSection kpi={kpi} trend={trend} />
 
       {/* ─── Rincian + penyimpangan ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         {/* Kinerja per divisi */}
-        <Card className="xl:col-span-7 min-w-0">
-          <SectionHead
-            title="Kinerja per Divisi"
-            subtitle="Tingkat penyelesaian action plan per divisi"
-            action={
-              <div className="inline-flex rounded-md border border-slate-300 dark:border-slate-700 overflow-hidden shrink-0">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Table2 className="w-3.5 h-3.5" /> Tabel
-                </button>
-                <button
-                  onClick={() => setViewMode('chart')}
-                  className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium transition-colors ${
-                    viewMode === 'chart'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <BarChart2 className="w-3.5 h-3.5" /> Grafik
-                </button>
-              </div>
-            }
-          />
-
-          {sortedDivisions.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Tidak ada data untuk divisi ini di periode terpilih.
-              </p>
-              {selectedDivision !== 'ALL' && (
-                <button
-                  onClick={() => handleDivisionChange('ALL')}
-                  className="mt-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Tampilkan semua divisi
-                </button>
-              )}
-            </div>
-          ) : viewMode === 'table' ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    <th className="text-left font-medium px-5 py-2.5">Divisi</th>
-                    <th className="text-right font-medium px-3 py-2.5">Jumlah</th>
-                    <th className="text-right font-medium px-3 py-2.5">Selesai</th>
-                    <th className="text-right font-medium px-3 py-2.5">Terlambat</th>
-                    <th className="text-left font-medium px-3 py-2.5 w-32">% Selesai</th>
-                    <th className="text-left font-medium px-3 py-2.5">Status</th>
-                    <th className="px-5 py-2.5 w-10" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {sortedDivisions.map((div) => (
-                    <tr
-                      key={div.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                    >
-                      <td className="px-5 py-3 min-w-0">
-                        <Link
-                          href={`/action-plans?division=${div.id}`}
-                          className="block min-w-0 group"
-                          title={`Lihat action plan divisi ${div.name}`}
-                        >
-                          <span className="block truncate font-medium text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                            {div.name}
-                          </span>
-                          {div.head && (
-                            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
-                              Manager: {div.head}
-                            </span>
-                          )}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
-                        {div.totalAPs}
-                      </td>
-                      <td className="px-3 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
-                        {div.completedAPs}
-                      </td>
-                      <td
-                        className={`px-3 py-3 text-right tabular-nums font-medium ${
-                          div.overdueAPs > 0
-                            ? 'text-orange-600 dark:text-orange-400'
-                            : 'text-slate-400 dark:text-slate-500'
-                        }`}
-                      >
-                        {div.overdueAPs}
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Bar pct={div.completionPct} />
-                          <span className="shrink-0 w-9 text-right text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-200">
-                            {div.completionPct}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <GovernanceBadge level={div.governanceIndex} />
-                      </td>
-                      <td className="px-5 py-3">
-                        <Link
-                          href={`/action-plans?division=${div.id}`}
-                          className="inline-flex text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
-                          aria-label={`Lihat action plan divisi ${div.name}`}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-5 space-y-4">
-              {sortedDivisions.map((div) => (
-                <Link key={div.id} href={`/action-plans?division=${div.id}`} className="block group min-w-0">
-                  <div className="flex items-center justify-between gap-3 mb-1.5 min-w-0">
-                    <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                      {div.name}
-                    </span>
-                    <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">
-                      {div.completionPct}%
-                    </span>
-                  </div>
-                  <Bar pct={div.completionPct} />
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                    {div.completedAPs} dari {div.totalAPs} selesai
-                    {div.overdueAPs > 0 && ` · ${div.overdueAPs} terlambat`}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {sortedDivisions.length > 0 && (
-            <div className="px-5 py-3 border-t border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
-                Total {totalDivisionAP} action plan di {sortedDivisions.length} divisi pada periode ini
-              </p>
-            </div>
-          )}
-        </Card>
+        <ReportsDivisionSection
+          sortedDivisions={sortedDivisions}
+          totalDivisionAP={totalDivisionAP}
+          selectedDivision={selectedDivision}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          onDivisionChange={handleDivisionChange}
+        />
 
         {/* Penyebab keterlambatan */}
         <Card className="xl:col-span-5 min-w-0">

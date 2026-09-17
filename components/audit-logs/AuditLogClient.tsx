@@ -334,7 +334,12 @@ export function AuditLogClient() {
 
             {exportOpen && (
               <>
-                <div className="fixed inset-0 z-20" onClick={() => setExportOpen(false)} />
+                <button
+                  type="button"
+                  aria-label="Tutup menu ekspor"
+                  className="fixed inset-0 z-20 cursor-default bg-transparent border-0"
+                  onClick={() => setExportOpen(false)}
+                />
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-30 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                   <div className="px-3 py-2 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
                     Format Ekspor Kepatuhan

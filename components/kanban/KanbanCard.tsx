@@ -55,13 +55,13 @@ export function KanbanCard({
   isSelected = false,
   onDragStart,
   onClick,
-}: {
+}: Readonly<{
   ap: ActionPlan
   draggable: boolean
   isSelected?: boolean
   onDragStart: (e: React.DragEvent, id: string) => void
   onClick: (e: React.MouseEvent) => void
-}) {
+}>) {
   // Label kategori: pakai division, fallback ke project, fallback ke 'Personal'
   const categoryLabel = ap.division?.name ?? ap.task?.project?.name ?? 'Personal'
 
@@ -96,10 +96,18 @@ export function KanbanCard({
     <div
       ref={cardRef}
       data-kanban-card-id={ap.id}
+      role="button"
+      tabIndex={0}
       draggable={draggable}
       onDragStart={(e) => draggable && handleDragStart(e)}
       onDragEnd={handleDragEnd}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.(e as unknown as React.MouseEvent)
+        }
+      }}
       title={!draggable ? 'Lihat detail (tidak bisa dipindah oleh Anda)' : undefined}
       className={`group rounded-xl border shadow-sm p-3.5 transition-all duration-150 select-none ${
         isSelected

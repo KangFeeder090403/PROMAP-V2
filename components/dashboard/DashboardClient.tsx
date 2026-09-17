@@ -480,9 +480,18 @@ export function DashboardClient() {
               return (
                 <div
                   key={`${item.kind}-${item.id}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     if (isAP) handleOpenAPDetail(item.id)
                     else setPreview(item)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      if (isAP) handleOpenAPDetail(item.id)
+                      else setPreview(item)
+                    }
                   }}
                   className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer"
                 >
