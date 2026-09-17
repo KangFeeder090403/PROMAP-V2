@@ -27,6 +27,7 @@ import { STATUS_TRANSITIONS } from '@/lib/action-plan-status'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { ChecklistList } from '@/components/action-plans/ChecklistList'
 import { CommentThread } from '@/components/comments/CommentThread'
+import { timeAgo } from '@/lib/date-utils'
 import { SubmitDialog } from '@/components/action-plans/SubmitDialog'
 import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
@@ -37,18 +38,6 @@ const ROLE_LABEL: Record<string, string> = {
   MANAGER: 'Manager',
   PIC: 'PIC',
   GUEST: 'Guest',
-}
-
-function timeAgo(value: string) {
-  const diff = Date.now() - new Date(value).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 1) return 'baru saja'
-  if (m < 60) return `${m} menit lalu`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h} jam lalu`
-  const d = Math.floor(h / 24)
-  if (d < 30) return `${d} hari lalu`
-  return new Date(value).toLocaleDateString('id-ID')
 }
 
 function dueText(endDate: string, status: string) {
@@ -322,6 +311,9 @@ export function ActionPlanDetail({
   const [inlineEvidence, setInlineEvidence] = useState('')
   const [inlineNote, setInlineNote] = useState('')
   const [savingEvidence, setSavingEvidence] = useState(false)
+  // timeAgo mewajibkan `now` dioper (lib/date-utils) — diambil sekali saat mount
+  // supaya render server dan client identik, tidak memicu mismatch hidrasi.
+  const [now] = useState(() => new Date())
 
   const panelRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -479,7 +471,7 @@ export function ActionPlanDetail({
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{ap.code}</span>
                   <StatusBadge status={ap.status} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
-                  <span className="text-xs text-slate-400 dark:text-slate-500">Diperbarui {timeAgo(ap.updatedAt)}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">Diperbarui {timeAgo(ap.updatedAt, now)}</span>
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                   Status hanya bergerak lewat alur Mulai Kerja → Submit → Review Manager.
@@ -737,7 +729,7 @@ export function ActionPlanDetail({
 
           {/* ===== Sticky footer ===== */}
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 px-5 py-3">
-            <span className="text-xs text-slate-400 dark:text-slate-500">Terakhir diperbarui {timeAgo(ap.updatedAt)}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">Terakhir diperbarui {timeAgo(ap.updatedAt, now)}</span>
             <DetailFooterActions
               isOwner={isOwner}
               canStart={canStart}

@@ -67,6 +67,28 @@ export function getJakartaWeekRange(): { start: Date; end: Date } {
 }
 
 /**
+ * Waktu relatif berbahasa Indonesia ("baru saja" / "5 menit lalu" / "2 jam lalu"
+ * / "3 hari lalu"). Lewat 30 hari jatuh ke tanggal absolut id-ID — semantik ini
+ * yang menang; "412 hari lalu" tidak informatif bagi pengguna.
+ *
+ * `now` WAJIB dioper, bukan default `new Date()`. Pemanggil di client mengambil
+ * `now` dari state ticking supaya render server dan client identik; default arg
+ * mengundang pemanggil melepasnya dan mismatch hidrasi kembali diam-diam.
+ */
+export function timeAgo(iso: string | Date, now: Date): string {
+  const then = iso instanceof Date ? iso : new Date(iso)
+  const diff = now.getTime() - then.getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return 'baru saja'
+  if (mins < 60) return `${mins} menit lalu`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} jam lalu`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days} hari lalu`
+  return then.toLocaleDateString('id-ID')
+}
+
+/**
  * Rentang waktu awal bulan (Tanggal 1 00:00:00 WIB) dan akhir bulan (23:59:59.999 WIB)
  */
 export function getJakartaMonthRange(): { start: Date; end: Date } {

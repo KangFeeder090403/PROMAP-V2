@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, apScope } from '@/lib/rbac'
-import { extractMentionIds, resolveMentions } from '@/lib/mentions'
+import { extractMentionIds, resolveMentionsForAp } from '@/lib/mentions'
+import { COMMENT_MAX_LENGTH } from '@/lib/mention-parse'
 import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 // Comment tidak bisa dihapus/diedit — hanya GET (list thread) & POST (tambah).
 
@@ -13,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
     const ap = await prisma.actionPlan.findFirst({
       where: { id: params.id, deletedAt: null, ...apScope(user) },
-      select: { id: true },
+      select: { id: true, companyId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -23,7 +25,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       include: { author: { select: { id: true, name: true } } },
     })
 
-    return NextResponse.json(comments)
+    // K4 — nama untuk highlight mention. Model Comment TIDAK punya relasi
+    // mentions (prisma/schema.prisma:282-295, tidak ada tabel Mention), jadi
+    // nama diambil lewat SATU query ter-batch untuk union id seluruh thread.
+    // Query per komentar (N+1) dilarang.
+    const mentionIds = [...new Set(comments.flatMap((c) => extractMentionIds(c.content)))]
+    const mentionedUsers = mentionIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: mentionIds }, companyId: ap.companyId, deletedAt: null },
+          select: { id: true, name: true },
+        })
+      : []
+
+    return NextResponse.json({
+      comments,
+      mentionNames: Object.fromEntries(mentionedUsers.map((u) => [u.id, u.name])),
+    })
   } catch (error) {
     console.error('[AP_COMMENTS_GET]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
@@ -36,38 +53,82 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const content = body.content?.trim()
+    const content = typeof body.content === 'string' ? body.content.trim() : ''
     if (!content) {
-      return NextResponse.json({ error: 'content wajib diisi' }, { status: 400 })
+      return NextResponse.json({ error: 'Komentar tidak boleh kosong' }, { status: 400 })
+    }
+    if (content.length > COMMENT_MAX_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `Komentar terlalu panjang: ${content.length} karakter, batas ${COMMENT_MAX_LENGTH}. Persingkat lalu kirim ulang.`,
+        },
+        { status: 400 }
+      )
     }
 
     const ap = await prisma.actionPlan.findFirst({
       where: { id: params.id, deletedAt: null, ...apScope(user) },
-      select: { id: true, companyId: true, title: true, picId: true },
+      select: { id: true, companyId: true, divisionId: true, title: true, picId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Validasi mention SEBELUM create — komentar dengan mention tidak sah tidak
+    // boleh masuk audit trail yang tidak bisa dihapus/diedit.
+    const mentionIds = extractMentionIds(content)
+    const { valid: mentioned, rejectedIds } = await resolveMentionsForAp(mentionIds, ap)
+
+    if (rejectedIds.length > 0) {
+      // K8 — sebut siapa yang ditolak. User menulis panjang; "Bad request"
+      // membuat kerjanya hilang tanpa penjelasan.
+      const known = await prisma.user.findMany({
+        where: { id: { in: rejectedIds }, companyId: ap.companyId, deletedAt: null },
+        select: { id: true, name: true },
+      })
+      const namedList = known.map((u) => u.name)
+      const unknownCount = rejectedIds.length - known.length
+
+      const parts: string[] = []
+      if (namedList.length > 0) {
+        parts.push(
+          `${namedList.join(', ')} tidak bisa di-mention di Action Plan ini karena berada di luar divisi atau jangkauan aksesnya`
+        )
+      }
+      if (unknownCount > 0) {
+        parts.push(`${unknownCount} mention tidak dikenali atau sudah tidak aktif`)
+      }
+
+      return NextResponse.json(
+        {
+          error: `${parts.join('. ')}. Hapus mention tersebut lalu kirim ulang — isi komentar Anda tidak terhapus.`,
+          rejectedIds,
+        },
+        { status: 400 }
+      )
+    }
 
     const comment = await prisma.comment.create({
       data: { actionPlanId: ap.id, authorId: user.id, content },
       include: { author: { select: { id: true, name: true } } },
     })
 
-    const mentionIds = extractMentionIds(content)
-    let notifiedUserIds = new Set<string>()
+    await logActivity({
+      userId: user.id,
+      actionPlanId: ap.id,
+      action: 'COMMENT_ADDED',
+      newValue: content.slice(0, 200),
+    })
 
-    if (mentionIds.length > 0) {
-      const mentioned = await resolveMentions(mentionIds, ap.companyId)
-      const notifyIds = mentioned.map((m) => m.id).filter((id) => id !== user.id)
-      if (notifyIds.length > 0) {
-        notifyIds.forEach((id) => notifiedUserIds.add(id))
-        await notify({
-          userIds: notifyIds,
-          title: 'Anda di-mention',
-          message: `${user.name} menyebut Anda di komentar "${ap.title}"`,
-          link: `/action-plans?open=${ap.id}`,
-          companyId: ap.companyId,
-        })
-      }
+    const notifiedUserIds = new Set<string>()
+    const notifyIds = mentioned.map((m) => m.id).filter((id) => id !== user.id)
+    if (notifyIds.length > 0) {
+      notifyIds.forEach((id) => notifiedUserIds.add(id))
+      await notify({
+        userIds: notifyIds,
+        title: 'Anda di-mention',
+        message: `${user.name} menyebut Anda di komentar "${ap.title}"`,
+        link: `/action-plans?open=${ap.id}`,
+        companyId: ap.companyId,
+      })
     }
 
     // Beritahu PIC jika ada komentar baru (jika bukan PIC sendiri dan belum di-notify via mention)
@@ -81,7 +142,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       })
     }
 
-    return NextResponse.json(comment, { status: 201 })
+    return NextResponse.json(
+      {
+        comment,
+        mentionNames: Object.fromEntries(mentioned.map((m) => [m.id, m.name])),
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('[AP_COMMENTS_POST]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

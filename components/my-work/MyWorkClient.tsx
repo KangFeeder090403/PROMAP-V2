@@ -27,6 +27,7 @@ import type { MyWorkApiResponse, MyWorkItem, MyWorkProposal } from '@/lib/types/
 import type { ActionPlanStatus, Priority, Role } from '@/lib/generated/prisma/client'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
+import { timeAgo } from '@/lib/date-utils'
 
 type Tab = 'semua' | 'aksi' | 'minggu' | 'selesai'
 
@@ -50,17 +51,6 @@ const EVIDENCE_ELIGIBLE: ActionPlanStatus[] = [
 ]
 
 const DAY_MS = 86_400_000
-
-/** Waktu relatif untuk label "Diperbarui … / Disubmit …". */
-function timeAgo(iso: string, now: Date) {
-  const diff = now.getTime() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return 'baru saja'
-  if (mins < 60) return `${mins} menit lalu`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} jam lalu`
-  return `${Math.floor(hours / 24)} hari lalu`
-}
 
 /** Meta label tenggat: Lewat / <1 jam / X jam / X hari / Besok. */
 function deadlineMeta(iso: string, now: Date): { label: string; cls: string } {
