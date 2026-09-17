@@ -3,9 +3,21 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { signOut } from 'next-auth/react'
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronsUpDown,
+  Settings,
+  History,
+  LogOut,
+  Building2,
+  Briefcase,
+} from 'lucide-react'
 import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
+import { AuditLogModal } from '@/components/settings/AuditLogModal'
 
 function initials(name: string) {
   return name
@@ -16,19 +28,56 @@ function initials(name: string) {
     .join('')
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'Admin Sistem',
+  ADMIN_OPERATIONAL: 'Admin Operasional',
+  MANAGER: 'Manager',
+  PIC: 'PIC',
+  GUEST: 'Guest',
+}
+
+const ROLE_BADGE: Record<string, string> = {
+  SUPER_ADMIN: 'bg-red-950/80 text-red-300 border border-red-800/60',
+  ADMIN_OPERATIONAL: 'bg-blue-950/80 text-blue-300 border border-blue-800/60',
+  MANAGER: 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60',
+  PIC: 'bg-slate-800 text-slate-300 border border-slate-700',
+  GUEST: 'bg-slate-800 text-slate-400 border border-slate-700',
+}
+
 export function Sidebar({
   user,
   isOpen,
   onClose,
+  isCollapsed = false,
+  onToggleCollapse,
 }: {
   user: SessionUser
   isOpen: boolean
   onClose: () => void
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }) {
   const pathname = usePathname()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [auditLogOpen, setAuditLogOpen] = useState(false)
 
-  // Badge "butuh aksi" di My Work. Di-refresh saat pindah halaman karena
-  // navigasi biasanya terjadi tepat setelah user menyelesaikan sesuatu.
+  const canAccessSettings =
+    user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+  const canAccessAuditLog =
+    user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
+
+  // Escape key listener untuk close profile popover
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setProfileOpen(false)
+    }
+    if (profileOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [profileOpen])
+
+  // Badge "butuh aksi" di My Work. Di-refresh saat pindah halaman
   const [actionCount, setActionCount] = useState(0)
   useEffect(() => {
     fetch('/api/my-work/count')
@@ -37,91 +86,268 @@ export function Sidebar({
       .catch(() => setActionCount(0))
   }, [pathname])
 
-  // Urutan wajib: filter item by role DULU, baru buang grup yang jadi kosong.
-  // Kalau dibalik, grup tanpa item yang boleh dilihat user tetap kerender.
+  // Urutan wajib: filter item by role DULU, baru buang grup yang jadi kosong
   const groups = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => item.roles.includes(user.role)),
   })).filter((group) => group.items.length > 0)
 
   return (
-    <aside
-      className={`fixed left-0 top-0 z-30 flex h-screen w-64 flex-col bg-slate-900 transition-transform duration-200 md:translate-x-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
-    >
-      <div className="flex h-14 items-center gap-3 border-b border-slate-800 px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
-          {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold text-white leading-tight">
-            {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
-          </p>
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
-            <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
-              {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex-1 space-y-6 overflow-y-auto p-3">
-        {groups.map((group, gi) => (
-          <div key={group.label ?? `group-${gi}`} className="space-y-1">
-            {group.label ? (
-              <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-                {group.label}
-              </p>
-            ) : (
-              <div className="mb-3 border-t border-slate-800" />
+    <>
+      <aside
+        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-slate-900 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
+          isCollapsed ? 'md:w-16 w-64' : 'w-64'
+        } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        {/* Header Tenant / Logo */}
+        <div className="flex h-14 items-center justify-between border-b border-slate-800 px-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">
+              {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
+            </div>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white leading-tight">
+                  {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
+                </p>
+                <div className="flex items-center gap-1.5 pt-0.5">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
+                    {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
+                  </p>
+                </div>
+              </div>
             )}
-            {group.items.map((item) => {
-              const Icon = item.icon
-              const active = matchesPath(item.href, pathname)
-              const badge = item.href === '/my-work' && actionCount > 0 ? actionCount : 0
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onClose}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                    active
-                      ? 'bg-white font-medium text-slate-900'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {badge > 0 && (
-                    <span
-                      className="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold tabular-nums text-white"
-                      aria-label={`${badge} item butuh aksi`}
-                    >
-                      {badge > 99 ? '99+' : badge}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
           </div>
-        ))}
-      </nav>
 
-      <div className="border-t border-slate-800 p-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-white">
-            {initials(user.name)}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm text-white">{user.name}</p>
-            <p className="truncate text-xs text-slate-400">{user.role}</p>
+          {/* Toggle Collapse button (hanya desktop) */}
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              aria-label={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
+              title={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
+              className="hidden md:flex h-7 w-7 items-center justify-center rounded text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
+
+        {/* Navigasi Menu */}
+        <nav className="flex-1 space-y-5 overflow-y-auto p-2">
+          {groups.map((group, gi) => (
+            <div key={group.label ?? `group-${gi}`} className="space-y-1">
+              {group.label ? (
+                !isCollapsed ? (
+                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    {group.label}
+                  </p>
+                ) : (
+                  <div className="my-2 border-t border-slate-800" />
+                )
+              ) : (
+                <div className="mb-2 border-t border-slate-800" />
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon
+                const active = matchesPath(item.href, pathname)
+                const badge = item.href === '/my-work' && actionCount > 0 ? actionCount : 0
+                return (
+                  <div key={item.href} className="relative group">
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                        isCollapsed
+                          ? 'justify-center p-2.5 h-10 w-full'
+                          : 'gap-3 px-3 py-2'
+                      } ${
+                        active
+                          ? 'bg-slate-800 text-blue-400 font-medium border-l-2 border-blue-500'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
+                      {!isCollapsed && badge > 0 && (
+                        <span
+                          className="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold tabular-nums text-white"
+                          aria-label={`${badge} item butuh aksi`}
+                        >
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
+                      {isCollapsed && badge > 0 && (
+                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900" />
+                      )}
+                    </Link>
+
+                    {/* Tooltip melayang saat compact mode */}
+                    {isCollapsed && (
+                      <div
+                        role="tooltip"
+                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-white shadow-lg ring-1 ring-slate-700/50"
+                      >
+                        {item.label}
+                        {badge > 0 && (
+                          <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                            {badge}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer Profil User & Account Switcher */}
+        <div className="relative border-t border-slate-800 p-2">
+          {/* Popover Dropup Profil User */}
+          {profileOpen && (
+            <>
+              <button
+                type="button"
+                aria-label="Tutup menu profil"
+                className="fixed inset-0 z-40 cursor-default bg-transparent border-0"
+                onClick={() => setProfileOpen(false)}
+              />
+              <div
+                role="menu"
+                aria-label="Menu Pengguna"
+                className={`fixed z-50 w-72 rounded-xl border border-slate-800 bg-slate-900/95 backdrop-blur-md p-1.5 shadow-2xl ring-1 ring-slate-700/40 text-slate-200 transition-all ${
+                  isCollapsed ? 'left-16 bottom-3 ml-2' : 'left-3 bottom-16'
+                }`}
+              >
+                {/* Header Info Akun */}
+                <div className="px-3 py-2.5 rounded-lg bg-slate-800/60 border border-slate-700/40 mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
+                      {initials(user.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-white leading-tight">{user.name}</p>
+                      <p className="truncate text-[11px] text-slate-400 mt-0.5">{user.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 space-y-1 pt-2 border-t border-slate-700/50 text-[11px]">
+                    <div className="flex items-center justify-between gap-2 text-slate-400">
+                      <span className="flex items-center gap-1 shrink-0 text-slate-500">
+                        <Building2 className="h-3 w-3" />
+                        Perusahaan:
+                      </span>
+                      <span className="font-medium text-slate-300 truncate text-right">
+                        {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : '-')}
+                      </span>
+                    </div>
+                    {user.divisionName && (
+                      <div className="flex items-center justify-between gap-2 text-slate-400">
+                        <span className="flex items-center gap-1 shrink-0 text-slate-500">
+                          <Briefcase className="h-3 w-3" />
+                          Divisi:
+                        </span>
+                        <span className="font-medium text-slate-300 truncate text-right">
+                          {user.divisionName}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <span className="text-slate-500">Hak Akses:</span>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE[user.role] || 'bg-slate-800 text-slate-300'}`}>
+                        {ROLE_LABEL[user.role] || user.role}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigasi Pengaturan & Audit Log */}
+                {(canAccessSettings || canAccessAuditLog) && (
+                  <div className="px-1 py-1 space-y-0.5 border-b border-slate-800/80 mb-1">
+                    {canAccessSettings && (
+                      <Link
+                        href="/settings"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                      >
+                        <Settings className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Pengaturan &amp; Tata Kelola</span>
+                      </Link>
+                    )}
+                    {canAccessAuditLog && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileOpen(false)
+                          setAuditLogOpen(true)
+                        }}
+                        className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-800 hover:text-white text-left transition-colors cursor-pointer"
+                      >
+                        <History className="h-3.5 w-3.5 text-slate-400" />
+                        <span>Audit Log Aktivitas</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Tombol Logout */}
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Keluar / Logout</span>
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Trigger Footer */}
+          <div className={`flex items-center gap-1.5 ${isCollapsed ? 'flex-col justify-center' : 'justify-between'}`}>
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={profileOpen}
+              onClick={() => setProfileOpen((v) => !v)}
+              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
+              } ${profileOpen ? 'bg-slate-800' : ''}`}
+            >
+              <div
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm"
+                title={`${user.name} (${user.role})`}
+              >
+                {initials(user.name)}
+              </div>
+              {!isCollapsed && (
+                <>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-white">{user.name}</p>
+                    <p className="truncate text-[11px] text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
+                  </div>
+                  <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                </>
+              )}
+            </button>
+
+            <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
+              <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
+            </div>
           </div>
         </div>
-        <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
-      </div>
-    </aside>
+      </aside>
+
+      {/* Modal Audit Log Global */}
+      <AuditLogModal
+        open={auditLogOpen}
+        onOpenChange={setAuditLogOpen}
+        companyId={user.companyId ?? null}
+      />
+    </>
   )
 }

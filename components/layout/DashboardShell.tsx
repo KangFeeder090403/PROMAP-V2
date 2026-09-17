@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
@@ -19,10 +19,62 @@ export interface SessionUser {
 
 export function DashboardShell({ user, children }: Readonly<{ user: SessionUser; children: React.ReactNode }>) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  // Inisialisasi dari localStorage setelah hydration
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('promap_sidebar_collapsed')
+      if (saved !== null) {
+        setIsCollapsed(saved === 'true')
+      }
+    } catch {
+      // Abaikan jika localStorage diblokir
+    }
+  }, [])
+
+  // Shortcut keyboard Ctrl+B / Cmd+B untuk toggle collapse
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        const target = e.target as HTMLElement | null
+        if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+          return
+        }
+        e.preventDefault()
+        setIsCollapsed((prev) => {
+          const next = !prev
+          try {
+            localStorage.setItem('promap_sidebar_collapsed', String(next))
+          } catch {}
+          return next
+        })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  function handleToggleCollapse() {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('promap_sidebar_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
 
   return (
     <div className="min-h-screen">
-      <Sidebar user={user} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        user={user}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
 
       {sidebarOpen && (
         <button
@@ -33,7 +85,7 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
         />
       )}
 
-      <div className="md:ml-64">
+      <div className={`transition-[margin] duration-200 ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
         <Header onMenuClick={() => setSidebarOpen(true)} user={user} />
         <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">{children}</main>
       </div>

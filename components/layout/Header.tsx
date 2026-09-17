@@ -5,7 +5,6 @@ import { Breadcrumb } from '@/components/layout/Breadcrumb'
 import { NewButton } from '@/components/layout/NewButton'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotifBell } from '@/components/layout/NotifBell'
-import { UserMenu } from '@/components/layout/UserMenu'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 
 export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: SessionUser }) {
@@ -39,7 +38,6 @@ export function Header({ onMenuClick, user }: { onMenuClick: () => void; user: S
         <NewButton role={user.role} />
         <ThemeToggle />
         <NotifBell />
-        <UserMenu user={user} />
       </div>
     </header>
   )
