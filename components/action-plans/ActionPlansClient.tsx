@@ -32,6 +32,8 @@ import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import { BulkCreateModal } from '@/components/action-plans/BulkCreateModal'
 import { ImportCsvModal } from '@/components/action-plans/ImportCsvModal'
 import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
+import { FilterPopover, type FilterDraftValues } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 
 export interface ActionPlan {
   id: string
@@ -672,81 +674,120 @@ export function ActionPlansClient({
             <button
               type="button"
               onClick={() => setFilterOpen((v) => !v)}
-              className={`inline-flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-semibold transition-colors cursor-pointer ${
                 filterOpen || activeFilterCount > 0
-                  ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                  ? 'border-blue-600 bg-blue-600 text-white'
                   : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-4 w-4 shrink-0" />
               Filter
               {activeFilterCount > 0 && (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-500 px-1 text-xs font-semibold text-white">
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-xs font-bold">
                   {activeFilterCount}
                 </span>
               )}
             </button>
-            {filterOpen && (
-              <div className="absolute left-0 top-11 z-20 w-64 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">Filter</span>
-                  <button
-                    type="button"
-                    onClick={() => setFilterOpen(false)}
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label htmlFor="filter-status-select" className="text-xs font-medium text-slate-500 dark:text-slate-400">Status</label>
-                    <select
-                      id="filter-status-select"
-                      value={statusFilter}
-                      onChange={(e) => applyFilter('statusFilter', e.target.value)}
-                      className="h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Semua Status</option>
-                      {STATUS_FILTERS.map((s) => (
-                        <option key={s} value={s}>
-                          {AP_STATUS_LABEL[s]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label htmlFor="filter-priority-select" className="text-xs font-medium text-slate-500 dark:text-slate-400">Prioritas</label>
-                    <select
-                      id="filter-priority-select"
-                      value={priorityFilter}
-                      onChange={(e) => applyFilter('priorityFilter', e.target.value)}
-                      className="h-9 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-sm text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Semua Prioritas</option>
-                      {PRIORITY_FILTERS.map((p) => (
-                        <option key={p} value={p}>
-                          {AP_PRIORITY_LABEL[p]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="w-full inline-flex items-center justify-center h-8 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  >
-                    Reset Filter
-                  </button>
-                </div>
-              </div>
-            )}
+
+            <FilterPopover
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              onApply={(draft) => {
+                setStatusFilter(draft.statuses[0] ?? '')
+                setPriorityFilter(draft.priorities[0] ?? '')
+                setDivisionFilter(draft.divisionIds[0] ?? '')
+                setPage(1)
+              }}
+              initialValues={{
+                statuses: statusFilter ? [statusFilter] : [],
+                priorities: priorityFilter ? [priorityFilter] : [],
+                divisionIds: divisionFilter ? [divisionFilter] : [],
+              }}
+              config={{
+                statuses: STATUS_ORDER.map((s) => ({
+                  value: s,
+                  label: AP_STATUS_LABEL[s] ?? s,
+                  dot: AP_STATUS_DOT[s],
+                })),
+                priorities: PRIORITY_FILTERS.map((p) => ({
+                  value: p,
+                  label: AP_PRIORITY_LABEL[p] ?? p,
+                })),
+                divisions: true,
+                pics: false,
+                projects: false,
+                dateRange: false,
+                entityName: 'Action Plan',
+                totalEntities: data.total,
+              }}
+              totalResults={data.total}
+            />
           </div>
         </div>
         <span className="text-xs text-slate-500 dark:text-slate-400">
           {loading ? 'Memperbarui...' : `${data.total} action plan`}
         </span>
       </div>
+
+      {/* ===== Active Filter Chips Row ===== */}
+      {(activeFilterCount > 0 || search) && (
+        <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            FILTER AKTIF:
+          </span>
+
+          {search && (
+            <ActiveChip
+              label={`Keyword: '${search}'`}
+              onRemove={() => {
+                setSearch('')
+                setSearchInput('')
+                setPage(1)
+              }}
+            />
+          )}
+
+          {statusFilter && (
+            <ActiveChip
+              label={`Status: ${AP_STATUS_LABEL[statusFilter] ?? statusFilter}`}
+              dot={AP_STATUS_DOT[statusFilter]}
+              onRemove={() => {
+                setStatusFilter('')
+                setPage(1)
+              }}
+            />
+          )}
+
+          {priorityFilter && (
+            <ActiveChip
+              label={`Prioritas: ${AP_PRIORITY_LABEL[priorityFilter] ?? priorityFilter}`}
+              onRemove={() => {
+                setPriorityFilter('')
+                setPage(1)
+              }}
+            />
+          )}
+
+          {divisionFilter && (
+            <ActiveChip
+              label={`Divisi: ${data.items[0]?.division?.name ?? 'Terpilih'}`}
+              dot="bg-teal-500"
+              onRemove={() => {
+                setDivisionFilter('')
+                setPage(1)
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+          >
+            Hapus semua filter
+          </button>
+        </div>
+      )}
 
       {/* ===== Ledger table ===== */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">

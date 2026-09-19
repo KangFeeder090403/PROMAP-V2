@@ -15,7 +15,10 @@ import {
   PlayCircle,
   User,
   X,
+  SlidersHorizontal,
 } from 'lucide-react'
+import { FilterPopover } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
@@ -72,6 +75,17 @@ const PRIORITY_META = {
   MEDIUM: { label: 'Medium', dot: 'bg-amber-500', bar: 'bg-amber-500' },
   LOW: { label: 'Low', dot: 'bg-slate-400', bar: 'bg-slate-400' },
 } as const
+
+const AR_STATUS_OPTIONS = [
+  { value: 'PENDING_APPROVAL', label: 'Menunggu Review' },
+  { value: 'EVIDENCE_REQUIRED', label: 'Perlu Bukti' },
+  { value: 'SUBMITTED', label: 'Proposal Diajukan' },
+]
+
+const AR_TYPE_OPTIONS = [
+  { value: 'AP', label: 'Action Plan' },
+  { value: 'PROPOSAL', label: 'Usulan Ide (Proposal)' },
+]
 
 function sortOverdue(rows: OverdueRow[], by: OverdueSort): OverdueRow[] {
   const riskRank = (r: OverdueRow['risk']) => (r === 'CRITICAL' ? 0 : r === 'HIGH' ? 1 : 2)
@@ -192,6 +206,9 @@ export function DashboardClient() {
   const [preview, setPreview] = useState<ActionRequiredItem | null>(null)
   const [remindState, setRemindState] = useState<RemindState>({})
   const [selectedAP, setSelectedAP] = useState<ActionPlan | null>(null)
+  const [arFilterOpen, setArFilterOpen] = useState(false)
+  const [arTypeFilter, setArTypeFilter] = useState('')
+  const [arStatusFilters, setArStatusFilters] = useState<string[]>([])
   const reqRef = useRef(0)
 
   const handleOpenAPDetail = useCallback(async (id: string) => {
@@ -307,6 +324,12 @@ export function DashboardClient() {
   const isPic = user.role === 'PIC' || user.roleLabel === 'PIC'
   const hasPicFilter = picFilter !== ''
   const selectedPicName = picOptions.find((p) => p.id === picFilter)?.name ?? null
+
+  const filteredActionRequired = (actionRequired ?? []).filter((item) => {
+    if (arTypeFilter && item.kind !== arTypeFilter) return false
+    if (arStatusFilters.length > 0 && !arStatusFilters.includes(item.status)) return false
+    return true
+  })
 
   // Overdue disortir di client (keputusan PO 2026-09-09) lalu dipotong 10 teratas.
   const overdueSorted = sortOverdue(overdueList, overdueSort)
@@ -456,25 +479,122 @@ export function DashboardClient() {
 
       {/* Action Required */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-100 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-2">
             <span className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 flex items-center justify-center">
               <Gavel className="w-5 h-5" aria-hidden="true" />
             </span>
             <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">Menunggu Keputusan Anda</h2>
             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-semibold">
-              {actionRequired.length} item
+              {filteredActionRequired.length}{filteredActionRequired.length !== actionRequired.length ? ` dari ${actionRequired.length}` : ''} item
             </span>
+          </div>
+
+          {/* Quick Filter Popover */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setArFilterOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                arFilterOpen || arTypeFilter || arStatusFilters.length > 0
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+              <span>Filter Cepat</span>
+              {(arTypeFilter || arStatusFilters.length > 0) && (
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                  {(arTypeFilter ? 1 : 0) + arStatusFilters.length}
+                </span>
+              )}
+            </button>
+
+            <FilterPopover
+              isOpen={arFilterOpen}
+              onClose={() => setArFilterOpen(false)}
+              onApply={(draft) => {
+                setArTypeFilter(draft.customType ?? '')
+                setArStatusFilters(draft.statuses)
+              }}
+              initialValues={{
+                statuses: arStatusFilters,
+                customType: arTypeFilter,
+              }}
+              config={{
+                customTypes: AR_TYPE_OPTIONS,
+                customTypeLabel: 'Tipe Dokumen',
+                statuses: AR_STATUS_OPTIONS,
+                priorities: false,
+                divisions: false,
+                pics: false,
+                projects: false,
+                dateRange: false,
+                entityName: 'Item Keputusan',
+                totalEntities: actionRequired.length,
+              }}
+              totalResults={filteredActionRequired.length}
+              align="right"
+            />
           </div>
         </div>
 
-        {actionRequired.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
-            Semua sudah beres — tidak ada item yang menunggu.
-          </p>
+        {/* Active Chips Row */}
+        {(arTypeFilter || arStatusFilters.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3 px-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+              FILTER AKTIF:
+            </span>
+            {arTypeFilter && (
+              <ActiveChip
+                label={`Tipe: ${AR_TYPE_OPTIONS.find((t) => t.value === arTypeFilter)?.label ?? arTypeFilter}`}
+                dot="bg-indigo-500"
+                onRemove={() => setArTypeFilter('')}
+              />
+            )}
+            {arStatusFilters.map((st) => (
+              <ActiveChip
+                key={st}
+                label={`Status: ${AR_STATUS_OPTIONS.find((s) => s.value === st)?.label ?? st}`}
+                onRemove={() => setArStatusFilters((prev) => prev.filter((s) => s !== st))}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setArTypeFilter('')
+                setArStatusFilters([])
+              }}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+            >
+              Hapus filter
+            </button>
+          </div>
+        )}
+
+        {filteredActionRequired.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {arTypeFilter || arStatusFilters.length > 0
+                ? 'Tidak ada item keputusan yang sesuai filter yang dipilih.'
+                : 'Semua sudah beres — tidak ada item yang menunggu.'}
+            </p>
+            {(arTypeFilter || arStatusFilters.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setArTypeFilter('')
+                  setArStatusFilters([])
+                }}
+                className="mt-3 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {actionRequired.map((item) => {
+            {filteredActionRequired.map((item) => {
               const isAP = item.kind === 'AP'
               const isApproval = isAP && item.status === 'PENDING_APPROVAL'
               return (

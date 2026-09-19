@@ -24,7 +24,10 @@ import {
   FileSpreadsheet,
   Users,
   Lightbulb,
+  Check,
+  X,
 } from 'lucide-react'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 
 // ─── Tipe data dari /api/reports ──────────────────────────────────────────────
 
@@ -322,6 +325,7 @@ function Dropdown({
   open,
   setOpen,
   widthClass,
+  isFiltered,
   children,
 }: {
   icon: React.ElementType
@@ -329,6 +333,7 @@ function Dropdown({
   open: boolean
   setOpen: (v: boolean) => void
   widthClass: string
+  isFiltered?: boolean
   children: React.ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -355,16 +360,20 @@ function Dropdown({
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm transition-colors max-w-full"
+        className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm font-medium transition-colors max-w-full cursor-pointer shadow-2xs ${
+          isFiltered
+            ? 'border-blue-500/50 dark:border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500/20'
+            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
+        }`}
       >
-        <Icon className="w-4 h-4 shrink-0 text-slate-400" />
+        <Icon className={`w-4 h-4 shrink-0 ${isFiltered ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
         <span className="truncate">{buttonLabel}</span>
         <ChevronDown className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div
-          className={`absolute left-0 top-full mt-1 z-20 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-md py-1 max-h-72 overflow-y-auto ${widthClass} max-w-[calc(100vw-2rem)]`}
+          className={`absolute left-0 top-full mt-1.5 z-30 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl py-1.5 max-h-72 overflow-y-auto ${widthClass} max-w-[calc(100vw-2rem)] ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95 duration-100`}
         >
           {children}
         </div>
@@ -386,13 +395,14 @@ function DropdownItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+      className={`w-full text-left px-3.5 py-2 text-xs sm:text-sm transition-colors flex items-center justify-between cursor-pointer ${
         active
-          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium'
-          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+          ? 'bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold'
+          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-normal'
       }`}
     >
-      {children}
+      <span className="truncate">{children}</span>
+      {active && <Check className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400 ml-2" />}
     </button>
   )
 }
@@ -874,58 +884,75 @@ export default function ReportsClient({ role }: Readonly<{ role: string }>) {
   })
 
   // ─── Toolbar (dipakai di state normal maupun kosong) ───────────────────────
+  const isDivisionFiltered = selectedDivision !== 'ALL'
   const toolbar = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Dropdown
-        icon={Calendar}
-        buttonLabel={quarterLabel}
-        open={quarterOpen}
-        setOpen={setQuarterOpen}
-        widthClass="w-72"
-      >
-        {options.availableQuarters.map((q) => (
-          <DropdownItem
-            key={q.value}
-            active={q.value === selectedQuarter}
-            onClick={() => handleQuarterChange(q.value)}
-          >
-            {q.label}
-          </DropdownItem>
-        ))}
-      </Dropdown>
-
-      {/* Manager terkunci ke divisinya sendiri — API mengabaikan filter ini */}
-      {role !== 'MANAGER' && options.divisionList.length > 0 && (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Dropdown
-          icon={Users}
-          buttonLabel={divisionLabel}
-          open={divisionOpen}
-          setOpen={setDivisionOpen}
-          widthClass="w-60"
+          icon={Calendar}
+          buttonLabel={quarterLabel}
+          open={quarterOpen}
+          setOpen={setQuarterOpen}
+          widthClass="w-72"
         >
-          <DropdownItem active={selectedDivision === 'ALL'} onClick={() => handleDivisionChange('ALL')}>
-            Semua Divisi
-          </DropdownItem>
-          {options.divisionList.map((d) => (
+          {options.availableQuarters.map((q) => (
             <DropdownItem
-              key={d.id}
-              active={d.id === selectedDivision}
-              onClick={() => handleDivisionChange(d.id)}
+              key={q.value}
+              active={q.value === selectedQuarter}
+              onClick={() => handleQuarterChange(q.value)}
             >
-              {d.name}
+              {q.label}
             </DropdownItem>
           ))}
         </Dropdown>
-      )}
 
-      <button
-        onClick={() => fetchData(selectedQuarter, selectedDivision)}
-        disabled={loading}
-        className={btnSecondary}
-      >
-        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        Muat Ulang
-      </button>
+        {/* Manager terkunci ke divisinya sendiri — API mengabaikan filter ini */}
+        {role !== 'MANAGER' && options.divisionList.length > 0 && (
+          <Dropdown
+            icon={Users}
+            buttonLabel={divisionLabel}
+            open={divisionOpen}
+            setOpen={setDivisionOpen}
+            widthClass="w-60"
+            isFiltered={isDivisionFiltered}
+          >
+            <DropdownItem active={selectedDivision === 'ALL'} onClick={() => handleDivisionChange('ALL')}>
+              Semua Divisi
+            </DropdownItem>
+            {options.divisionList.map((d) => (
+              <DropdownItem
+                key={d.id}
+                active={d.id === selectedDivision}
+                onClick={() => handleDivisionChange(d.id)}
+              >
+                {d.name}
+              </DropdownItem>
+            ))}
+          </Dropdown>
+        )}
+
+        <button
+          onClick={() => fetchData(selectedQuarter, selectedDivision)}
+          disabled={loading}
+          className={btnSecondary}
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Muat Ulang
+        </button>
+      </div>
+
+      {isDivisionFiltered && role !== 'MANAGER' && (
+        <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            FILTER AKTIF:
+          </span>
+          <ActiveChip
+            label={`Divisi: ${options.divisionList.find((d) => d.id === selectedDivision)?.name ?? selectedDivision}`}
+            dot="bg-teal-500"
+            onRemove={() => handleDivisionChange('ALL')}
+          />
+        </div>
+      )}
     </div>
   )
 

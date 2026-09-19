@@ -245,6 +245,7 @@ export function ProjectsClient({
           divisions: true,
           pics: false,
           projects: false,
+          priorities: false,
           dateRange: false,
           entityName: 'Inisiatif Proyek',
           totalEntities: data.length,

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   Filter,
+  SlidersHorizontal,
   AlarmClock,
   Flag,
   RefreshCw,
@@ -24,6 +25,8 @@ import { CalendarDayEventsModal } from '@/components/calendar/CalendarDayEventsM
 import { CalendarWeekView } from '@/components/calendar/CalendarWeekView'
 import { CalendarAgendaView } from '@/components/calendar/CalendarAgendaView'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
+import { FilterPopover } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 import {
   getMonthGrid,
   computeWeekSegments,
@@ -107,6 +110,29 @@ export function CalendarClient() {
   const [selectedPic, setSelectedPic] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedPriority, setSelectedPriority] = useState('')
+  const [filterOpen, setFilterOpen] = useState(false)
+
+  const statusLabelMap = useMemo(() => {
+    return Object.fromEntries((filterOptions?.statuses ?? []).map((s) => [s.key, s.label]))
+  }, [filterOptions?.statuses])
+
+  const picNameMap = useMemo(() => {
+    return Object.fromEntries((filterOptions?.pics ?? []).map((p) => [p.id, p.name]))
+  }, [filterOptions?.pics])
+
+  const projectNameMap = useMemo(() => {
+    return Object.fromEntries((filterOptions?.projects ?? []).map((pr) => [pr.id, pr.name]))
+  }, [filterOptions?.projects])
+
+  const priorityLabelMap = useMemo(() => {
+    return Object.fromEntries((filterOptions?.priorities ?? []).map((pr) => [pr.key, pr.label]))
+  }, [filterOptions?.priorities])
+
+  const activeFilterCount =
+    (selectedStatus ? 1 : 0) +
+    (selectedPic ? 1 : 0) +
+    (selectedProject ? 1 : 0) +
+    (selectedPriority ? 1 : 0)
 
   // Create Modal state
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -375,69 +401,117 @@ export function CalendarClient() {
       </div>
 
       {/* Dynamic Filter Toolbar (§B8, §C1 #14) */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Filter Status */}
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          aria-label="Filter Status"
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-        >
-          <option value="">Semua Status ({filterOptions?.statuses.length ?? 8})</option>
-          {filterOptions?.statuses.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl px-2.5 py-1.5 shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Unified Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                filterOpen || activeFilterCount > 0
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs'
+              }`}
+            >
+              <SlidersHorizontal size={13} className="shrink-0" />
+              <span>Filter</span>
+              {activeFilterCount > 0 && (
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
 
-        {/* Filter PIC */}
-        <select
-          value={selectedPic}
-          onChange={(e) => setSelectedPic(e.target.value)}
-          aria-label="Filter PIC"
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-        >
-          <option value="">Semua PIC ({filterOptions?.pics.length ?? 0})</option>
-          {filterOptions?.pics.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+            <FilterPopover
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              onApply={(draft) => {
+                setSelectedStatus(draft.statuses[0] ?? '')
+                setSelectedPic(draft.picIds[0] ?? '')
+                setSelectedProject(draft.projectId ?? '')
+                setSelectedPriority(draft.priorities[0] ?? '')
+              }}
+              initialValues={{
+                statuses: selectedStatus ? [selectedStatus] : [],
+                picIds: selectedPic ? [selectedPic] : [],
+                projectId: selectedProject,
+                priorities: selectedPriority ? [selectedPriority] : [],
+              }}
+              config={{
+                statuses:
+                  filterOptions?.statuses.map((s) => ({
+                    value: s.key,
+                    label: s.label,
+                    dot: STATUS_DOT_COLOR[s.key],
+                  })) ?? [],
+                pics:
+                  filterOptions?.pics.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    division: p.division,
+                  })) ?? [],
+                projects: filterOptions?.projects ?? [],
+                priorities:
+                  filterOptions?.priorities.map((pr) => ({
+                    value: pr.key,
+                    label: pr.label,
+                  })) ?? [],
+                dateRange: false,
+                divisions: false,
+                entityName: 'Rencana Aksi',
+                totalEntities: events?.length ?? 0,
+              }}
+              totalResults={events?.length ?? 0}
+            />
+          </div>
+        </div>
 
-        {/* Filter Project */}
-        <select
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-          aria-label="Filter Project"
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-        >
-          <option value="">Semua Project ({filterOptions?.projects.length ?? 0})</option>
-          {filterOptions?.projects.map((pr) => (
-            <option key={pr.id} value={pr.id}>
-              {pr.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <Filter size={12} />
+          Showing {totalPlans} Active Plans
+        </div>
+      </div>
 
-        {/* Filter Prioritas */}
-        <select
-          value={selectedPriority}
-          onChange={(e) => setSelectedPriority(e.target.value)}
-          aria-label="Filter Prioritas"
-          className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-        >
-          <option value="">Prioritas: Semua</option>
-          {filterOptions?.priorities.map((pr) => (
-            <option key={pr.key} value={pr.key}>
-              {pr.label}
-            </option>
-          ))}
-        </select>
+      {/* Active Filter Chips */}
+      {activeFilterCount > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            FILTER AKTIF:
+          </span>
 
-        {/* Reset Filter Button */}
-        {(selectedStatus || selectedPic || selectedProject || selectedPriority) && (
+          {selectedStatus && (
+            <ActiveChip
+              label={`Status: ${statusLabelMap[selectedStatus] ?? selectedStatus}`}
+              dot={STATUS_DOT_COLOR[selectedStatus]}
+              onRemove={() => setSelectedStatus('')}
+            />
+          )}
+
+          {selectedPic && (
+            <ActiveChip
+              label={`PIC: ${picNameMap[selectedPic] ?? selectedPic}`}
+              dot="bg-indigo-500"
+              onRemove={() => setSelectedPic('')}
+            />
+          )}
+
+          {selectedProject && (
+            <ActiveChip
+              label={`Proyek: ${projectNameMap[selectedProject] ?? selectedProject}`}
+              dot="bg-purple-500"
+              onRemove={() => setSelectedProject('')}
+            />
+          )}
+
+          {selectedPriority && (
+            <ActiveChip
+              label={`Prioritas: ${priorityLabelMap[selectedPriority] ?? selectedPriority}`}
+              dot="bg-blue-500"
+              onRemove={() => setSelectedPriority('')}
+            />
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -446,18 +520,12 @@ export function CalendarClient() {
               setSelectedProject('')
               setSelectedPriority('')
             }}
-            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
           >
-            <X size={12} />
-            Reset Filter
+            Hapus semua filter
           </button>
-        )}
-
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
-          <Filter size={12} />
-          Showing {totalPlans} Active Plans
         </div>
-      </div>
+      )}
 
       {/* Main: Calendar + Right Sidebar */}
       <div className="flex flex-col xl:flex-row gap-4 flex-1 min-h-0">

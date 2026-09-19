@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import {
   Search,
   Filter,
+  SlidersHorizontal,
+  ChevronDown,
   ArrowUpDown,
   Plus,
   LayoutGrid,
@@ -22,6 +24,8 @@ import { useKanbanMarquee } from '@/hooks/useKanbanMarquee'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
+import { FilterPopover } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 import {
   KANBAN_COLUMNS,
   columnForStatus,
@@ -36,6 +40,8 @@ async function fetchBoardActionPlans(params: {
   picId?: string
   divisionId?: string
   dateRange?: string
+  dateFrom?: string
+  dateTo?: string
   sortBy?: string
 }): Promise<ActionPlan[]> {
   const query = new URLSearchParams({ view: 'board' })
@@ -44,6 +50,8 @@ async function fetchBoardActionPlans(params: {
   if (params.picId) query.set('picId', params.picId)
   if (params.divisionId) query.set('divisionId', params.divisionId)
   if (params.dateRange && params.dateRange !== 'all') query.set('dateRange', params.dateRange)
+  if (params.dateFrom) query.set('dateFrom', params.dateFrom)
+  if (params.dateTo) query.set('dateTo', params.dateTo)
   if (params.sortBy) query.set('sortBy', params.sortBy)
 
   const res = await fetch(`/api/action-plans?${query.toString()}`)
@@ -77,6 +85,9 @@ export function KanbanClient({
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [picFilter, setPicFilter] = useState<string>('')
   const [dateRange, setDateRange] = useState<string>('all')
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+  const [filterOpen, setFilterOpen] = useState(false)
   const [sortBy, setSortBy] = useState<string>('newest')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
@@ -98,6 +109,8 @@ export function KanbanClient({
         picId: picFilter || undefined,
         divisionId: divisionId || undefined,
         dateRange,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
         sortBy,
       })
       setItems(data)
@@ -111,7 +124,7 @@ export function KanbanClient({
     } finally {
       setLoading(false)
     }
-  }, [projectId, priorityFilter, picFilter, divisionId, dateRange, sortBy])
+  }, [projectId, priorityFilter, picFilter, divisionId, dateRange, dateFrom, dateTo, sortBy])
 
   useEffect(() => {
     void fetchData()
@@ -623,38 +636,62 @@ export function KanbanClient({
           </div>
         </div>
 
-        {/* Right: Dropdown Filters & Sorting */}
+        {/* Right: Filter Popover Button & Sorting */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Priority filter */}
-          <div className="flex items-center gap-1.5">
-            <Filter size={12} className="text-slate-400 shrink-0" />
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Unified Filter Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                filterOpen || (priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo)
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
             >
-              <option value="">Semua Prioritas</option>
-              <option value="HIGH">Tinggi (High)</option>
-              <option value="MEDIUM">Sedang (Medium)</option>
-              <option value="LOW">Rendah (Low)</option>
-            </select>
-          </div>
+              <SlidersHorizontal size={13} className="shrink-0" />
+              <span>Filter</span>
+              {(priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo) && (
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                  {(priorityFilter ? 1 : 0) + (picFilter ? 1 : 0) + (dateRange !== 'all' ? 1 : 0) + (dateFrom || dateTo ? 1 : 0)}
+                </span>
+              )}
+            </button>
 
-          {/* PIC filter (if multiple PICs exist) */}
-          {availablePics.length > 0 && (
-            <select
-              value={picFilter}
-              onChange={(e) => setPicFilter(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua PIC ({availablePics.length})</option>
-              {availablePics.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
+            <FilterPopover
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              onApply={(draft) => {
+                setPriorityFilter(draft.priorities[0] ?? '')
+                setPicFilter(draft.picIds[0] ?? '')
+                setDateFrom(draft.dateFrom)
+                setDateTo(draft.dateTo)
+                if (draft.dateFrom || draft.dateTo) setDateRange('all')
+              }}
+              initialValues={{
+                priorities: priorityFilter ? [priorityFilter] : [],
+                picIds: picFilter ? [picFilter] : [],
+                dateFrom,
+                dateTo,
+              }}
+              config={{
+                statuses: false,
+                priorities: [
+                  { value: 'HIGH', label: 'Tinggi (High)' },
+                  { value: 'MEDIUM', label: 'Sedang (Medium)' },
+                  { value: 'LOW', label: 'Rendah (Low)' },
+                ],
+                pics: availablePics.length > 0 ? availablePics : true,
+                dateRange: true,
+                divisions: false,
+                projects: false,
+                entityName: 'Action Plan',
+                totalEntities: items?.length ?? 0,
+              }}
+              totalResults={scoped.length}
+              align="right"
+            />
+          </div>
 
           {/* Sort By PRD §B8 */}
           <div className="flex items-center gap-1.5 pl-1 border-l border-slate-200 dark:border-slate-700">
@@ -662,7 +699,7 @@ export function KanbanClient({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="newest">Terbaru Dibuat</option>
               <option value="oldest">Terlama Dibuat</option>
@@ -673,6 +710,72 @@ export function KanbanClient({
           </div>
         </div>
       </div>
+
+      {/* ── Active Filter Chips Row ── */}
+      {(search || priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo) && (
+        <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            FILTER AKTIF:
+          </span>
+
+          {search && (
+            <ActiveChip
+              label={`Keyword: '${search}'`}
+              onRemove={() => setSearch('')}
+            />
+          )}
+
+          {priorityFilter && (
+            <ActiveChip
+              label={`Prioritas: ${priorityFilter}`}
+              dot={priorityFilter === 'HIGH' ? 'bg-red-500' : priorityFilter === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'}
+              onRemove={() => setPriorityFilter('')}
+            />
+          )}
+
+          {picFilter && (
+            <ActiveChip
+              label={`PIC: ${availablePics.find((p) => p.id === picFilter)?.name ?? picFilter}`}
+              dot="bg-indigo-500"
+              onRemove={() => setPicFilter('')}
+            />
+          )}
+
+          {dateRange !== 'all' && (
+            <ActiveChip
+              label={`Periode: ${dateRange === 'today' ? 'Hari Ini' : dateRange === 'week' ? 'Minggu Ini' : 'Bulan Ini'}`}
+              dot="bg-amber-500"
+              onRemove={() => setDateRange('all')}
+            />
+          )}
+
+          {(dateFrom || dateTo) && (
+            <ActiveChip
+              label={`Tanggal: ${dateFrom || '...'} s/d ${dateTo || '...'}`}
+              dot="bg-amber-500"
+              onRemove={() => {
+                setDateFrom('')
+                setDateTo('')
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('')
+              setPriorityFilter('')
+              setPicFilter('')
+              setDateRange('all')
+              setDateFrom('')
+              setDateTo('')
+            }}
+            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+          >
+            Hapus semua filter
+          </button>
+        </div>
+      )}
 
       {projectId && (
         <div className="text-xs text-slate-500 dark:text-slate-400 px-1">
@@ -706,20 +809,27 @@ export function KanbanClient({
             Buat Action Plan
           </button>
         </div>
-      ) : scoped.length === 0 && search.trim() ? (
+      ) : scoped.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-6 text-center">
           <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            Tidak ada Action Plan yang cocok dengan &quot;{search}&quot;
+            {search ? `Tidak ada Action Plan yang cocok dengan "${search}"` : 'Tidak ada Action Plan yang cocok dengan filter.'}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Coba periksa kembali ejaan atau gunakan kata kunci lain.
+            Coba sesuaikan parameter filter atau reset untuk melihat semua data.
           </p>
           <button
             type="button"
-            onClick={() => setSearch('')}
-            className="mt-3 inline-flex items-center gap-2 h-8 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors"
+            onClick={() => {
+              setSearch('')
+              setPriorityFilter('')
+              setPicFilter('')
+              setDateRange('all')
+              setDateFrom('')
+              setDateTo('')
+            }}
+            className="mt-3 inline-flex items-center gap-2 h-8 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors cursor-pointer"
           >
-            Reset Pencarian
+            Reset Filter &amp; Pencarian
           </button>
         </div>
       ) : (

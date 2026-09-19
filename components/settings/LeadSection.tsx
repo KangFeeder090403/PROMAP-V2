@@ -13,7 +13,10 @@ import {
   FileEdit,
   Save,
   X,
+  SlidersHorizontal,
 } from 'lucide-react'
+import { FilterPopover } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 
 interface Lead {
   id: string
@@ -47,6 +50,13 @@ const LEAD_STATUS_CONFIG = {
   },
 }
 
+const LEAD_STATUS_OPTIONS = [
+  { value: 'NEW', label: 'Lead Baru' },
+  { value: 'TRIAL_ACTIVE', label: 'Trial Aktif' },
+  { value: 'CONVERTED', label: 'Menjadi Klien' },
+  { value: 'COLD', label: 'Tidak Aktif' },
+]
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('id-ID', {
     day: 'numeric',
@@ -61,7 +71,8 @@ export function LeadSection() {
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilters, setStatusFilters] = useState<string[]>([])
+  const [filterOpen, setFilterOpen] = useState(false)
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null)
   const [notesDraft, setNotesDraft] = useState<string>('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -128,7 +139,9 @@ export function LeadSection() {
 
   const filtered = useMemo(() => {
     let rows = leads
-    if (statusFilter) rows = rows.filter((l) => l.status === statusFilter)
+    if (statusFilters.length > 0) {
+      rows = rows.filter((l) => statusFilters.includes(l.status))
+    }
     const q = search.trim().toLowerCase()
     if (q) {
       rows = rows.filter(
@@ -140,7 +153,7 @@ export function LeadSection() {
       )
     }
     return rows
-  }, [leads, statusFilter, search])
+  }, [leads, statusFilters, search])
 
   return (
     <div className="space-y-4">
@@ -175,41 +188,101 @@ export function LeadSection() {
       </div>
 
       {/* Toolbar filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari prospek atau PT..."
-            className="w-full h-8 pl-8 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="flex flex-col gap-2.5 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
+            {/* Search */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari prospek atau PT..."
+                className="w-full h-8 pl-8 pr-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  aria-label="Hapus pencarian"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Popover */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setFilterOpen((v) => !v)}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                  filterOpen || statusFilters.length > 0
+                    ? 'border-blue-600 bg-blue-600 text-white'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+                <span>Filter</span>
+                {statusFilters.length > 0 && (
+                  <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                    {statusFilters.length}
+                  </span>
+                )}
+              </button>
+
+              <FilterPopover
+                isOpen={filterOpen}
+                onClose={() => setFilterOpen(false)}
+                onApply={(draft) => {
+                  setStatusFilters(draft.statuses)
+                }}
+                initialValues={{
+                  statuses: statusFilters,
+                }}
+                config={{
+                  statuses: LEAD_STATUS_OPTIONS,
+                  priorities: false,
+                  divisions: false,
+                  pics: false,
+                  projects: false,
+                  dateRange: false,
+                  entityName: 'Prospek',
+                  totalEntities: leads.length,
+                }}
+                totalResults={filtered.length}
+              />
+            </div>
+          </div>
+
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Menampilkan <span className="font-semibold text-slate-700 dark:text-slate-200">{filtered.length}</span> dari {leads.length} prospek
+          </span>
         </div>
 
-        {/* Status filter chips */}
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {[
-            { key: '', label: 'Semua' },
-            { key: 'NEW', label: 'Baru' },
-            { key: 'TRIAL_ACTIVE', label: 'Trial Aktif' },
-            { key: 'CONVERTED', label: 'Converted' },
-            { key: 'COLD', label: 'Cold' },
-          ].map((f) => (
+        {/* Active Chips Row */}
+        {statusFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+              STATUS AKTIF:
+            </span>
+            {statusFilters.map((st) => (
+              <ActiveChip
+                key={st}
+                label={LEAD_STATUS_CONFIG[st as keyof typeof LEAD_STATUS_CONFIG]?.label ?? st}
+                onRemove={() => setStatusFilters((prev) => prev.filter((s) => s !== st))}
+              />
+            ))}
             <button
-              key={f.key}
               type="button"
-              onClick={() => setStatusFilter(f.key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                statusFilter === f.key
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
+              onClick={() => setStatusFilters([])}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
             >
-              {f.label}
+              Hapus filter
             </button>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -245,7 +318,23 @@ export function LeadSection() {
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    Tidak ada data prospek yang sesuai filter.
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                      {search || statusFilters.length > 0
+                        ? 'Tidak ada data prospek yang sesuai dengan pencarian dan filter.'
+                        : 'Belum ada data prospek.'}
+                    </p>
+                    {(search || statusFilters.length > 0) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearch('')
+                          setStatusFilters([])
+                        }}
+                        className="mt-3 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                      >
+                        Reset Filter &amp; Pencarian
+                      </button>
+                    )}
                   </td>
                 </tr>
               )}

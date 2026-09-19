@@ -12,6 +12,7 @@ import { ProposalConvertModal } from '@/components/proposals/ProposalConvertModa
 import { ProposalDetailModal } from '@/components/proposals/ProposalDetailModal'
 import {
   Search,
+  SlidersHorizontal,
   Plus,
   CheckCircle2,
   XCircle,
@@ -23,6 +24,8 @@ import {
   FolderKanban,
   X,
 } from 'lucide-react'
+import { FilterPopover } from '@/components/ui/FilterPopover'
+import { ActiveChip } from '@/components/ui/FilterToolbar'
 
 export interface Proposal {
   id: string
@@ -34,7 +37,7 @@ export interface Proposal {
   createdAt: string
   updatedAt: string
   projectId: string | null
-  proposer: { id: string; name: string; role?: string } | null
+  proposer: { id: string; name: string; role?: string; divisionId?: string | null } | null
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -115,6 +118,11 @@ export function ProposalsClient({
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [divisionFilter, setDivisionFilter] = useState<string>('')
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [divisionMap, setDivisionMap] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [sortOpen, setSortOpen] = useState(false)
@@ -221,6 +229,15 @@ export function ProposalsClient({
     }
   }
 
+  useEffect(() => {
+    fetch('/api/divisions')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((divs: { id: string; name: string }[]) => {
+        setDivisionMap(Object.fromEntries(divs.map((d) => [d.id, d.name])))
+      })
+      .catch(() => {})
+  }, [])
+
   // ── counts per status ─────────────────────────────────────────────────────
   const counts = useMemo(() => {
     if (serverCounts) return serverCounts
@@ -240,6 +257,15 @@ export function ProposalsClient({
     if (!data) return []
     let rows = data
     if (statusFilter) rows = rows.filter((p) => p.status === statusFilter)
+    if (divisionFilter) rows = rows.filter((p) => p.proposer?.divisionId === divisionFilter)
+    if (dateFrom) {
+      const fromTime = new Date(dateFrom).setHours(0, 0, 0, 0)
+      rows = rows.filter((p) => new Date(p.createdAt).getTime() >= fromTime)
+    }
+    if (dateTo) {
+      const toTime = new Date(dateTo).setHours(23, 59, 59, 999)
+      rows = rows.filter((p) => new Date(p.createdAt).getTime() <= toTime)
+    }
     const q = search.trim().toLowerCase()
     if (q) rows = rows.filter((p) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
     return [...rows].sort((a, b) => {
@@ -247,7 +273,7 @@ export function ProposalsClient({
       if (sort === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       return a.title.localeCompare(b.title)
     })
-  }, [data, statusFilter, search, sort])
+  }, [data, statusFilter, divisionFilter, dateFrom, dateTo, search, sort])
 
   // ── tab definition ────────────────────────────────────────────────────────
   const TABS = [
@@ -342,28 +368,127 @@ export function ProposalsClient({
         </button>
       </div>
 
-      {/* ── Search + create (mobile) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari usulan ide..."
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      {/* ── Search + Filter + create (mobile) ── */}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari usulan ide..."
+              className="w-full h-9 pl-9 pr-8 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Bersihkan pencarian"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Popover Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 h-9 px-3.5 rounded-lg border text-sm font-semibold transition-colors cursor-pointer ${
+                filterOpen || divisionFilter || dateFrom || dateTo
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4 shrink-0" />
+              <span>Filter</span>
+              {(divisionFilter || dateFrom || dateTo) && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-xs font-bold">
+                  {(divisionFilter ? 1 : 0) + (dateFrom || dateTo ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            <FilterPopover
+              isOpen={filterOpen}
+              onClose={() => setFilterOpen(false)}
+              onApply={(draft) => {
+                setDivisionFilter(draft.divisionIds[0] ?? '')
+                setDateFrom(draft.dateFrom)
+                setDateTo(draft.dateTo)
+              }}
+              initialValues={{
+                divisionIds: divisionFilter ? [divisionFilter] : [],
+                dateFrom,
+                dateTo,
+              }}
+              config={{
+                divisions: true,
+                dateRange: true,
+                statuses: false,
+                priorities: false,
+                pics: false,
+                projects: false,
+                entityName: 'Usulan Proposal',
+                totalEntities: data?.length ?? 0,
+              }}
+              totalResults={displayed.length}
+            />
+          </div>
+
+          {/* Create button (mobile only) */}
+          <button
+            type="button"
+            onClick={() => { setEditing(null); setFormOpen(true) }}
+            className="sm:hidden inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Buat Usulan Baru
+          </button>
         </div>
 
-        {/* Create button (mobile only) */}
-        <button
-          type="button"
-          onClick={() => { setEditing(null); setFormOpen(true) }}
-          className="sm:hidden inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Buat Usulan Baru
-        </button>
+        {/* Active Chips Row */}
+        {(divisionFilter || dateFrom || dateTo) && (
+          <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+              FILTER AKTIF:
+            </span>
+
+            {divisionFilter && (
+              <ActiveChip
+                label={`Divisi: ${divisionMap[divisionFilter] ?? 'Terpilih'}`}
+                dot="bg-teal-500"
+                onRemove={() => setDivisionFilter('')}
+              />
+            )}
+
+            {(dateFrom || dateTo) && (
+              <ActiveChip
+                label={`Tanggal: ${dateFrom || '...'} s/d ${dateTo || '...'}`}
+                dot="bg-amber-500"
+                onRemove={() => {
+                  setDateFrom('')
+                  setDateTo('')
+                }}
+              />
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setDivisionFilter('')
+                setDateFrom('')
+                setDateTo('')
+              }}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+            >
+              Hapus filter
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Filter tabs + sort ── */}
@@ -439,9 +564,26 @@ export function ProposalsClient({
       {/* ── Grid cards ── */}
       {displayed.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 py-16 text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {search ? 'Tidak ada usulan yang cocok dengan pencarian.' : 'Belum ada usulan.'}
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {search || divisionFilter || dateFrom || dateTo || statusFilter
+              ? 'Tidak ada usulan yang cocok dengan pencarian dan filter.'
+              : 'Belum ada usulan.'}
           </p>
+          {(search || divisionFilter || dateFrom || dateTo || statusFilter) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('')
+                setStatusFilter('')
+                setDivisionFilter('')
+                setDateFrom('')
+                setDateTo('')
+              }}
+              className="mt-3 inline-flex items-center gap-2 h-8 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors cursor-pointer"
+            >
+              Reset Filter &amp; Pencarian
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
