@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Role } from '@/lib/generated/prisma/client'
+import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ProposalFormModal } from '@/components/proposals/ProposalFormModal'
 import { ProposalReviewDialog } from '@/components/proposals/ProposalReviewDialog'
@@ -18,6 +20,7 @@ import {
   ChevronDown,
   Lightbulb,
   Rocket,
+  FolderKanban,
   X,
 } from 'lucide-react'
 
@@ -30,6 +33,7 @@ export interface Proposal {
   reviewNote: string | null
   createdAt: string
   updatedAt: string
+  projectId: string | null
   proposer: { id: string; name: string; role?: string } | null
 }
 
@@ -90,15 +94,21 @@ const ROLE_LABEL: Record<string, string> = {
 
 // ── main component ────────────────────────────────────────────────────────────
 
+// Cermin canManageProject — PIC tidak bisa bikin project.
+const CAN_CREATE_PROJECT = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER']
+
 export function ProposalsClient({
   role,
   userId,
+  currentUserDivisionId = null,
   openCreate,
 }: {
   role: Role
   userId: string
+  currentUserDivisionId?: string | null
   openCreate?: boolean
 }) {
+  const canCreateProject = CAN_CREATE_PROJECT.includes(role)
   const router = useRouter()
   const [data, setData] = useState<Proposal[] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -124,6 +134,7 @@ export function ProposalsClient({
   const [reviewing, setReviewing] = useState<Proposal | null>(null)
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null)
   const [convertingProposal, setConvertingProposal] = useState<Proposal | null>(null)
+  const [projectFromProposal, setProjectFromProposal] = useState<Proposal | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -603,25 +614,54 @@ export function ProposalsClient({
                     </div>
                   )}
 
-                  {/* APPROVED: Jadikan Action Plan + detail */}
+                  {/* APPROVED: satu primary (Jadikan Project), sisanya turun derajat */}
                   {p.status === 'APPROVED' && (
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {p.projectId ? (
+                        <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium">
+                          <FolderKanban className="h-3.5 w-3.5" />
+                          Sudah jadi Project
+                        </span>
+                      ) : (
+                        canCreateProject && (
+                          <button
+                            type="button"
+                            onClick={() => setProjectFromProposal(p)}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold transition-colors"
+                            title="Wujudkan usulan ini menjadi Project lintas divisi"
+                          >
+                            <FolderKanban className="h-3.5 w-3.5" />
+                            Jadikan Project
+                          </button>
+                        )
+                      )}
+
                       <button
                         type="button"
                         onClick={() => setConvertingProposal(p)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold transition-colors shadow-xs"
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
                         title="Jadikan usulan ini Action Plan eksekusi nyata"
                       >
                         <Rocket className="h-3.5 w-3.5" />
                         Jadikan Action Plan
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setReviewing(p)}
-                        className="text-xs text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
-                      >
-                        Detail &rsaquo;
-                      </button>
+
+                      {p.projectId ? (
+                        <Link
+                          href={`/projects/${p.projectId}`}
+                          className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                        >
+                          Lihat Project &rsaquo;
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReviewing(p)}
+                          className="ml-auto text-xs text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
+                        >
+                          Detail &rsaquo;
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -669,6 +709,33 @@ export function ProposalsClient({
           showToast(`Usulan berhasil dikonversi ke Action Plan "${ap.title}"!`)
         }}
       />
+
+      {canCreateProject && projectFromProposal && (
+        <ProjectForm
+          open={Boolean(projectFromProposal)}
+          onOpenChange={(open) => !open && setProjectFromProposal(null)}
+          project={null}
+          role={role}
+          currentUserDivisionId={currentUserDivisionId}
+          prefill={{
+            name: projectFromProposal.title,
+            description: projectFromProposal.description,
+          }}
+          submitTo={{
+            url: `/api/proposals/${projectFromProposal.id}/convert`,
+            extra: { target: 'PROJECT' },
+          }}
+          onSuccess={(created) => {
+            setProjectFromProposal(null)
+            void fetchData()
+            showToast(
+              created?.name
+                ? `Usulan berhasil menjadi Project "${created.name}".`
+                : 'Usulan berhasil menjadi Project.'
+            )
+          }}
+        />
+      )}
 
       <ProposalDetailModal
         open={!!selectedProposal}

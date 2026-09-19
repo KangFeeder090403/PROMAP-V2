@@ -9,16 +9,19 @@ export type ActivityAction =
   | 'REMINDER_SENT'
   | 'CREATED'
   | 'UPDATED'
+  | 'USER_UPDATE'
 
 export async function logActivity({
   userId,
   actionPlanId,
+  projectId,
   action,
   oldValue,
   newValue,
 }: {
   userId: string
   actionPlanId?: string | null
+  projectId?: string | null
   action: ActivityAction
   oldValue?: string | null
   newValue?: string | null
@@ -28,6 +31,7 @@ export async function logActivity({
       data: {
         userId,
         actionPlanId: actionPlanId ?? null,
+        projectId: projectId ?? null,
         action,
         oldValue: oldValue ?? null,
         newValue: newValue ?? null,

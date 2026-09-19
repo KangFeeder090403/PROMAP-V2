@@ -2,20 +2,28 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, projectScope, canManageProject } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { createProjectWithTasks, ProjectInputError } from '@/lib/projects'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getSessionUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(req.url)
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = ['createdAt', 'name', 'startDate', 'endDate']
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt'
+
     const projects = await prisma.project.findMany({
       where: { ...projectScope(user), deletedAt: null },
       include: {
         company: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [safeSortBy]: sortOrder },
     })
 
     const ids = projects.map((p) => p.id)
@@ -125,121 +133,33 @@ export async function POST(req: Request) {
 
     const body = await req.json()
 
-    if (!body.name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-    }
-
-    let companyId: string
-    let divisionId: string | null = null
-
-    if (user.role === 'SUPER_ADMIN') {
-      if (!body.companyId) {
-        return NextResponse.json({ error: 'companyId is required for SUPER_ADMIN' }, { status: 400 })
-      }
-      const company = await prisma.company.findUnique({ where: { id: body.companyId } })
-      if (!company || company.deletedAt) {
-        return NextResponse.json({ error: 'Invalid companyId' }, { status: 400 })
-      }
-      companyId = body.companyId
-
-      if (body.divisionId) {
-        const division = await prisma.division.findUnique({ where: { id: body.divisionId } })
-        if (!division || division.deletedAt || division.companyId !== companyId) {
-          return NextResponse.json({ error: 'Invalid divisionId' }, { status: 400 })
-        }
-        divisionId = body.divisionId
-      }
-    } else if (user.role === 'ADMIN_OPERATIONAL') {
-      companyId = user.companyId!
-
-      if (body.divisionId) {
-        const division = await prisma.division.findUnique({ where: { id: body.divisionId } })
-        if (!division || division.deletedAt || division.companyId !== companyId) {
-          return NextResponse.json({ error: 'Invalid divisionId' }, { status: 400 })
-        }
-        divisionId = body.divisionId
-      }
-    } else {
-      // MANAGER
-      companyId = user.companyId!
-      divisionId = user.divisionId
-    }
-
-    // PIC yang ditugaskan — divalidasi harus se-company & punya divisi, karena
-    // Task.divisionId wajib. Divisi task diambil dari divisi PIC-nya sendiri
-    // sehingga satu project bisa tampil lintas divisi tanpa ubah schema.
-    const picIds: string[] = Array.isArray(body.picIds)
-      ? [...new Set(body.picIds.filter((id: unknown) => typeof id === 'string'))] as string[]
-      : []
-
-    const pics = picIds.length
-      ? await prisma.user.findMany({
-          where: { id: { in: picIds }, companyId, deletedAt: null, status: 'ACTIVE' },
-          select: { id: true, name: true, divisionId: true },
-        })
-      : []
-
-    if (pics.length !== picIds.length || pics.some((p) => !p.divisionId)) {
-      return NextResponse.json(
-        { error: 'PIC tidak valid atau belum punya divisi' },
-        { status: 400 }
-      )
-    }
-
-    // MANAGER hanya boleh menugaskan PIC di divisinya sendiri.
-    if (user.role === 'MANAGER' && pics.some((p) => p.divisionId !== user.divisionId)) {
-      return NextResponse.json(
-        { error: 'Manager hanya bisa menugaskan PIC di divisinya sendiri' },
-        { status: 403 }
-      )
-    }
-
-    const startDate = body.startDate ? new Date(body.startDate) : null
-    const endDate = body.endDate ? new Date(body.endDate) : null
-
-    const result = await prisma.$transaction(async (tx) => {
-      const project = await tx.project.create({
-        data: {
-          name: body.name,
-          description: body.description,
-          companyId,
-          divisionId,
-          startDate,
-          endDate,
-          createdById: user.id
-        }
+    const { project, pics } = await prisma.$transaction((tx) =>
+      createProjectWithTasks(tx, user, {
+        name: body.name,
+        description: body.description ?? null,
+        companyId: body.companyId ?? null,
+        divisionId: body.divisionId ?? null,
+        startDate: body.startDate ? new Date(body.startDate) : null,
+        endDate: body.endDate ? new Date(body.endDate) : null,
+        picIds: body.picIds,
       })
-
-      if (pics.length) {
-        await tx.task.createMany({
-          data: pics.map((p) => ({
-            title: `Kontribusi ${p.name}`,
-            description: `Task awal untuk ${p.name}. Ganti judul dan tambahkan Action Plan sesuai lingkup kerjanya.`,
-            projectId: project.id,
-            divisionId: p.divisionId!,
-            picId: p.id,
-            createdById: user.id,
-            startDate,
-            endDate,
-          })),
-        })
-      }
-
-      return project
-    })
+    )
 
     if (pics.length > 0) {
       await notify({
         userIds: pics.map((p) => p.id),
         title: 'Ditugaskan ke Project Baru',
-        message: `Kamu telah ditugaskan ke project "${result.name}" sebagai PIC.`,
-        link: `/projects/${result.id}`,
-        companyId,
+        message: `Kamu telah ditugaskan ke project "${project.name}" sebagai PIC.`,
+        link: `/projects/${project.id}`,
+        companyId: project.companyId,
       })
     }
 
-    return NextResponse.json(result, { status: 201 })
+    return NextResponse.json(project, { status: 201 })
   } catch (error) {
+    if (error instanceof ProjectInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
     console.error('[PROJECTS_POST]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }

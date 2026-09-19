@@ -49,6 +49,11 @@ interface AuditLogItem {
       name: string
     } | null
   } | null
+  project?: {
+    id: string
+    name: string
+    divisionId?: string | null
+  } | null
 }
 
 const ACTION_BADGE: Record<string, { label: string; className: string }> = {
@@ -472,6 +477,26 @@ export function AuditLogModal({
                       {log.user?.role}
                     </span>
                   </div>
+
+                  {/* Target Project (log tanpa Action Plan, mis. konversi Proposal) */}
+                  {!log.actionPlan && log.project && (
+                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 flex-wrap">
+                      <FileText size={13} className="text-slate-400 shrink-0" />
+                      <span className="text-slate-400 text-xs">Sasaran:</span>
+                      <Link
+                        href={`/projects/${log.project.id}`}
+                        onClick={() => onOpenChange(false)}
+                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 truncate max-w-sm"
+                        title="Buka detail Project"
+                      >
+                        <span className="truncate">{log.project.name}</span>
+                        <ExternalLink size={10} className="shrink-0" />
+                      </Link>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                        Project
+                      </span>
+                    </div>
+                  )}
 
                   {/* Target Action Plan & Division Link */}
                   {log.actionPlan && (

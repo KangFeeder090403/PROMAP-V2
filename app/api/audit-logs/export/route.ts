@@ -21,17 +21,27 @@ export async function GET(req: Request) {
     // RBAC Scope
     let tenantWhere: Prisma.ActivityLogWhereInput = {}
 
+    // Cabang `project` menutup log konversi Proposal->Project yang user-nya
+    // berada di tenant lain (SUPER_ADMIN) — cermin app/api/audit-logs/route.ts.
     if (user.role === 'SUPER_ADMIN') {
       const companyId = searchParams.get('companyId')
       if (companyId) {
         tenantWhere = {
-          OR: [{ user: { companyId } }, { actionPlan: { companyId } }],
+          OR: [
+            { user: { companyId } },
+            { actionPlan: { companyId } },
+            { project: { companyId } },
+          ],
         }
       }
     } else if (user.role === 'ADMIN_OPERATIONAL') {
       const cId = user.companyId!
       tenantWhere = {
-        OR: [{ user: { companyId: cId } }, { actionPlan: { companyId: cId } }],
+        OR: [
+          { user: { companyId: cId } },
+          { actionPlan: { companyId: cId } },
+          { project: { companyId: cId } },
+        ],
       }
     } else if (user.role === 'MANAGER') {
       const cId = user.companyId!
@@ -40,10 +50,15 @@ export async function GET(req: Request) {
             OR: [
               { user: { divisionId: user.divisionId } },
               { actionPlan: { divisionId: user.divisionId } },
+              { project: { divisionId: user.divisionId } },
             ],
           }
         : {
-            OR: [{ user: { companyId: cId } }, { actionPlan: { companyId: cId } }],
+            OR: [
+              { user: { companyId: cId } },
+              { actionPlan: { companyId: cId } },
+              { project: { companyId: cId } },
+            ],
           }
     } else {
       tenantWhere = {
@@ -67,6 +82,7 @@ export async function GET(req: Request) {
           { newValue: { contains: search, mode: 'insensitive' } },
           { user: { name: { contains: search, mode: 'insensitive' } } },
           { actionPlan: { title: { contains: search, mode: 'insensitive' } } },
+          { project: { name: { contains: search, mode: 'insensitive' } } },
         ],
       })
     }
@@ -100,6 +116,7 @@ export async function GET(req: Request) {
             },
           },
         },
+        project: { select: { id: true, name: true } },
       },
     })
 
@@ -151,7 +168,7 @@ export async function GET(req: Request) {
         sanitize(log.user?.role ?? 'SYSTEM'),
         sanitize(log.user?.division?.name ?? 'Umum'),
         sanitize(log.action),
-        sanitize(log.actionPlan?.title ?? '-'),
+        sanitize(log.actionPlan?.title ?? log.project?.name ?? '-'),
         sanitize(log.oldValue),
         sanitize(log.newValue),
       ]

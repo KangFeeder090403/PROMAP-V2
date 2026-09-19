@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RotateCcw, X } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 
 export type ProjectFormProject = {
@@ -28,6 +29,7 @@ type PickUser = {
   name: string
   role: Role
   status: string
+  companyId: string | null
   divisionId: string | null
 }
 
@@ -40,13 +42,22 @@ export function ProjectForm({
   onOpenChange,
   project,
   role,
+  currentUserDivisionId = null,
+  prefill,
+  submitTo,
   onSuccess,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   project: ProjectFormProject | null
   role: Role
-  onSuccess: () => void
+  /** Divisi user aktif — dipakai membatasi picker PIC untuk MANAGER. */
+  currentUserDivisionId?: string | null
+  /** Nilai awal saat create dari sumber lain, mis. konversi Proposal. */
+  prefill?: { name: string; description: string | null }
+  /** Endpoint alternatif khusus mode create (konversi Proposal). */
+  submitTo?: { url: string; extra?: Record<string, unknown> }
+  onSuccess: (project?: { id: string; name: string }) => void
 }) {
   const mode: 'create' | 'edit' = project ? 'edit' : 'create'
 
@@ -65,12 +76,15 @@ export function ProjectForm({
   const [picSearch, setPicSearch] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [picLoading, setPicLoading] = useState(true)
+  const [picError, setPicError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     if (!open) return
     setError('')
-    setName(project?.name ?? '')
-    setDescription(project?.description ?? '')
+    setName(project?.name ?? prefill?.name ?? '')
+    setDescription(project?.description ?? prefill?.description ?? '')
     setStartDate(toDateInput(project?.startDate))
     setEndDate(toDateInput(project?.endDate))
     setCompanyId(project?.companyId ?? '')
@@ -87,19 +101,37 @@ export function ProjectForm({
   // Muat data anggota aktif dan divisi saat modal dibuka
   useEffect(() => {
     if (!open) return
+    let active = true
+    setPicLoading(true)
+    setPicError(false)
     Promise.all([
-      fetch('/api/users').then((r) => (r.ok ? r.json() : [])),
-      fetch('/api/divisions').then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/users').then((r) => {
+        if (!r.ok) throw new Error('users')
+        return r.json()
+      }),
+      fetch('/api/divisions').then((r) => {
+        if (!r.ok) throw new Error('divisions')
+        return r.json()
+      }),
     ])
       .then(([u, d]: [PickUser[], { id: string; name: string }[]]) => {
+        if (!active) return
         setUsers(Array.isArray(u) ? u : [])
         setDivisions(Array.isArray(d) ? d : [])
       })
       .catch(() => {
+        if (!active) return
         setUsers([])
         setDivisions([])
+        setPicError(true)
       })
-  }, [open])
+      .finally(() => {
+        if (active) setPicLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [open, reloadKey])
 
   // Saat edit, ambil daftar PIC yang saat ini terdaftar di task project
   useEffect(() => {
@@ -131,8 +163,18 @@ export function ProjectForm({
   const divisionName = (id: string | null) =>
     divisions.find((d) => d.id === id)?.name ?? 'Tanpa divisi'
 
-  // Hanya anggota aktif yang punya divisi
-  const assignable = users.filter((u) => u.status === 'ACTIVE' && u.divisionId)
+  // Hanya anggota aktif yang punya divisi, dan yang memang boleh ditugaskan server:
+  // SUPER_ADMIN dibatasi company terpilih, MANAGER dibatasi divisinya sendiri.
+  // Tanpa filter ini picker menawarkan orang yang pasti ditolak server (400/403).
+  const scopeCompanyId = role === 'SUPER_ADMIN' ? companyId : null
+  const assignable = users.filter(
+    (u) =>
+      u.status === 'ACTIVE' &&
+      u.divisionId &&
+      (role !== 'SUPER_ADMIN' || !scopeCompanyId || u.companyId === scopeCompanyId) &&
+      (role !== 'MANAGER' || u.divisionId === currentUserDivisionId)
+  )
+  const needCompanyFirst = role === 'SUPER_ADMIN' && mode === 'create' && !companyId
 
   const filteredAssignable = assignable.filter((u) => {
     if (!picSearch.trim()) return true
@@ -160,7 +202,11 @@ export function ProjectForm({
     setError('')
     setLoading(true)
 
-    const url = mode === 'create' ? '/api/projects' : `/api/projects/${project!.id}`
+    // submitTo hanya berlaku untuk create — mode edit tetap PUT ke project-nya sendiri.
+    const url =
+      mode === 'create'
+        ? (submitTo?.url ?? '/api/projects')
+        : `/api/projects/${project!.id}`
     const method = mode === 'create' ? 'POST' : 'PUT'
 
     const payload: Record<string, unknown> = {
@@ -169,6 +215,7 @@ export function ProjectForm({
       startDate: startDate || null,
       endDate: endDate || null,
       picIds,
+      ...(mode === 'create' ? submitTo?.extra : undefined),
     }
 
     if (mode === 'edit') {
@@ -191,13 +238,16 @@ export function ProjectForm({
 
     setLoading(false)
 
+    const data = await res.json().catch(() => ({}))
+
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
       setError(data.error || 'Gagal menyimpan project')
       return
     }
 
-    onSuccess()
+    // POST /api/projects membalas project telanjang, konversi proposal membalas
+    // { success, project } — satu baris ini menyamakan keduanya.
+    onSuccess(data.project ?? data)
   }
 
   return (
@@ -322,7 +372,7 @@ export function ProjectForm({
           )}
 
           {/* 6. Timeline (Tanggal Mulai & Target Selesai) */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="startDate" className="text-slate-700 dark:text-slate-300">
                 Tanggal Mulai
@@ -371,10 +421,50 @@ export function ProjectForm({
             )}
 
             <div className="max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-950">
-              {filteredAssignable.length === 0 ? (
+              {picLoading ? (
+                <div className="space-y-2 p-3" aria-busy="true" aria-live="polite">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <div className="h-4 w-4 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                      <div className="h-3 flex-1 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                      <div className="h-3 w-20 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              ) : picError ? (
+                <div className="flex flex-col items-center gap-2 px-3 py-4">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                    Gagal memuat daftar anggota.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setReloadKey((k) => k + 1)}
+                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Coba lagi
+                  </button>
+                </div>
+              ) : needCompanyFirst ? (
                 <p className="px-3 py-3 text-xs text-slate-400 text-center">
-                  {picSearch ? 'Tidak ada anggota yang cocok.' : 'Belum ada anggota aktif.'}
+                  Pilih perusahaan dulu untuk melihat anggota yang bisa ditugaskan.
                 </p>
+              ) : filteredAssignable.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 px-3 py-4">
+                  <p className="text-xs text-slate-400 text-center">
+                    {picSearch ? 'Tidak ada anggota yang cocok.' : 'Belum ada anggota aktif.'}
+                  </p>
+                  {picSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setPicSearch('')}
+                      className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                      Reset pencarian
+                    </button>
+                  )}
+                </div>
               ) : (
                 filteredAssignable.map((u) => {
                   const isChecked = picIds.includes(u.id)

@@ -1,9 +1,144 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser } from '@/lib/rbac'
+import { getSessionUser, canManageProject } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
-import type { Priority } from '@/lib/generated/prisma/client'
+import {
+  createProjectWithTasks,
+  linkProposalToProject,
+  ConflictError,
+  ProjectInputError,
+} from '@/lib/projects'
+import type { Priority, User } from '@/lib/generated/prisma/client'
+
+type ConvertableProposal = {
+  id: string
+  title: string
+  description: string
+  proposerId: string
+  projectId: string | null
+  proposer: { companyId: string | null; divisionId: string | null }
+}
+
+/**
+ * Konversi Proposal → Project. Tidak punya aturan tenant sendiri:
+ * seluruh resolve company/divisi, validasi PIC, dan guard lintas divisi
+ * dijalankan createProjectWithTasks() supaya tidak ada aturan kembar.
+ */
+async function convertToProject(
+  user: User,
+  proposal: ConvertableProposal,
+  body: Record<string, unknown>
+) {
+  // MANAGER selalu create di divisinya sendiri — cermin POST /api/projects.
+  if (!canManageProject(user, user.divisionId)) {
+    return NextResponse.json(
+      { error: 'Anda tidak memiliki izin untuk membuat Project' },
+      { status: 403 }
+    )
+  }
+
+  // Cek cepat untuk pesan yang enak dibaca. Penjamin sesungguhnya = updateMany di bawah.
+  if (proposal.projectId) {
+    return NextResponse.json(
+      { error: 'Proposal ini sudah dikonversi menjadi Project' },
+      { status: 409 }
+    )
+  }
+
+  // Non SUPER_ADMIN: companyId dari klien diabaikan total, helper pakai user.companyId.
+  const companyId = user.role === 'SUPER_ADMIN' ? (body.companyId as string | undefined) : undefined
+
+  try {
+    const { project, pics } = await prisma.$transaction(async (tx) => {
+      const created = await createProjectWithTasks(tx, user, {
+        // Tanpa fallback ke proposal.title: name kosong wajib jatuh ke guard 400
+        // di helper, bukan diam-diam ditambal. UI mengisi lewat prefill ProjectForm.
+        name: body.name as string,
+        description:
+          typeof body.description === 'string' ? body.description : proposal.description,
+        companyId: companyId ?? null,
+        divisionId: (body.divisionId as string | null | undefined) ?? null,
+        startDate: body.startDate ? new Date(body.startDate as string) : null,
+        endDate: body.endDate ? new Date(body.endDate as string) : null,
+        picIds: body.picIds as string[] | undefined,
+      })
+
+      await linkProposalToProject(tx, proposal.id, created.project.id)
+
+      return created
+    })
+
+    await logActivity({
+      userId: user.id,
+      projectId: project.id,
+      actionPlanId: null,
+      action: 'CREATED',
+      oldValue: `Proposal:${proposal.id}@${proposal.proposer.companyId ?? 'none'}`,
+      newValue: `Project:${project.id}:${project.name}@${project.companyId}`,
+    })
+
+    const picIdsNotified = pics.map((p) => p.id).filter((id) => id !== user.id)
+    if (picIdsNotified.length > 0) {
+      await notify({
+        userIds: picIdsNotified,
+        title: 'Ditugaskan ke Project Baru',
+        message: `Kamu ditugaskan ke project "${project.name}" hasil konversi usulan "${proposal.title}".`,
+        link: `/projects/${project.id}`,
+        companyId: project.companyId,
+      })
+    }
+
+    if (proposal.proposerId !== user.id && !pics.some((p) => p.id === proposal.proposerId)) {
+      await notify({
+        userIds: [proposal.proposerId],
+        title: 'Usulan Anda telah diwujudkan menjadi Project',
+        message: `Usulan "${proposal.title}" kini menjadi project "${project.name}".`,
+        link: `/projects/${project.id}`,
+        companyId: project.companyId,
+      })
+    }
+
+    // Manager divisi tujuan selain divisi konverter perlu tahu ada kerja masuk.
+    const targetDivisionIds = [
+      ...new Set(pics.map((p) => p.divisionId).filter((d): d is string => Boolean(d))),
+    ].filter((d) => d !== user.divisionId)
+
+    if (targetDivisionIds.length > 0) {
+      const managers = await prisma.user.findMany({
+        where: {
+          role: 'MANAGER',
+          divisionId: { in: targetDivisionIds },
+          companyId: project.companyId,
+          status: 'ACTIVE',
+          deletedAt: null,
+          id: { not: user.id },
+        },
+        select: { id: true },
+      })
+      if (managers.length > 0) {
+        await notify({
+          userIds: managers.map((m) => m.id),
+          title: 'Divisi Anda terlibat di Project baru',
+          message: `Project "${project.name}" melibatkan anggota divisi Anda.`,
+          link: `/projects/${project.id}`,
+          companyId: project.companyId,
+        })
+      }
+    }
+
+    return NextResponse.json({ success: true, project }, { status: 201 })
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 })
+    }
+    if (error instanceof ProjectInputError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('[PROPOSAL_CONVERT_PROJECT]', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -60,6 +195,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const body = await req.json().catch(() => ({}))
+
+    // Tanpa target eksplisit tetap Action Plan — backward compatible.
+    if (body.target === 'PROJECT') {
+      return convertToProject(user, proposal, body)
+    }
 
     const title = (body.title || proposal.title).trim()
     const outcomeKpi = (body.outcomeKpi || proposal.description).trim()

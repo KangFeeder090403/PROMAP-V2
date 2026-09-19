@@ -113,23 +113,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     }).length
 
     const taskIds = tasks.map((t) => t.id)
-    const activityLogs =
-      taskIds.length > 0
-        ? await prisma.activityLog.findMany({
-            where: {
-              actionPlan: {
-                taskId: { in: taskIds },
-                deletedAt: null,
-              },
-            },
-            include: {
-              user: { select: { id: true, name: true } },
-              actionPlan: { select: { id: true, title: true } },
-            },
-            take: 20,
-            orderBy: { createdAt: 'desc' },
-          })
-        : []
+    // taskIds kosong -> cabang `in: []` tidak cocok apa pun, cabang projectId tetap jalan
+    // sehingga log pembuatan project (mis. hasil konversi Proposal) tetap tampil.
+    const activityLogs = await prisma.activityLog.findMany({
+      where: {
+        OR: [
+          { projectId: id },
+          { actionPlan: { taskId: { in: taskIds }, deletedAt: null } },
+        ],
+      },
+      include: {
+        user: { select: { id: true, name: true } },
+        actionPlan: { select: { id: true, title: true } },
+      },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+    })
 
     return NextResponse.json({
       project: {

@@ -19,6 +19,9 @@ export async function GET(req: Request) {
 
     let baseScope: Prisma.ActivityLogWhereInput = {}
 
+    // Cabang `project` wajib: saat SUPER_ADMIN konversi proposal lintas tenant,
+    // log-nya punya user di company lain dan actionPlanId null — tanpa cabang ini
+    // Admin Ops perusahaan penerima tidak pernah melihat project asing masuk.
     if (user.role === 'SUPER_ADMIN') {
       const companyId = searchParams.get('companyId')
       if (companyId) {
@@ -26,6 +29,7 @@ export async function GET(req: Request) {
           OR: [
             { user: { companyId } },
             { actionPlan: { companyId } },
+            { project: { companyId } },
           ],
         }
       }
@@ -35,6 +39,7 @@ export async function GET(req: Request) {
         OR: [
           { user: { companyId: cId } },
           { actionPlan: { companyId: cId } },
+          { project: { companyId: cId } },
         ],
       }
     } else if (user.role === 'MANAGER') {
@@ -44,12 +49,14 @@ export async function GET(req: Request) {
             OR: [
               { user: { divisionId: user.divisionId } },
               { actionPlan: { divisionId: user.divisionId } },
+              { project: { divisionId: user.divisionId } },
             ],
           }
         : {
             OR: [
               { user: { companyId: cId } },
               { actionPlan: { companyId: cId } },
+              { project: { companyId: cId } },
             ],
           }
     } else {
@@ -72,6 +79,7 @@ export async function GET(req: Request) {
         OR: [
           { user: { name: { contains: search, mode: 'insensitive' } } },
           { actionPlan: { title: { contains: search, mode: 'insensitive' } } },
+          { project: { name: { contains: search, mode: 'insensitive' } } },
           { oldValue: { contains: search, mode: 'insensitive' } },
           { newValue: { contains: search, mode: 'insensitive' } },
         ],
@@ -107,6 +115,14 @@ export async function GET(req: Request) {
                 name: true,
               },
             },
+          },
+        },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            companyId: true,
+            divisionId: true,
           },
         },
       },
