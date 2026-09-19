@@ -1100,6 +1100,7 @@ export function ProjectDetailClient({
             createdAt: project.createdAt,
           }}
           role={currentUserRole}
+          currentUserDivisionId={currentUserDivisionId}
           onSuccess={() => {
             setEditProjectOpen(false)
             fetchProject()

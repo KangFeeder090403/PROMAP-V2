@@ -8,7 +8,7 @@ const CAN_CREATE = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER']
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: { new?: string }
+  searchParams: { new?: string; open?: string }
 }) {
   const user = await getSessionUser()
   if (!user) redirect('/login')
@@ -16,7 +16,9 @@ export default async function ProjectsPage({
   return (
     <ProjectsClient
       role={user.role}
+      currentUserDivisionId={user.divisionId}
       openCreate={CAN_CREATE.includes(user.role) && searchParams.new === '1'}
+      initialOpenId={searchParams.open}
     />
   )
 }

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { ProjectForm } from '@/components/projects/ProjectForm'
+import { ProjectDrawer } from '@/components/projects/ProjectDrawer'
 import { FilterToolbar } from '@/components/ui/FilterToolbar'
 import { FilterEmptyState } from '@/components/ui/FilterEmptyState'
 import { useFilterState } from '@/lib/use-filter-state'
@@ -63,13 +64,24 @@ const PROJECT_STATUS_OPTIONS = [
   { value: 'INACTIVE', label: 'Nonaktif', dot: 'bg-slate-400' },
 ]
 
-export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: boolean }) {
+export function ProjectsClient({
+  role,
+  currentUserDivisionId = null,
+  openCreate,
+  initialOpenId,
+}: {
+  role: Role
+  currentUserDivisionId?: string | null
+  openCreate?: boolean
+  initialOpenId?: string
+}) {
   const router = useRouter()
   const [data, setData] = useState<Project[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
+  const [drawerProjectId, setDrawerProjectId] = useState<string | null>(initialOpenId ?? null)
 
   // Filter state (UI-11: terikat URL Query Params PRD §B8, debounce 250ms)
   const filterState = useFilterState(250)
@@ -81,6 +93,12 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
     fetchData()
   }, [])
 
+  useEffect(() => {
+    if (initialOpenId) {
+      setDrawerProjectId(initialOpenId)
+    }
+  }, [initialOpenId])
+
   // Header "+ New > Project" mengarah ke /projects?new=1. Buka modal, lalu
   // bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
   useEffect(() => {
@@ -88,7 +106,7 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
     setEditing(null)
     setFormOpen(true)
     router.replace('/projects', { scroll: false })
-  }, [openCreate])
+  }, [openCreate, router])
 
   async function fetchData() {
     try {
@@ -307,11 +325,11 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                         key={p.id}
                         tabIndex={0}
                         className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60"
-                        onClick={() => router.push(`/projects/${p.id}`)}
+                        onClick={() => setDrawerProjectId(p.id)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault()
-                            router.push(`/projects/${p.id}`)
+                            setDrawerProjectId(p.id)
                           }
                         }}
                       >
@@ -432,11 +450,22 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
                                     role="menuitem"
                                     onClick={() => {
                                       setMenuOpenFor(null)
+                                      setDrawerProjectId(p.id)
+                                    }}
+                                    className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                  >
+                                    Inspeksi Cepat (Drawer)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      setMenuOpenFor(null)
                                       router.push(`/projects/${p.id}`)
                                     }}
                                     className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                                   >
-                                    Buka Detail
+                                    Buka Halaman Penuh
                                   </button>
                                   {canManage && (
                                     <button
@@ -518,12 +547,29 @@ export function ProjectsClient({ role, openCreate }: { role: Role; openCreate?: 
           onOpenChange={setFormOpen}
           project={editing}
           role={role}
+          currentUserDivisionId={currentUserDivisionId}
           onSuccess={() => {
             setFormOpen(false)
             fetchData()
           }}
         />
       )}
+
+      <ProjectDrawer
+        projectId={drawerProjectId}
+        role={role}
+        open={Boolean(drawerProjectId)}
+        onOpenChange={(open) => {
+          if (!open) setDrawerProjectId(null)
+        }}
+        onEdit={(proj) => {
+          const found = data?.find((p) => p.id === proj.id)
+          if (found) {
+            setEditing(found)
+            setFormOpen(true)
+          }
+        }}
+      />
     </div>
   )
 }

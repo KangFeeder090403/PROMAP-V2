@@ -22,12 +22,19 @@ const SAFE_SELECT = {
   updatedAt: true,
 } as const
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await getSessionUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const { searchParams } = new URL(req.url)
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = ['createdAt', 'name', 'email', 'role', 'status']
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt'
 
     let where: Record<string, unknown> = {}
     if (user.role === 'ADMIN_OPERATIONAL') where = { companyId: user.companyId }
@@ -38,7 +45,7 @@ export async function GET() {
     const data = await prisma.user.findMany({
       where: { ...where, deletedAt: null },
       select: SAFE_SELECT,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { [safeSortBy]: sortOrder },
     })
 
     return NextResponse.json(data)

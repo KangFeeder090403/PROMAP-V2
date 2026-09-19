@@ -12,6 +12,11 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const projectId = searchParams.get('projectId')
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = ['createdAt', 'startDate', 'endDate', 'priority', 'title', 'status']
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt'
 
     let where: any = { deletedAt: null }
 
@@ -36,7 +41,7 @@ export async function GET(req: Request) {
 
     const data = await prisma.task.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { [safeSortBy]: sortOrder }
     })
 
     return NextResponse.json(data)

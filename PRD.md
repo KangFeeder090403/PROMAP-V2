@@ -387,7 +387,7 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 
 ### C1. Backend — Status
 
-*(hasil audit repo, 2026-09-04)*
+*(hasil audit repo, 2026-09-18)*
 
 ```
 ✅ 1.  Setup & Auth                 app/api/auth/*
@@ -403,38 +403,33 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 ✅ 11. Notifikasi In-App            app/api/notifications/*  (6d586ac)
 ✅ 12. Kanban Board                 pakai /api/action-plans + PUT /tasks/[id] (6d586ac)
 ✅ 13. Kalender + Download PDF      app/api/calendar, /calendar/export (e642936)
-🔶 14. Filter & Sort                filter parsial: action-plans/tasks/proposals punya
-                                    searchParams; projects belum. Sort belum ada.
+✅ 14. Filter & Sort                action-plans, proposals, tasks, projects, users, leads: dynamic filter + sort whitelist.
 ✅ 15. Cron Job Overdue             app/api/cron/check-overdue  (6d586ac)
-⬜ 16. Laporan & Export             app/api/reports belum ada (hanya folder .gitkeep)
-⬜ 17. Audit Log                    tidak ada satupun prisma.activityLog.create.
-                                    Ada 2 ponytail marker di action-plans/[id]/
-                                    {submit,review}/route.ts
+✅ 16. Laporan & Export             app/api/reports/route.ts (289 baris) +
+                                    export/route.ts (761 baris, governanceIndex, quarters)
+✅ 17. Audit Log                    lib/activity-log.ts dipanggil 15 route +
+                                    app/api/audit-logs + export
 ```
 
 ### C2. Frontend (V2.4) — Urutan Pengerjaan
 
-*(hasil audit repo, 2026-09-04 — V2.4 = refactor, bukan bangun dari nol)*
+*(hasil audit repo, 2026-09-18 — V2.4 = refactor, bukan bangun dari nol)*
 
 > **Layout tiap layar: §B10.** Screen tanpa entri di B10 = layout belum disepakati,
 > tanya Product Owner sebelum mulai.
 
 **P0 — Wajib (fondasi, tidak bisa di-skip):**
 ```
-🔶 UI-1  App Shell     ADA: components/layout/{DashboardShell,Sidebar,Header,
-                       NotifBell,UserMenu,nav-config}.tsx
-                       KURANG: nav flat 8 item, belum ada grup WORKSPACE/EXECUTION/
-                       INSIGHTS · belum ada breadcrumb (Header cuma judul halaman) ·
-                       belum ada tombol + New global · belum ada My Work
-🔶 UI-2  Auth Pages    ADA: app/(auth)/{login,register}/page.tsx — audit visual V2.4
-⬜ UI-3  Dashboard     ADA app/(dashboard)/page.tsx + charts, TAPI belum adaptif per
-                       role, belum ada Action Required, belum ada Team Workload
-⬜ UI-4  My Work       belum ada route sama sekali
-🔶 UI-5  Projects      ADA app/(dashboard)/projects/page.tsx (list saja)
-                       KURANG: detail page /projects/[id] + tabs
-🔶 UI-6  Action Plan   ADA app/(dashboard)/action-plans/page.tsx + ActionPlanDetail
-                       (Dialog, 3 tab) KURANG: harus Drawer, bukan Dialog ·
-                       belum ada full page /action-plans/[id]
+✅ UI-1  App Shell     components/layout/{DashboardShell,Sidebar,Header,
+                       NotifBell,nav-config}.tsx — nav 3-grup (Workspace/
+                       Execution/Insights), breadcrumb, +New global
+✅ UI-2  Auth Pages    app/(auth)/login/page.tsx + demo/page.tsx (no self-register)
+✅ UI-3  Dashboard     role-adaptif (isPic), Action Required, priority breakdown
+                       (Team Workload ada tapi flag-off, deviasi resmi 2026-09-09)
+✅ UI-4  My Work       app/(dashboard)/my-work/page.tsx → MyWorkClient.tsx (1280 baris)
+✅ UI-5  Projects      list + detail /projects/[id] → ProjectDetailClient.tsx (1413 baris, tabs)
+✅ UI-6  Action Plan   Drawer (ActionPlanDetail) & Full Page Workspace
+                       /action-plans/[id] (ActionPlanWorkspaceClient, 2-kolom + sidebar)
 ```
 
 **P1 — Penting (setelah P0 stabil):**
@@ -445,10 +440,11 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 ✅ UI-8  Proposals     SELESAI: Tabel proposal dengan nama pengaju (proposer.name),
                        modal buat/edit draft, review dialog dengan catatan wajib saat tolak,
                        modal inspeksi detail proposal, RBAC Super Admin/Admin Ops/Manager.
-🔶 UI-9  Settings      ADA app/(dashboard)/settings/page.tsx (Company, Division, User,
-                       UserLabel aktif). GAP: Modul Leads belum diintegrasikan ke Settings.
-🔶 UI-10 Calendar      ADA app/(dashboard)/calendar/page.tsx + Gantt + export PDF
-⬜ UI-11 Filter & Sort belum ada toolbar konsisten di list page manapun
+✅ UI-9  Settings      SELESAI: Company, Division, User, UserLabel aktif, tab Leads
+                       sudah terintegrasi di SettingsClient.tsx
+✅ UI-10 Calendar      SELESAI: app/(dashboard)/calendar/page.tsx + 6 komponen
+                       (Gantt, Week, Agenda, export PDF, sync feed .ics)
+✅ UI-11 Filter & Sort FilterToolbar.tsx terstandarisasi & backend sort whitelist lengkap
 ```
 
 ### C2.1 Laporan Implementasi & Verifikasi UI-7, UI-8, UI-9 (Audit September 2026)
@@ -500,10 +496,11 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 
 **P2 — Setelah core stabil:**
 ```
-⬜ UI-12 Reports & Export   folder kosong. Percobaan sebelumnya dibuang (lihat catatan)
-⬜ UI-13 Leads              backend /api/leads ada, UI belum
-⬜ UI-14 Guest Demo Page    backend /api/guest/* ada, UI belum
-⬜ UI-15 Audit Log view     bergantung backend #17 yang belum ada
+✅ UI-12 Reports & Export   reports/page.tsx → ReportsClient.tsx (1092 baris, RBAC Manager+)
+✅ UI-13 Leads              /settings/leads (kanonik); /leads lama akan dikonsolidasi
+✅ UI-14 Guest Demo Page    app/(auth)/demo/page.tsx → GuestDemoPanel, terhubung /api/guest/*
+✅ UI-15 Audit Log view     settings/audit-logs/page.tsx → AuditLogClient.tsx, /audit-logs redirect
+✅ Landing Page             app/landing/page.tsx → 13 komponen, 35 kB
 ```
 
 ### C3. Ditunda ke V3
