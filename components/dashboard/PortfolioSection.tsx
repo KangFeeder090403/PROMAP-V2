@@ -1,33 +1,88 @@
 'use client'
 
 import Link from 'next/link'
-import { Activity, Building2, CalendarClock } from 'lucide-react'
-import type { PortfolioSummary } from '@/lib/types/dashboard'
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRight,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  Clock,
+  Layers,
+  TrendingUp,
+  Zap,
+} from 'lucide-react'
+import type { PortfolioSummary, ProjectHealth } from '@/lib/types/dashboard'
 
-const HEALTH_META = {
-  ON_TRACK: { label: 'Sesuai Rencana', dot: 'bg-emerald-500', bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-300' },
-  AT_RISK: { label: 'Perlu Perhatian', dot: 'bg-amber-500', bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-300' },
-  DELAYED: { label: 'Terlambat', dot: 'bg-red-500', bar: 'bg-red-500', text: 'text-red-700 dark:text-red-300' },
-} as const
+const HEALTH_CONFIG: Record<
+  ProjectHealth,
+  {
+    label: string
+    dot: string
+    badge: string
+    bar: string
+    text: string
+  }
+> = {
+  ON_TRACK: {
+    label: 'Sesuai Target',
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+    bar: 'bg-emerald-500',
+    text: 'text-emerald-700 dark:text-emerald-300',
+  },
+  AT_RISK: {
+    label: 'Perlu Perhatian',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800',
+    bar: 'bg-amber-500',
+    text: 'text-amber-700 dark:text-amber-300',
+  },
+  DELAYED: {
+    label: 'Terlambat',
+    dot: 'bg-red-500',
+    badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800',
+    bar: 'bg-red-500',
+    text: 'text-red-700 dark:text-red-300',
+  },
+}
 
-function Card({ children }: { children: React.ReactNode }) {
+function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+    <div
+      className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 transition-all ${className}`}
+    >
       {children}
     </div>
   )
 }
 
-function Head({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+function SectionHeader({
+  icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon: React.ReactNode
+  title: string
+  subtitle: string
+  action?: React.ReactNode
+}) {
   return (
-    <div className="flex items-center gap-2 pb-4">
-      <span className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-        {icon}
-      </span>
-      <div>
-        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">{title}</h3>
-        <span className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800/80 mb-5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 shrink-0">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-50 tracking-tight">
+            {title}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+        </div>
       </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   )
 }
@@ -36,173 +91,381 @@ export function PortfolioSection({ portfolio }: { portfolio: PortfolioSummary })
   const { healthSummary, projectHealth, divisionProgress, upcomingMilestones } = portfolio
   const totalProjects = projectHealth.length
 
-  const best = divisionProgress[0]
-  const bottleneck = [...divisionProgress].sort((a, b) => b.overdueRate - a.overdueRate)[0]
+  // Health Score Calculation (% on track)
+  const healthScore =
+    totalProjects > 0
+      ? Math.round(
+          ((healthSummary.onTrack * 1.0 + healthSummary.atRisk * 0.5) / totalProjects) * 100
+        )
+      : 100
+
+  const totalOverdueTasks = projectHealth.reduce((acc, p) => acc + p.overdueTasks, 0)
+  const totalTasks = projectHealth.reduce((acc, p) => acc + p.taskCount, 0)
+
+  const bestDivision = divisionProgress[0]
+  const bottleneckDivision = [...divisionProgress].sort((a, b) => b.overdueRate - a.overdueRate)[0]
+
+  if (totalProjects === 0) {
+    return (
+      <Card>
+        <SectionHeader
+          icon={<Layers className="w-4 h-4" aria-hidden="true" />}
+          title="Helicopter View &amp; Portofolio Proyek"
+          subtitle="Tinjauan eksekutif progres dan kapasitas seluruh inisiatif"
+        />
+        <div className="py-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-3">
+            <Layers className="h-6 w-6" />
+          </div>
+          <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            Belum ada proyek aktif
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            Buat proyek baru untuk mengaktifkan ringkasan kesehatan portofolio, progres lintas divisi, dan radar tenggat waktu.
+          </p>
+          <Link
+            href="/projects"
+            className="inline-flex items-center gap-1.5 mt-4 px-3.5 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-colors shadow-xs"
+          >
+            Buka Menu Proyek &rarr;
+          </Link>
+        </div>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {/* 1. Ringkasan Kesehatan Proyek */}
+      {/* 1. EXECUTIVE HEALTH STRIP (Command Header) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Metric 1: Overall Health Score */}
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Kesehatan Portofolio
+            </span>
+            <div className="p-1.5 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+              <Zap className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tabular-nums">
+              {healthScore}%
+            </span>
+            <span
+              className={`text-[11px] font-medium px-1.5 py-0.5 rounded ${
+                healthScore >= 80
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                  : healthScore >= 50
+                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                    : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+              }`}
+            >
+              {healthScore >= 80 ? 'Optimal' : healthScore >= 50 ? 'Waspada' : 'Kritis'}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+            Dari total {totalProjects} proyek aktif
+          </p>
+        </div>
+
+        {/* Metric 2: On Track */}
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Sesuai Target (On Track)
+            </span>
+            <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {healthSummary.onTrack}
+            </span>
+            <span className="text-xs text-slate-400">proyek</span>
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+            {Math.round((healthSummary.onTrack / totalProjects) * 100)}% dari portofolio
+          </p>
+        </div>
+
+        {/* Metric 3: Needs Attention */}
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Perlu Perhatian (At Risk)
+            </span>
+            <div className="p-1.5 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-400 tabular-nums">
+              {healthSummary.atRisk}
+            </span>
+            <span className="text-xs text-slate-400">proyek</span>
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+            Mendekati tenggat waktu
+          </p>
+        </div>
+
+        {/* Metric 4: Delayed / Overdue Bottlenecks */}
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Terlambat / Tertahan
+            </span>
+            <div className="p-1.5 rounded-md bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400">
+              <Clock className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-bold tracking-tight text-red-600 dark:text-red-400 tabular-nums">
+              {healthSummary.delayed}
+            </span>
+            <span className="text-xs text-slate-400">proyek</span>
+          </div>
+          <p className="text-[11px] text-red-500/80 dark:text-red-400/80 mt-1 font-medium">
+            {totalOverdueTasks > 0 ? `${totalOverdueTasks} task telat terdeteksi` : 'Nol task terlambat'}
+          </p>
+        </div>
+      </div>
+
+      {/* 2. PROJECT PORTFOLIO MATRIX & MINI GANTT HORIZON */}
       <Card>
-        <Head
-          icon={<Activity className="w-5 h-5" aria-hidden="true" />}
-          title="Kesehatan Proyek"
-          subtitle={`${totalProjects} project aktif dalam pantauan Anda`}
+        <SectionHeader
+          icon={<Activity className="w-4 h-4" aria-hidden="true" />}
+          title="Matriks Progres &amp; Kesehatan Inisiatif"
+          subtitle="Pantau laju penyelesaian, status kesehatan, dan risiko setiap proyek aktif"
+          action={
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+            >
+              <span>Semua Proyek</span>
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          }
         />
 
-        {totalProjects === 0 ? (
-          <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-            Belum ada project aktif untuk dipantau.
-          </p>
-        ) : (
-          <>
-            <div className="grid grid-cols-3 gap-3">
-              {(['ON_TRACK', 'AT_RISK', 'DELAYED'] as const).map((key) => {
-                const meta = HEALTH_META[key]
-                const value =
-                  key === 'ON_TRACK'
-                    ? healthSummary.onTrack
-                    : key === 'AT_RISK'
-                      ? healthSummary.atRisk
-                      : healthSummary.delayed
-                return (
-                  <div
-                    key={key}
-                    className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 px-3 py-2.5"
-                  >
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                      <span className={`w-2 h-2 rounded-full ${meta.dot}`} aria-hidden="true" />
+        <div className="space-y-4 divide-y divide-slate-100 dark:divide-slate-800/70">
+          {projectHealth.map((p) => {
+            const meta = HEALTH_CONFIG[p.health]
+            const isFinished = p.progress === 100
+            return (
+              <div key={p.id} className="pt-4 first:pt-0 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dot}`} />
+                    <Link
+                      href={`/projects/${p.id}`}
+                      className="font-medium text-sm text-slate-800 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 truncate hover:underline"
+                      title={p.name}
+                    >
+                      {p.name}
+                    </Link>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span
+                      className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${meta.badge}`}
+                    >
                       {meta.label}
                     </span>
-                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-50">
-                      {value}
-                    </p>
+                    <span className="text-xs font-semibold font-mono tabular-nums text-slate-700 dark:text-slate-300 w-12 text-right">
+                      {p.progress}%
+                    </span>
                   </div>
-                )
-              })}
-            </div>
+                </div>
 
-            <div className="mt-4 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-4">
-              {projectHealth.slice(0, 6).map((p) => {
-                const meta = HEALTH_META[p.health]
-                return (
-                  <div key={p.id} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-3 text-xs">
-                      <Link
-                        href={`/projects/${p.id}`}
-                        className="truncate font-medium text-slate-700 hover:text-blue-600 hover:underline dark:text-slate-300 dark:hover:text-blue-400"
-                      >
-                        {p.name}
-                      </Link>
-                      <span className={`shrink-0 font-mono ${meta.text}`}>
-                        {p.progress}%
-                        {p.overdueTasks > 0 && ` · ${p.overdueTasks} telat`}
+                {/* Visual Progress Bar (Multi-Segment) */}
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      isFinished
+                        ? 'bg-emerald-500'
+                        : meta.bar
+                    }`}
+                    style={{ width: `${Math.max(p.progress, 2)}%` }}
+                  />
+                </div>
+
+                {/* Sub-details (Tasks count, Due, Overdue alerts) */}
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <Layers className="h-3 w-3 text-slate-400" />
+                      {p.taskCount} Sub-Task
+                    </span>
+                    {p.overdueTasks > 0 && (
+                      <span className="flex items-center gap-1 font-semibold text-red-600 dark:text-red-400">
+                        <AlertTriangle className="h-3 w-3" />
+                        {p.overdueTasks} Terlambat
                       </span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
-                      <div className={`h-full ${meta.bar}`} style={{ width: `${p.progress}%` }} />
-                    </div>
+                    )}
                   </div>
-                )
-              })}
-            </div>
-          </>
-        )}
+
+                  {p.endDate && (
+                    <div className="flex items-center gap-1 font-mono">
+                      <CalendarClock className="h-3 w-3 text-slate-400" />
+                      <span>Target: {new Date(p.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </Card>
 
+      {/* 3. DUAL COLUMN: DIVISION VELOCITY & RADAR TENGGAT */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 2. Perbandingan Lintas Divisi */}
-        <Card>
-          <Head
-            icon={<Building2 className="w-5 h-5" aria-hidden="true" />}
-            title="Progres Lintas Divisi"
-            subtitle="Divisi mana yang paling lancar, mana yang tersendat"
-          />
+        {/* Kolom Kiri: Kecepatan & Progres Lintas Divisi */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <SectionHeader
+              icon={<Building2 className="w-4 h-4" aria-hidden="true" />}
+              title="Kapasitas &amp; Progres Lintas Divisi"
+              subtitle="Komparasi laju eksekusi dan bottleneck per divisi"
+            />
 
-          {divisionProgress.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-              Belum ada task yang bisa dibandingkan antar divisi.
-            </p>
-          ) : (
-            <>
-              <div className="space-y-3.5">
+            {divisionProgress.length === 0 ? (
+              <p className="py-8 text-center text-xs text-slate-500 dark:text-slate-400">
+                Belum ada data pembagian divisi yang terpetakan.
+              </p>
+            ) : (
+              <div className="space-y-4">
                 {divisionProgress.map((d) => (
-                  <div key={d.id} className="flex flex-col gap-1.5">
+                  <div key={d.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">{d.name}</span>
-                      <span className="shrink-0 font-mono text-slate-500 dark:text-slate-400">
-                        {d.done}/{d.total} · {d.completionRate}%
-                        {d.overdue > 0 && (
-                          <span className="ml-1.5 text-red-600 dark:text-red-400">{d.overdue} telat</span>
-                        )}
+                      <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
+                        {d.name}
                       </span>
+                      <div className="flex items-center gap-2 font-mono text-[11px]">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          {d.done}/{d.total} selesai
+                        </span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {d.completionRate}%
+                        </span>
+                        {d.overdue > 0 && (
+                          <span className="px-1.5 py-0.2 rounded bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 text-[10px] font-bold">
+                            {d.overdue} telat
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex h-2.5 w-full overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
-                      <div className="h-full bg-emerald-500" style={{ width: `${d.completionRate}%` }} />
-                      <div className="h-full bg-red-500" style={{ width: `${d.overdueRate}%` }} />
+
+                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div
+                        className="h-full bg-emerald-500 rounded-l-full transition-all"
+                        style={{ width: `${d.completionRate}%` }}
+                      />
+                      {d.overdueRate > 0 && (
+                        <div
+                          className="h-full bg-red-500 transition-all"
+                          style={{ width: `${d.overdueRate}%` }}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
 
-              {best && bottleneck && (
-                <p className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs text-slate-500 dark:text-slate-400">
-                  Tercepat: <span className="font-medium text-slate-700 dark:text-slate-300">{best.name}</span> ({best.completionRate}%).
-                  {bottleneck.overdue > 0 && (
-                    <>
-                      {' '}Paling tersendat:{' '}
-                      <span className="font-medium text-slate-700 dark:text-slate-300">{bottleneck.name}</span> ({bottleneck.overdueRate}% telat).
-                    </>
-                  )}
-                </p>
+          {bestDivision && bottleneckDivision && (
+            <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1.5 truncate">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span>Tercepat: <strong className="font-medium text-slate-700 dark:text-slate-300">{bestDivision.name}</strong> ({bestDivision.completionRate}%)</span>
+              </div>
+              {bottleneckDivision.overdue > 0 && (
+                <div className="flex items-center gap-1 text-red-600 dark:text-red-400 shrink-0 font-medium">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{bottleneckDivision.name} ({bottleneckDivision.overdue} telat)</span>
+                </div>
               )}
-            </>
+            </div>
           )}
         </Card>
 
-        {/* 3. Radar Tenggat 14 hari */}
-        <Card>
-          <Head
-            icon={<CalendarClock className="w-5 h-5" aria-hidden="true" />}
-            title="Radar Tenggat"
-            subtitle="Target besar yang jatuh tempo dalam 14 hari ke depan"
-          />
+        {/* Kolom Kanan: Radar Tenggat 14 Hari */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <SectionHeader
+              icon={<CalendarClock className="w-4 h-4" aria-hidden="true" />}
+              title="Radar Tenggat Waktu (14 Hari)"
+              subtitle="Milestone dan target kritis yang jatuh tempo segera"
+            />
 
-          {upcomingMilestones.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-              Tidak ada tenggat dalam 14 hari ke depan.
-            </p>
-          ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {upcomingMilestones.map((m, i) => {
-                const urgent = m.daysLeft <= 3
-                return (
-                  <li key={`${m.projectId}-${i}`} className="flex items-center gap-3 py-2.5">
-                    <span
-                      className={`w-14 shrink-0 rounded-md px-2 py-1 text-center text-xs font-semibold tabular-nums ${
+            {upcomingMilestones.length === 0 ? (
+              <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs">
+                <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-40 text-emerald-500" />
+                <p className="font-medium text-slate-700 dark:text-slate-300">
+                  Semua target aman
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Tidak ada tenggat kritis dalam 14 hari ke depan.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                {upcomingMilestones.map((m, i) => {
+                  const urgent = m.daysLeft <= 3
+                  return (
+                    <div
+                      key={`${m.projectId}-${i}`}
+                      className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-colors ${
                         urgent
-                          ? 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
-                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200/80 dark:border-red-900/50'
+                          : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
                       }`}
                     >
-                      {m.daysLeft}h lagi
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{m.title}</p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {m.projectName} · {m.divisionName}
-                      </p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-12 h-10 rounded-md flex flex-col items-center justify-center font-mono shrink-0 leading-none ${
+                            urgent
+                              ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-bold'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          <span className="text-xs">{m.daysLeft}</span>
+                          <span className="text-[9px] uppercase">hari</span>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate" title={m.title}>
+                            {m.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            {m.projectName} &bull; {m.divisionName}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/projects/${m.projectId}`}
+                        className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-900 transition-colors shrink-0"
+                        title="Buka Proyek"
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
+                      </Link>
                     </div>
-                    <Link
-                      href={`/projects/${m.projectId}`}
-                      className="shrink-0 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-                    >
-                      Lihat →
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Horizon pemantauan: <strong>14 Hari ke Depan</strong></span>
+            <Link href="/calendar" className="text-blue-600 dark:text-blue-400 hover:underline text-[11px] font-medium">
+              Buka Kalender &rarr;
+            </Link>
+          </div>
         </Card>
       </div>
     </div>

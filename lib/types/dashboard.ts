@@ -71,13 +71,15 @@ export type DashboardResponse = {
   overdueList: OverdueRow[]
 }
 
+export type ProjectHealth = 'ON_TRACK' | 'AT_RISK' | 'DELAYED'
+
 export type PortfolioSummary = {
   healthSummary: { onTrack: number; atRisk: number; delayed: number }
   projectHealth: {
     id: string
     name: string
     progress: number
-    health: 'ON_TRACK' | 'AT_RISK' | 'DELAYED'
+    health: ProjectHealth
     taskCount: number
     overdueTasks: number
     endDate: string | null
