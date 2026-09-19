@@ -11,11 +11,13 @@ import {
   LogOut,
   Building2,
   Briefcase,
+  User,
 } from 'lucide-react'
 import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
 import { AuditLogModal } from '@/components/settings/AuditLogModal'
+import { ProfileModal } from '@/components/profile/ProfileModal'
 
 function initials(name: string) {
   return name
@@ -55,6 +57,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [auditLogOpen, setAuditLogOpen] = useState(false)
 
   const canAccessSettings =
@@ -278,6 +281,21 @@ export function Sidebar({
                   </div>
                 </div>
 
+                {/* Edit Profil Sendiri */}
+                <div className="px-1 py-1 border-b border-slate-200 dark:border-slate-800/80 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(false)
+                      setProfileModalOpen(true)
+                    }}
+                    className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white text-left transition-colors cursor-pointer"
+                  >
+                    <User className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                    <span>Profil Saya</span>
+                  </button>
+                </div>
+
                 {/* Navigasi Pengaturan & Audit Log */}
                 {(canAccessSettings || canAccessAuditLog) && (
                   <div className="px-1 py-1 space-y-0.5 border-b border-slate-200 dark:border-slate-800/80 mb-1">
@@ -354,6 +372,12 @@ export function Sidebar({
           </div>
         </div>
       </aside>
+
+      {/* Modal Profile Saya */}
+      <ProfileModal
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
+      />
 
       {/* Modal Audit Log Global */}
       <AuditLogModal

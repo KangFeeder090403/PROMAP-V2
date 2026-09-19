@@ -157,7 +157,11 @@ export const authOptions: NextAuthOptions = {
       if (!user) return false
       return tenantAllows(user)
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
+      if (trigger === 'update' && session?.name) {
+        token.name = session.name
+      }
+
       // OAuth: `user.id` adalah id akun Google, bukan cuid DB. Wajib lookup ulang
       // supaya token.uid valid untuk getSessionUser() dan scope tenant tidak bocor.
       if (account?.provider === 'google' && token.email) {
@@ -206,7 +210,7 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         id: (claims.uid as string) ?? '',
         email: session.user?.email ?? '',
-        name: session.user?.name ?? '',
+        name: (token?.name as string) ?? session.user?.name ?? '',
         role: (claims.role as Role) ?? 'GUEST',
         status: (claims.status as UserStatus) ?? 'ACTIVE',
         companyId: (claims.companyId as string | null) ?? null,
@@ -214,6 +218,9 @@ export const authOptions: NextAuthOptions = {
         isGuest: Boolean(claims.isGuest),
         // Fitur testing dev-only; snapshot terisi saat impersonasi aktif.
         isImpersonating: Boolean(claims.impersonatorSnapshot),
+      }
+      if (token?.name && session.user) {
+        session.user.name = token.name as string
       }
       return session
     },
