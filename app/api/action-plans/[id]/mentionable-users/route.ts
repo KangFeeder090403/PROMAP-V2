@@ -16,9 +16,23 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // apScope dulu: yang tidak boleh membaca AP-nya tidak boleh tahu isi timnya.
     const ap = await prisma.actionPlan.findFirst({
-      where: { id: params.id, deletedAt: null, ...apScope(user) },
+      where: {
+        id: params.id,
+        deletedAt: null,
+        ...(user.role === 'SUPER_ADMIN'
+          ? {}
+          : user.role === 'ADMIN_OPERATIONAL'
+            ? { companyId: user.companyId! }
+            : user.role === 'MANAGER'
+              ? (user.divisionId ? { divisionId: user.divisionId } : { picId: user.id })
+              : {
+                  OR: [
+                    { picId: user.id },
+                    ...(user.divisionId ? [{ divisionId: user.divisionId }] : []),
+                  ],
+                }),
+      },
       select: { companyId: true, divisionId: true, picId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })

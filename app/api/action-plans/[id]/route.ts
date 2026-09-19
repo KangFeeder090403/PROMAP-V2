@@ -11,6 +11,9 @@ function canViewAP(
   if (ap.companyId !== user.companyId) return false
   if (user.role === 'ADMIN_OPERATIONAL') return true
   if (user.role === 'MANAGER') return user.divisionId !== null && ap.divisionId === user.divisionId
+  if (user.role === 'PIC') {
+    return ap.picId === user.id || (user.divisionId !== null && ap.divisionId === user.divisionId)
+  }
   return ap.picId === user.id
 }
 
@@ -36,15 +39,36 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const existing = await prisma.actionPlan.findUnique({
       where: { id },
       include: {
-        pic: { select: { id: true, name: true, role: true } },
+        pic: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            email: true,
+            supervisor: { select: { id: true, name: true, role: true } },
+          },
+        },
         task: {
           select: {
             id: true,
             title: true,
             project: { select: { id: true, name: true } },
+            createdBy: { select: { id: true, name: true, role: true } },
           },
         },
         division: { select: { id: true, name: true } },
+        activityLogs: {
+          select: {
+            id: true,
+            action: true,
+            oldValue: true,
+            newValue: true,
+            createdAt: true,
+            user: { select: { id: true, name: true, role: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
         _count: { select: { comments: true } },
       },
     })

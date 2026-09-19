@@ -19,7 +19,22 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const ap = await prisma.actionPlan.findFirst({
-      where: { id: params.id, deletedAt: null, ...apScope(user) },
+      where: {
+        id: params.id,
+        deletedAt: null,
+        ...(user.role === 'SUPER_ADMIN'
+          ? {}
+          : user.role === 'ADMIN_OPERATIONAL'
+            ? { companyId: user.companyId! }
+            : user.role === 'MANAGER'
+              ? (user.divisionId ? { divisionId: user.divisionId } : { picId: user.id })
+              : {
+                  OR: [
+                    { picId: user.id },
+                    ...(user.divisionId ? [{ divisionId: user.divisionId }] : []),
+                  ],
+                }),
+      },
       select: { id: true, companyId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -72,7 +87,22 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const ap = await prisma.actionPlan.findFirst({
-      where: { id: params.id, deletedAt: null, ...apScope(user) },
+      where: {
+        id: params.id,
+        deletedAt: null,
+        ...(user.role === 'SUPER_ADMIN'
+          ? {}
+          : user.role === 'ADMIN_OPERATIONAL'
+            ? { companyId: user.companyId! }
+            : user.role === 'MANAGER'
+              ? (user.divisionId ? { divisionId: user.divisionId } : { picId: user.id })
+              : {
+                  OR: [
+                    { picId: user.id },
+                    ...(user.divisionId ? [{ divisionId: user.divisionId }] : []),
+                  ],
+                }),
+      },
       select: { id: true, companyId: true, divisionId: true, title: true, picId: true },
     })
     if (!ap) return NextResponse.json({ error: 'Not found' }, { status: 404 })

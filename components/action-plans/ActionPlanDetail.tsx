@@ -20,6 +20,7 @@ import {
   Upload,
   Globe,
   Github,
+  Maximize2,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_STATUS_STYLE, AP_STATUS_LABEL, AP_PRIORITY_STYLE, AP_PRIORITY_LABEL } from '@/lib/status-labels'
@@ -445,6 +446,13 @@ export function ActionPlanDetail({
                 ))}
               </div>
               <div className="flex items-center gap-1">
+                <a
+                  href={`/action-plans/${ap.id}`}
+                  title="Buka halaman penuh (Full Workspace)"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </a>
                 {ap.evidenceLink && (
                   <a
                     href={ap.evidenceLink}

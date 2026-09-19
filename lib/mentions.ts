@@ -56,15 +56,14 @@ export function mentionableUserWhere(ap: MentionableApContext): Prisma.UserWhere
     { role: 'ADMIN_OPERATIONAL' },
   ]
 
-  // AP personal (divisionId null) tidak match manager manapun — sejalan dengan
-  // apScope() MANAGER yang mensyaratkan divisionId cocok.
+  // AP dengan divisi: Manager dan seluruh PIC di divisi tersebut dapat di-mention.
+  // AP personal (divisionId null): seluruh anggota aktif dalam perusahaan dapat di-mention.
   if (ap.divisionId) {
     roleBranches.push({ role: 'MANAGER', divisionId: ap.divisionId })
+    roleBranches.push({ role: 'PIC', divisionId: ap.divisionId })
+  } else {
+    roleBranches.push({ companyId: ap.companyId })
   }
-
-  // PIC biasa tidak punya cabang role: apScope() PIC = { picId: user.id },
-  // jadi satu-satunya PIC yang tercakup adalah pemilik AP — ditangani cabang
-  // { id: ap.picId } di bawah.
 
   return {
     deletedAt: null,
