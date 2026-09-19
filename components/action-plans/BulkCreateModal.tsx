@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, Calendar, CheckCircle2, Clock, HelpCircle, Loader2, Plus, Sparkles } from 'lucide-react'
+import { AlertCircle, Calendar, CheckCircle2, Clock, HelpCircle, Info, Layers, Loader2, Plus } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { parseBulkActionPlans } from '@/lib/bulk-parser'
-import { AP_PRIORITY_LABEL, AP_PRIORITY_STYLE } from '@/lib/status-labels'
+import { AP_PRIORITY_LABEL, AP_PRIORITY_STYLE, AP_STATUS_LABEL, AP_STATUS_STYLE } from '@/lib/status-labels'
 
 interface BulkCreateModalProps {
   open: boolean
@@ -50,6 +50,7 @@ export function BulkCreateModal({
 
   const [defaultPriority, setDefaultPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
   const [defaultDays, setDefaultDays] = useState<number>(7)
+  const [defaultStatus, setDefaultStatus] = useState<'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE'>('NOT_STARTED')
 
   const [selectedTask, setSelectedTask] = useState<string>(defaultTaskId ?? 'personal')
   const [selectedPic, setSelectedPic] = useState<string>(defaultPicId ?? currentUserId)
@@ -92,14 +93,26 @@ export function BulkCreateModal({
       setError(null)
       setDefaultPriority('MEDIUM')
       setDefaultDays(7)
+      setDefaultStatus('NOT_STARTED')
       setSelectedTask(defaultTaskId ?? 'personal')
       setSelectedPic(defaultPicId ?? currentUserId)
     }
   }, [open, defaultTaskId, defaultPicId, currentUserId])
 
+  // Auto-reset status jika task dipilih (hanya personal AP yang boleh COMPLETE)
+  useEffect(() => {
+    if (selectedTask !== 'personal' && defaultStatus === 'COMPLETE') {
+      setDefaultStatus('NOT_STARTED')
+    }
+  }, [selectedTask, defaultStatus])
+
   const parsedItems = useMemo(() => {
-    return parseBulkActionPlans(text, { priority: defaultPriority, days: defaultDays })
-  }, [text, defaultPriority, defaultDays])
+    return parseBulkActionPlans(text, {
+      priority: defaultPriority,
+      days: defaultDays,
+      status: defaultStatus,
+    })
+  }, [text, defaultPriority, defaultDays, defaultStatus])
 
   const validItems = parsedItems.filter((it) => it.isValid && it.title.length > 0)
   const canSubmit = validItems.length > 0 && validItems.length <= 50 && !loading
@@ -116,14 +129,21 @@ export function BulkCreateModal({
       const taskId = isPersonal ? null : selectedTask
       const picId = isPersonal ? (selectedPic || currentUserId) : null
 
-      const items = validItems.map((item) => ({
-        title: item.title,
-        outcomeKpi: item.title,
-        priority: item.priority,
-        endDate: item.deadlineDate.toISOString(),
-        taskId,
-        picId,
-      }))
+      const items = validItems.map((item) => {
+        let itemStatus = item.status || defaultStatus
+        if (!isPersonal && itemStatus === 'COMPLETE') {
+          itemStatus = 'NOT_STARTED'
+        }
+        return {
+          title: item.title,
+          outcomeKpi: item.title,
+          priority: item.priority,
+          endDate: item.deadlineDate.toISOString(),
+          taskId,
+          picId,
+          status: itemStatus,
+        }
+      })
 
       const res = await fetch('/api/action-plans/bulk', {
         method: 'POST',
@@ -150,7 +170,7 @@ export function BulkCreateModal({
       <DialogContent className="sm:max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 p-6 sm:rounded-xl max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <Sparkles className="h-5 w-5" />
+            <Layers className="h-5 w-5" />
             <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-50">
               Bulk Create Action Plans
             </DialogTitle>
@@ -174,17 +194,17 @@ export function BulkCreateModal({
             <div className="space-y-0.5 leading-relaxed">
               <span className="font-medium">Panduan Format: </span>
               <code className="font-mono bg-blue-100/70 dark:bg-blue-900/50 px-1 py-0.5 rounded text-[11px]">
-                [Judul], [Prioritas: LOW | Medium | High], [Deadline/Durasi: 7 hari / 2026-09-30]
+                [Judul], [Prioritas: Low|Med|High], [Deadline: 7 hari / 2026-09-30], [Status: started | dimulai | on progres]
               </code>
               <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">
-                Pemisah mendukung koma (<code>,</code>), titik koma (<code>;</code>), atau pipa (<code>|</code>). Prioritas dan deadline bersifat opsional (mengikuti kontrol default fallback).
+                Pemisah koma (<code>,</code>), titik koma (<code>;</code>), atau pipa (<code>|</code>). Prioritas, deadline, dan status opsional (mengikuti kontrol default fallback bila tidak dicantumkan).
               </p>
             </div>
           </div>
 
           {/* Fallback Defaults Controls */}
-          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800">
-            <div className="space-y-1">
+          <div className="shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 w-full min-w-0">
+            <div className="space-y-1 min-w-0">
               <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                 Default Prioritas
               </Label>
@@ -199,7 +219,7 @@ export function BulkCreateModal({
               </select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                 <Clock className="h-3 w-3" /> Default Durasi
               </Label>
@@ -215,7 +235,7 @@ export function BulkCreateModal({
               </select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label htmlFor="bulk-task" className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
                 Task / Project
               </Label>
@@ -234,7 +254,7 @@ export function BulkCreateModal({
               </select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <Label htmlFor="bulk-pic" className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
                 PIC Assignee
               </Label>
@@ -261,6 +281,29 @@ export function BulkCreateModal({
                 </select>
               )}
             </div>
+
+            <div className="space-y-1 min-w-0">
+              <Label htmlFor="bulk-status" className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                Status Awal
+              </Label>
+              <select
+                id="bulk-status"
+                value={defaultStatus}
+                onChange={(e) => setDefaultStatus(e.target.value as 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE')}
+                className={SELECT_CLASS}
+              >
+                <option value="NOT_STARTED">Belum Mulai</option>
+                <option value="IN_PROGRESS">Dikerjakan</option>
+                <option value="COMPLETE" disabled={selectedTask !== 'personal'}>
+                  Selesai {selectedTask !== 'personal' ? '(Hanya Personal)' : ''}
+                </option>
+              </select>
+              {selectedTask !== 'personal' && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight">
+                  AP Task wajib alur review
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Textarea Input */}
@@ -284,7 +327,7 @@ export function BulkCreateModal({
               rows={4}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`Selesaikan draft MoU mitra, High, 3 hari\nKirim laporan mingguan ke finance, Low, 2026-09-30\nFollow-up perbaikan bug staging`}
+              placeholder={`Selesaikan draft MoU mitra, High, 3 hari, on progres\nKirim laporan mingguan ke finance, Low, 2026-09-30, started\nFollow-up perbaikan bug staging, Medium, 5 hari, on progres`}
               className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans"
               autoFocus
             />
@@ -306,7 +349,7 @@ export function BulkCreateModal({
             <div className="flex-1 overflow-y-auto p-2 space-y-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
               {parsedItems.length === 0 ? (
                 <div className="h-full min-h-[100px] flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs gap-1 py-4">
-                  <Sparkles className="h-5 w-5 opacity-40" />
+                  <Layers className="h-5 w-5 opacity-40" />
                   <span>Ketik atau tempel teks di atas untuk melihat preview interaktif.</span>
                 </div>
               ) : (
@@ -317,7 +360,7 @@ export function BulkCreateModal({
                       !item.isValid ? 'opacity-60 bg-red-50/40 dark:bg-red-950/20 p-1.5 rounded' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
                       <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 w-5 shrink-0 text-right">
                         {idx + 1}.
                       </span>
@@ -325,13 +368,29 @@ export function BulkCreateModal({
                         {item.title || <span className="italic text-red-500">Judul kosong</span>}
                       </span>
                       {item.error && (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded shrink-0">
+                        <span className="basis-full min-w-0 truncate text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
                           {item.error}
                         </span>
                       )}
+                      {item.ignoredTokens?.length ? (
+                        <span
+                          className="basis-full min-w-0 truncate inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                          title={`Kata diabaikan: ${item.ignoredTokens.join(', ')}`}
+                        >
+                          <Info className="h-3 w-3 shrink-0" />
+                          Diabaikan: {item.ignoredTokens.join(', ')}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          AP_STATUS_STYLE[item.status]
+                        }`}
+                      >
+                        {AP_STATUS_LABEL[item.status] ?? item.status}
+                      </span>
                       <span
                         className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                           AP_PRIORITY_STYLE[item.priority]

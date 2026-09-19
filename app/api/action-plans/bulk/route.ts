@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
-import type { Priority } from '@/lib/generated/prisma/client'
+import { logActivity } from '@/lib/activity-log'
+import type { Priority, ActionPlanStatus } from '@/lib/generated/prisma/client'
+
+const CREATABLE_STATUS = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETE'] as const
+type CreatableStatus = (typeof CREATABLE_STATUS)[number]
 
 interface BulkCreateItem {
   title: string
@@ -12,6 +16,7 @@ interface BulkCreateItem {
   endDate?: string
   taskId?: string | null
   picId?: string | null
+  status?: ActionPlanStatus
 }
 
 export async function POST(req: Request) {
@@ -85,6 +90,7 @@ export async function POST(req: Request) {
       divisionId: string | null
       isPersonal: boolean
       targetUserName: string
+      status: CreatableStatus
     }
 
     const preparedList: PreparedItem[] = []
@@ -103,6 +109,15 @@ export async function POST(req: Request) {
       const priority: Priority =
         item.priority === 'HIGH' || item.priority === 'LOW' ? item.priority : 'MEDIUM'
 
+      const rawStatus = item.status || 'NOT_STARTED'
+      if (!CREATABLE_STATUS.includes(rawStatus as CreatableStatus)) {
+        return NextResponse.json(
+          { error: `Item ke-${i + 1}: Status tidak valid` },
+          { status: 400 }
+        )
+      }
+      const status = rawStatus as CreatableStatus
+
       let startDate = item.startDate ? new Date(item.startDate) : defaultStart
       if (isNaN(startDate.getTime())) startDate = defaultStart
 
@@ -110,6 +125,14 @@ export async function POST(req: Request) {
       if (isNaN(endDate.getTime())) endDate = defaultEnd
 
       const isPersonal = !item.taskId
+
+      if (status === 'COMPLETE' && !isPersonal) {
+        return NextResponse.json(
+          { error: `Item ke-${i + 1}: Action Plan terkait Task wajib melalui alur review atasan` },
+          { status: 400 }
+        )
+      }
+
       let task = null
 
       if (!isPersonal) {
@@ -201,6 +224,7 @@ export async function POST(req: Request) {
         divisionId,
         isPersonal,
         targetUserName: target.name,
+        status,
       })
     }
 
@@ -219,7 +243,7 @@ export async function POST(req: Request) {
             companyId: item.companyId,
             divisionId: item.divisionId,
             isPersonal: item.isPersonal,
-            status: 'NOT_STARTED',
+            status: item.status,
           },
           include: {
             pic: { select: { id: true, name: true, role: true } },
@@ -237,8 +261,26 @@ export async function POST(req: Request) {
       )
     )
 
-    // Notify assignees (if not creator)
-    const notificationsToTrigger = createdPlans.filter((ap) => ap.picId !== user.id)
+    // Activity log untuk status selain NOT_STARTED (non-blocking)
+    const itemsToLog = createdPlans.filter((ap) => ap.status !== 'NOT_STARTED')
+    if (itemsToLog.length > 0) {
+      await Promise.allSettled(
+        itemsToLog.map((ap) =>
+          logActivity({
+            userId: user.id,
+            actionPlanId: ap.id,
+            action: 'STATUS_CHANGED',
+            oldValue: null,
+            newValue: ap.status,
+          })
+        )
+      )
+    }
+
+    // Notify assignees (if not creator and not COMPLETE)
+    const notificationsToTrigger = createdPlans.filter(
+      (ap) => ap.picId !== user.id && ap.status !== 'COMPLETE'
+    )
     if (notificationsToTrigger.length > 0) {
       await Promise.allSettled(
         notificationsToTrigger.map((ap) =>
