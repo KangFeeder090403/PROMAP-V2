@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { PageTransition } from '@/components/animation/PageTransition'
+import { GlobalAnimationProvider } from '@/components/animation/GlobalAnimationProvider'
 
 export interface SessionUser {
   id: string
@@ -91,7 +93,11 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
           isCollapsed={isCollapsed}
           onToggleCollapse={handleToggleCollapse}
         />
-        <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">{children}</main>
+        <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
+          <GlobalAnimationProvider>
+            <PageTransition>{children}</PageTransition>
+          </GlobalAnimationProvider>
+        </main>
       </div>
     </div>
   )
