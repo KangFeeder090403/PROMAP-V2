@@ -138,15 +138,39 @@ export async function GET(req: NextRequest) {
     // Helicopter view — scope project mengikuti projectScope (Manager = divisinya).
     const portfolioProjects = await prisma.project.findMany({
       where: { ...projectScope(user), deletedAt: null, isActive: true },
-      select: { id: true, name: true, endDate: true, divisionId: true },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        createdAt: true,
+        divisionId: true,
+      },
       take: 200,
     })
-    const portfolioTasks = portfolioProjects.length
+    const rawPortfolioTasks = portfolioProjects.length
       ? await prisma.task.findMany({
           where: { projectId: { in: portfolioProjects.map((p) => p.id) }, deletedAt: null },
-          select: { projectId: true, divisionId: true, title: true, status: true, endDate: true },
+          select: {
+            projectId: true,
+            divisionId: true,
+            title: true,
+            status: true,
+            endDate: true,
+            pic: { select: { name: true } },
+          },
         })
       : []
+
+    const portfolioTasks = rawPortfolioTasks.map((t) => ({
+      projectId: t.projectId,
+      divisionId: t.divisionId,
+      title: t.title,
+      status: t.status,
+      endDate: t.endDate,
+      picName: t.pic?.name ?? null,
+    }))
+
     const portfolioDivisions = await prisma.division.findMany({
       where: {
         id: {
@@ -160,10 +184,18 @@ export async function GET(req: NextRequest) {
       },
       select: { id: true, name: true },
     })
+
+    const pendingReviewApCount = actionPlans.filter(
+      (ap) => ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED'
+    ).length
+    const pendingProposalsCount = proposals.filter((p) => p.status === 'SUBMITTED').length
+
     const portfolio = buildPortfolio(
       portfolioProjects,
       portfolioTasks,
-      new Map(portfolioDivisions.map((d) => [d.id, d.name]))
+      new Map(portfolioDivisions.map((d) => [d.id, d.name])),
+      new Date(),
+      { pendingProposalsCount, pendingReviewApCount }
     )
 
     const agg = aggregateDashboard(

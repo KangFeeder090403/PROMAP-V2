@@ -5,8 +5,11 @@ import Link from 'next/link'
 import {
   AlertTriangle,
   BellRing,
+  Calendar,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   ClipboardList,
   FileText,
   Gavel,
@@ -14,8 +17,11 @@ import {
   Paperclip,
   PlayCircle,
   User,
+  Users,
   X,
   SlidersHorizontal,
+  Layers,
+  LayoutDashboard,
 } from 'lucide-react'
 import { FilterPopover } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
@@ -23,6 +29,9 @@ import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
+import { ExecutionVelocityChart } from '@/components/dashboard/ExecutionVelocityChart'
+import { PriorityRiskMatrix } from '@/components/dashboard/PriorityRiskMatrix'
+import { DivisionVelocityCard } from '@/components/dashboard/DivisionVelocityCard'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,
@@ -209,6 +218,9 @@ export function DashboardClient() {
   const [arFilterOpen, setArFilterOpen] = useState(false)
   const [arTypeFilter, setArTypeFilter] = useState('')
   const [arStatusFilters, setArStatusFilters] = useState<string[]>([])
+  const [activeDashboardView, setActiveDashboardView] = useState<'portfolio' | 'operational'>('portfolio')
+  const [workloadFilter, setWorkloadFilter] = useState<'ALL' | 'HIGH' | 'OVERDUE' | 'OPTIMAL'>('ALL')
+  const [workloadExpanded, setWorkloadExpanded] = useState(false)
   const reqRef = useRef(0)
 
   const handleOpenAPDetail = useCallback(async (id: string) => {
@@ -337,6 +349,21 @@ export function DashboardClient() {
   // API mengirim maksimal OVERDUE_CANDIDATES; kalau penuh, total sebenarnya bisa lebih.
   const overdueMore = overdueList.length >= 100
 
+  const highCount = picWorkload.filter((w) => (w.overdue >= 1 && w.total >= 6) || w.total >= 8).length
+  const overduePicCount = picWorkload.filter((w) => w.overdue > 0).length
+  const optimalCount = picWorkload.filter((w) => w.overdue === 0).length
+
+  const filteredPicWorkload = picWorkload.filter((w) => {
+    if (workloadFilter === 'HIGH') return (w.overdue >= 1 && w.total >= 6) || w.total >= 8
+    if (workloadFilter === 'OVERDUE') return w.overdue > 0
+    if (workloadFilter === 'OPTIMAL') return w.overdue === 0
+    return true
+  })
+
+  const displayedPicWorkload = workloadExpanded
+    ? filteredPicWorkload
+    : filteredPicWorkload.slice(0, 5)
+
   const subtitleBits = [
     user.divisionName ? `Divisi ${user.divisionName}` : null,
     user.companyName ?? null,
@@ -365,71 +392,130 @@ export function DashboardClient() {
           </button>
         </div>
       )}
-      {/* Contextual Banner & Time Filter */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-        <div className="space-y-1">
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
-            {data.greeting}, {user.name}
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {subtitleBits.join(' · ') || user.roleLabel}
-          </p>
-          <p className="text-sm text-slate-700 dark:text-slate-300">{headline}</p>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
-          {!isPic && (
-            <select
-              value={picFilter}
-              onChange={(e) => handlePicChange(e.target.value)}
-              disabled={switching}
-              aria-label="Filter berdasarkan PIC"
-              className="h-8 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
-            >
-              <option value="">Semua PIC</option>
-              {picOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <div
-            className="flex-1 min-w-0 lg:flex-none flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg overflow-x-auto whitespace-nowrap"
-            aria-busy={switching}
-          >
-            {RANGE_TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => handleRangeChange(tab.key)}
-                disabled={switching}
-                aria-current={range === tab.key ? 'page' : undefined}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-all disabled:cursor-not-allowed ${
-                  range === tab.key
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-semibold shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          {switching && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              Memuat…
+      {/* Contextual Banner, Time Filter & Sub-view Tabs */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 pb-0 sm:pb-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5">
+          <div className="space-y-1 min-w-0">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+              {subtitleBits.join(' · ') || user.roleLabel}
             </span>
-          )}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+              {data.greeting}, {user.name}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">{headline}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
+            {!isPic && (
+              <select
+                value={picFilter}
+                onChange={(e) => handlePicChange(e.target.value)}
+                disabled={switching}
+                aria-label="Filter berdasarkan PIC"
+                className="h-8 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
+              >
+                <option value="">Semua PIC</option>
+                {picOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <div
+              className="flex-1 min-w-0 lg:flex-none flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto whitespace-nowrap"
+              aria-busy={switching}
+            >
+              {RANGE_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleRangeChange(tab.key)}
+                  disabled={switching}
+                  aria-current={range === tab.key ? 'page' : undefined}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:cursor-not-allowed ${
+                    range === tab.key
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-semibold shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            {switching && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                Memuat…
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Tab Switcher Mode Tampilan (Gaya Navigasi Terintegrasi Linear / Stripe) */}
+        {!isPic && data.portfolio && (
+          <div className="flex items-center gap-6 border-t border-slate-100 dark:border-slate-800 -mx-5 sm:-mx-6 px-5 sm:px-6">
+            <button
+              type="button"
+              onClick={() => setActiveDashboardView('portfolio')}
+              className={`py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 -mb-px transition-colors ${
+                activeDashboardView === 'portfolio'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-4 h-4" aria-hidden="true" />
+              <span>Portofolio Eksekutif</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveDashboardView('operational')}
+              className={`py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 -mb-px transition-colors ${
+                activeDashboardView === 'operational'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
+              <span>Operasional Rencana Aksi</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Core Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {!isPic && data.portfolio && activeDashboardView === 'portfolio' ? (
+        <section aria-label="Ringkasan Eksekutif Portofolio Proyek" className="w-full min-w-0">
+          <PortfolioSection
+            portfolio={data.portfolio}
+            user={user}
+            greeting={data.greeting}
+            userRole={user.role}
+            actionRequired={actionRequired}
+            onOpenActionItem={(item) => {
+              if (item.kind === 'AP') handleOpenAPDetail(item.id)
+              else setPreview(item)
+            }}
+          />
+        </section>
+      ) : (
+        <div className="space-y-6 w-full min-w-0">
+          {/* 4 Kartu Metrik Inti (Stitch Style - Terlihat untuk Semua Role) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 w-full min-w-0">
         <MetricCard
           label="Total Rencana Aksi"
           value={metrics.total}
           icon={ClipboardList}
           iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
-          footer="Semua rencana aksi pada rentang ini"
+          badge={
+            <svg className="w-14 h-6 shrink-0 opacity-80" viewBox="0 0 56 20" fill="none">
+              <path
+                d="M 2 16 C 12 14, 18 8, 30 10 C 40 12, 46 5, 54 3"
+                stroke="#3B82F6"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <circle cx="54" cy="3" r="2" fill="#2563EB" />
+            </svg>
+          }
+          footer="Target rencana aksi pada rentang ini"
         />
         <MetricCard
           label="Selesai"
@@ -437,48 +523,79 @@ export function DashboardClient() {
           icon={CheckCircle2}
           iconClass="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"
           badge={
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 dark:border dark:border-emerald-800/40 px-2 py-0.5 rounded">
+            <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/40 px-2 py-0.5 rounded-full">
               {Math.round(metrics.completionRate)}%
             </span>
           }
           progress={metrics.completionRate}
+          footer={`${metrics.complete} dari ${metrics.total} AP tuntas (${Math.round(metrics.completionRate)}%)`}
         />
         <MetricCard
-          label="Sedang Dikerjakan"
+          label="Sedang Berjalan"
           value={metrics.inProgress}
           icon={PlayCircle}
           iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
           footer={
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-blue-600 dark:text-blue-400">{metrics.inReview}</span>{' '}
-              di antaranya menunggu persetujuan
-            </p>
+            <div className="space-y-2">
+              {(() => {
+                const activeOnly = Math.max(0, metrics.inProgress - metrics.inReview)
+                const totalActive = Math.max(metrics.inProgress, 1)
+                const activePct = Math.round((activeOnly / totalActive) * 100)
+                const reviewPct = 100 - activePct
+                return (
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
+                    <div className="h-full bg-blue-500 rounded-l-full transition-all" style={{ width: `${activePct}%` }} />
+                    <div className="h-full bg-indigo-500 rounded-r-full transition-all" style={{ width: `${reviewPct}%` }} />
+                  </div>
+                )
+              })()}
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>{Math.max(0, metrics.inProgress - metrics.inReview)} aktif</span>
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">&bull;</span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                  <span>{metrics.inReview} review</span>
+                </span>
+              </div>
+            </div>
           }
         />
         <MetricCard
           label="Lewat Tenggat"
           value={metrics.overdue}
-          valueClass="text-orange-600 dark:text-orange-400"
+          valueClass={metrics.overdue > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-slate-900 dark:text-slate-50'}
           icon={AlertTriangle}
-          iconClass="bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-300"
+          iconClass={
+            metrics.overdue > 0
+              ? 'bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-300'
+              : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+          }
           badge={
             metrics.overdue > 0 ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 dark:bg-orange-950/60 dark:border dark:border-orange-800/40 text-orange-700 dark:text-orange-300 text-xs font-semibold">
-                <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                Perlu ditindak
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 dark:border dark:border-orange-800/40 text-orange-700 dark:text-orange-300 text-xs font-semibold">
+                <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                Perlu Tindakan
               </span>
-            ) : undefined
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 dark:border dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                Terkendali
+              </span>
+            )
           }
           footer={
             overdueList.length > 0
               ? `Terlama: ${overdueList[0].title} (${overdueList[0].lateDays} hari)`
-              : 'Tidak ada yang lewat tenggat'
+              : 'Semua target waktu aman terkendali'
           }
         />
       </div>
 
-      {/* Action Required */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+      {/* Action Required (Menunggu Keputusan Anda) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-100 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-2">
             <span className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 flex items-center justify-center">
@@ -744,13 +861,24 @@ export function DashboardClient() {
         )}
       </div>
 
-      {/* Charts: Status Distribution + Team Workload */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex flex-col justify-between">
+      {/* Baris Analisis 1: Laju Eksekusi & Burndown + Sebaran Status AP */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 w-full min-w-0">
+        <div className="xl:col-span-7 w-full min-w-0">
+          <ExecutionVelocityChart
+            total={metrics.total}
+            complete={metrics.complete}
+            inProgress={metrics.inProgress}
+            inReview={metrics.inReview}
+            overdue={metrics.overdue}
+            completionRate={metrics.completionRate}
+          />
+        </div>
+
+        <div className="xl:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
           <div>
             <div className="flex items-center justify-between pb-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">Sebaran Status</h3>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Sebaran Status</h3>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {metrics.total} rencana aksi pada rentang ini
                 </span>
@@ -762,156 +890,216 @@ export function DashboardClient() {
               legendLayout="grid"
             />
           </div>
-          <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Sudah selesai</span>
-            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+          <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Realisasi Selesai</span>
+            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
               {metrics.complete} dari {metrics.total} ({Math.round(metrics.completionRate)}%)
             </span>
           </div>
         </div>
-
-        {SHOW_TEAM_WORKLOAD ? (
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4">
-            <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">Beban Kerja Tim</h3>
-              <span className="text-xs text-slate-500 dark:text-slate-400">Jumlah rencana aksi per orang</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-orange-500" aria-hidden="true" /> Terlambat
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-indigo-500" aria-hidden="true" /> Review
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-blue-500" aria-hidden="true" /> Dikerjakan
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded bg-emerald-500" aria-hidden="true" /> Selesai
-              </span>
-            </div>
-          </div>
-
-          {picWorkload.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">Belum ada anggota tim.</p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {picWorkload.map((w) => {
-                const pct = (n: number) => (w.total > 0 ? Math.round((n / w.total) * 100) : 0)
-                const isHigh = w.overdue >= 1 && w.total >= 6
-                const chip = isHigh ? (
-                  <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 dark:border dark:border-orange-800/40 text-xs font-bold inline-flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Beban Tinggi ({w.total} AP)
-                  </span>
-                ) : w.review > 0 ? (
-                  <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/40 text-xs font-medium">
-                    {w.review} Review ({w.total} AP)
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/40 text-xs font-medium">
-                    Optimal ({w.total} AP)
-                  </span>
-                )
-                return (
-                  <div key={w.picId} className="flex flex-col gap-1.5">
-                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                        <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {initials(w.picName)}
-                        </span>
-                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{w.picName}</span>
-                        {chip}
-                      </div>
-                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400 shrink-0">
-                        {w.overdue} Terlambat · {w.active + w.review} Aktif · {w.done} Selesai
-                      </span>
-                    </div>
-                    <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded flex overflow-hidden">
-                      <div className="bg-orange-500 h-full" style={{ width: `${pct(w.overdue)}%` }} />
-                      <div className="bg-indigo-500 h-full" style={{ width: `${pct(w.review)}%` }} />
-                      <div className="bg-blue-500 h-full" style={{ width: `${pct(w.active)}%` }} />
-                      <div className="bg-emerald-500 h-full" style={{ width: `${pct(w.done)}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
-            <span>Orang dengan batang oranye terpanjang paling butuh bantuan.</span>
-            <Link href="/board" className="font-medium text-blue-600 hover:underline dark:text-blue-400 shrink-0">
-              Atur ulang tugas →
-            </Link>
-          </div>
-        </div>
-        ) : (
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-          <div className="pb-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">Distribusi Prioritas</h3>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Tingkat urgensi seluruh rencana aksi pada rentang ini
-            </span>
-          </div>
-          {metrics.total === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
-              Belum ada rencana aksi untuk dinilai prioritasnya.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {priorityBreakdown.map((p) => {
-                const meta = PRIORITY_META[p.priority]
-                const pct = metrics.total > 0 ? Math.round((p.count / metrics.total) * 100) : 0
-                return (
-                  <div key={p.priority} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                        <span className={`w-2 h-2 rounded-full ${meta.dot}`} aria-hidden="true" />
-                        {meta.label}
-                      </span>
-                      <span className="font-mono text-slate-500 dark:text-slate-400">
-                        {p.count} AP · {pct}%
-                      </span>
-                    </div>
-                    <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded overflow-hidden">
-                      <div className={`h-full ${meta.bar}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-        )}
       </div>
 
-      {/* Helicopter view — kesehatan project, lintas divisi, radar tenggat */}
-      {data.portfolio && <PortfolioSection portfolio={data.portfolio} />}
+      {/* Baris Analisis 2: Beban Kerja Tim + Matriks Prioritas & Risiko */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 w-full min-w-0">
+        <div className="xl:col-span-7 w-full min-w-0">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+            {/* Header Beban Kerja Tim + Status Legend */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                    <Users className="w-4 h-4" aria-hidden="true" />
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                    Beban Kerja Tim
+                  </h3>
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    {picWorkload.length} Anggota
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Distribusi penugasan rencana aksi dan pemantauan kapasitas tim
+                </p>
+              </div>
 
-      {/* Overdue & Critical Deadlines */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 flex items-center justify-center">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 shrink-0">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded bg-orange-500" aria-hidden="true" /> Terlambat
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded bg-indigo-500" aria-hidden="true" /> Review
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded bg-blue-500" aria-hidden="true" /> Dikerjakan
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded bg-emerald-500" aria-hidden="true" /> Selesai
+                </span>
+              </div>
+            </div>
+
+            {/* Filter Status Beban Kerja */}
+            {picWorkload.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setWorkloadFilter('ALL')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    workloadFilter === 'ALL'
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Semua ({picWorkload.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkloadFilter('HIGH')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    workloadFilter === 'HIGH'
+                      ? 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300 font-semibold border border-orange-200 dark:border-orange-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Beban Tinggi ({highCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkloadFilter('OVERDUE')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    workloadFilter === 'OVERDUE'
+                      ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 font-semibold border border-red-200 dark:border-red-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Ada Terlambat ({overduePicCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkloadFilter('OPTIMAL')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    workloadFilter === 'OPTIMAL'
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  Optimal ({optimalCount})
+                </button>
+              </div>
+            )}
+
+            {picWorkload.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">Belum ada anggota tim.</p>
+            ) : filteredPicWorkload.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 py-6 text-center">
+                Tidak ada anggota tim dengan kriteria beban ini.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {displayedPicWorkload.map((w) => {
+                  const pct = (n: number) => (w.total > 0 ? Math.round((n / w.total) * 100) : 0)
+                  const isHigh = (w.overdue >= 1 && w.total >= 6) || w.total >= 8
+                  const chip = isHigh ? (
+                    <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 dark:border dark:border-orange-800/40 text-xs font-bold inline-flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Beban Tinggi ({w.total} AP)
+                    </span>
+                  ) : w.review > 0 ? (
+                    <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/40 text-xs font-medium">
+                      {w.review} Review ({w.total} AP)
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/40 text-xs font-medium">
+                      Optimal ({w.total} AP)
+                    </span>
+                  )
+                  return (
+                    <div key={w.picId} className="flex flex-col gap-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {initials(w.picName)}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{w.picName}</span>
+                          {chip}
+                        </div>
+                        <span className="font-mono text-xs text-slate-500 dark:text-slate-400 shrink-0">
+                          {w.overdue} Terlambat · {w.active + w.review} Aktif · {w.done} Selesai
+                        </span>
+                      </div>
+                      <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded flex overflow-hidden">
+                        <div className="bg-orange-500 h-full" style={{ width: `${pct(w.overdue)}%` }} />
+                        <div className="bg-indigo-500 h-full" style={{ width: `${pct(w.review)}%` }} />
+                        <div className="bg-blue-500 h-full" style={{ width: `${pct(w.active)}%` }} />
+                        <div className="bg-emerald-500 h-full" style={{ width: `${pct(w.done)}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {filteredPicWorkload.length > 5 && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setWorkloadExpanded(!workloadExpanded)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors"
+                    >
+                      <span>
+                        {workloadExpanded
+                          ? 'Tampilkan Lebih Ringkas (5 Teratas)'
+                          : `Lihat Semua (${filteredPicWorkload.length} Anggota)`}
+                      </span>
+                      {workloadExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="xl:col-span-5 w-full min-w-0">
+          <PriorityRiskMatrix
+            priorityBreakdown={priorityBreakdown}
+            total={metrics.total}
+            overdueCount={metrics.overdue}
+          />
+        </div>
+      </div>
+
+      {/* TIER 3: CRITICAL OVERDUE DRILL-DOWN */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" aria-hidden="true" />
             </span>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">Lewat Tenggat</h3>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-50">
+                  Daftar Rencana Aksi Lewat Tenggat
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 font-mono text-xs font-bold">
+                  {overdueList.length}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {overdueList.length === 0
-                  ? 'Tidak ada yang lewat tenggat'
-                  : `Menampilkan ${overdueShown.length} dari ${overdueMore ? '100+' : overdueList.length} teratas`}
-              </span>
+                  ? 'Semua rencana aksi berjalan sesuai jadwal'
+                  : `Menampilkan ${overdueShown.length} dari ${overdueMore ? '100+' : overdueList.length} tugas yang membutuhkan eskalasi segera`}
+              </p>
             </div>
           </div>
           {overdueList.length > 0 && (
-            <label className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              Urutkan
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Urutkan:</span>
               <select
                 value={overdueSort}
                 onChange={(e) => setOverdueSort(e.target.value as OverdueSort)}
-                className="h-8 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -919,92 +1107,88 @@ export function DashboardClient() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           )}
         </div>
 
         {overdueList.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
-            {hasPicFilter
-              ? `${selectedPicName ?? 'PIC ini'} tidak punya rencana aksi yang lewat tenggat.`
-              : 'Tidak ada action plan yang melewati tenggat. Mantap.'}
-          </p>
+          <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500 opacity-60" aria-hidden="true" />
+            <p className="font-semibold text-slate-800 dark:text-slate-200">
+              {hasPicFilter
+                ? `${selectedPicName ?? 'PIC ini'} tidak punya rencana aksi yang lewat tenggat.`
+                : 'Tidak ada action plan yang melewati tenggat. Semua berjalan tepat waktu.'}
+            </p>
+          </div>
         ) : (
-          <div className="w-full">
-            <table className="w-full table-fixed text-left">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="px-3 py-2.5 rounded-l-md font-medium">Rencana Aksi</th>
-                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap hidden sm:table-cell">Prioritas</th>
-                  <th className="w-32 px-2 py-2.5 font-medium whitespace-nowrap hidden md:table-cell">PIC</th>
-                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap hidden lg:table-cell">Batas Waktu</th>
-                  <th className="w-24 px-2 py-2.5 font-medium whitespace-nowrap">Terlambat</th>
-                  <th className="w-36 px-2 py-2.5 text-right rounded-r-md font-medium whitespace-nowrap">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {overdueShown.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-t border-slate-100 dark:border-slate-800">
-                    <td className="px-3 py-2.5 min-w-0">
-                      <div className="flex flex-col min-w-0">
-                        <span className="inline-flex items-center gap-1.5 min-w-0">
-                          <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 shrink-0">{row.refCode}</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100 truncate">{row.title}</span>
-                        </span>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {row.subtitle && (
-                            <span className="truncate max-w-[200px]">{row.subtitle}</span>
-                          )}
-                          <span className="md:hidden text-slate-400">· {row.picName}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2.5 whitespace-nowrap hidden sm:table-cell">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold ${RISK_STYLE[row.risk]}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${RISK_DOT[row.risk]}`} />
-                        {RISK_LABEL[row.risk]}
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800 -mx-5 sm:-mx-6 px-5 sm:px-6">
+            {overdueShown.map((row) => (
+              <div
+                key={row.id}
+                className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 -mx-5 sm:-mx-6 px-5 sm:px-6 transition-colors min-w-0"
+              >
+                {/* Bagian Kiri: Kode Ref + Judul + Metadata */}
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="shrink-0 font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800/40">
+                      {row.refCode}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      {row.title}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${RISK_STYLE[row.risk]}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${RISK_DOT[row.risk]}`} />
+                      {RISK_LABEL[row.risk]}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                    {row.subtitle && (
+                      <span className="font-medium text-slate-600 dark:text-slate-300">
+                        {row.subtitle}
                       </span>
-                    </td>
-                    <td className="px-2 py-2.5 whitespace-nowrap hidden md:table-cell min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[9px] font-bold flex items-center justify-center shrink-0">
-                          {initials(row.picName)}
-                        </span>
-                        <span className="text-slate-700 dark:text-slate-200 font-medium text-xs truncate">{row.picName}</span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2.5 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap hidden lg:table-cell">
-                      {fmtDate(row.deadline)}
-                    </td>
-                    <td className="px-2 py-2.5 whitespace-nowrap">
-                      <span className="font-mono text-xs font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/50 dark:border dark:border-orange-800/40 px-2 py-0.5 rounded inline-block">
-                        {row.lateDays} Hari
+                    )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[8px] font-bold flex items-center justify-center shrink-0">
+                        {initials(row.picName)}
                       </span>
-                    </td>
-                    <td className="px-2 py-2.5 text-right whitespace-nowrap">
-                      <div className="inline-flex items-center justify-end gap-1.5">
-                        <RemindButton state={remindState[row.id]} onClick={() => void handleRemind(row.id)} />
-                        <Link
-                          href={`/action-plans?open=${row.id}&highlight=${row.id}`}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            handleOpenAPDetail(row.id)
-                          }}
-                          className={`${btnBase} bg-blue-500 text-white hover:bg-blue-600 shadow-sm shrink-0`}
-                        >
-                          Detail
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <span>PIC: <strong>{row.picName}</strong></span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                      <span>Target: {fmtDate(row.deadline)}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bagian Kanan: Badge Keterlambatan + Tombol Aksi */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/50 dark:border dark:border-orange-800/40 px-2.5 py-1 rounded-lg shrink-0">
+                      Terlambat {row.lateDays} Hari
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <RemindButton state={remindState[row.id]} onClick={() => void handleRemind(row.id)} />
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAPDetail(row.id)}
+                      className={`${btnBase} bg-blue-600 hover:bg-blue-700 text-white shadow-xs shrink-0`}
+                    >
+                      Detail
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+        </div>
+      )}
 
       {/* Drawer preview proposal — Radix Portal agar tidak tertabrak sticky header */}
       <DialogPrimitive.Root open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
