@@ -20,11 +20,8 @@ import {
   Plus,
   PanelRight,
 } from 'lucide-react'
-import { CalendarEventModal } from '@/components/calendar/CalendarEventModal'
-import { CalendarDayEventsModal } from '@/components/calendar/CalendarDayEventsModal'
-import { CalendarWeekView } from '@/components/calendar/CalendarWeekView'
-import { CalendarAgendaView } from '@/components/calendar/CalendarAgendaView'
-import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
+import dynamic from 'next/dynamic'
+import { useRef } from 'react'
 import { FilterPopover } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
 import {
@@ -36,6 +33,27 @@ import {
   type CalendarViewMode,
 } from '@/lib/calendar-grid'
 import { AP_STATUS_LABEL } from '@/lib/status-labels'
+
+const CalendarEventModal = dynamic(
+  () => import('@/components/calendar/CalendarEventModal').then((m) => m.CalendarEventModal),
+  { ssr: false }
+)
+const CalendarDayEventsModal = dynamic(
+  () => import('@/components/calendar/CalendarDayEventsModal').then((m) => m.CalendarDayEventsModal),
+  { ssr: false }
+)
+const ActionPlanFormModal = dynamic(
+  () => import('@/components/action-plans/ActionPlanFormModal').then((m) => m.ActionPlanFormModal),
+  { ssr: false }
+)
+const CalendarWeekView = dynamic(
+  () => import('@/components/calendar/CalendarWeekView').then((m) => m.CalendarWeekView),
+  { ssr: false }
+)
+const CalendarAgendaView = dynamic(
+  () => import('@/components/calendar/CalendarAgendaView').then((m) => m.CalendarAgendaView),
+  { ssr: false }
+)
 
 /* ─── constants ─────────────────────────────────────────────── */
 const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
@@ -64,7 +82,7 @@ const STATUS_BAR_COLOR: Record<string, string> = {
 
 type ViewTab = 'table' | 'board' | 'calendar'
 
-interface FilterOptions {
+export interface FilterOptions {
   statuses: { key: string; label: string }[]
   priorities: { key: string; label: string }[]
   pics: { id: string; name: string; division?: { name: string } | null }[]
@@ -90,13 +108,19 @@ function deadlineLabel(daysLeft: number): { text: string; className: string } {
   }
 }
 
-export function CalendarClient() {
+export function CalendarClient({
+  initialEvents,
+  initialFilterOptions,
+}: {
+  initialEvents?: CalendarEvent[]
+  initialFilterOptions?: FilterOptions
+} = {}) {
   const router = useRouter()
 
   const [anchorDate, setAnchorDate] = useState<Date>(() => new Date())
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month')
-  const [events, setEvents] = useState<CalendarEvent[] | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState<CalendarEvent[] | null>(initialEvents ?? null)
+  const [loading, setLoading] = useState(!initialEvents)
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
@@ -105,12 +129,14 @@ export function CalendarClient() {
   const [overflowDate, setOverflowDate] = useState<Date | null>(null)
 
   // Dynamic filter state
-  const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null)
+  const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(initialFilterOptions ?? null)
   const [selectedStatus, setSelectedStatus] = useState('')
   const [selectedPic, setSelectedPic] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedPriority, setSelectedPriority] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
+
+  const initialFetchSkipped = useRef(Boolean(initialEvents))
 
   const statusLabelMap = useMemo(() => {
     return Object.fromEntries((filterOptions?.statuses ?? []).map((s) => [s.key, s.label]))
@@ -138,15 +164,17 @@ export function CalendarClient() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(() => new Date())
 
-  // Load dynamic filter options from API
+  // Load dynamic filter options from API if not pre-fetched
   useEffect(() => {
-    fetch('/api/calendar/filters')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) setFilterOptions(data)
-      })
-      .catch((err) => console.error('Gagal memuat opsi filter kalender:', err))
-  }, [])
+    if (!initialFilterOptions) {
+      fetch('/api/calendar/filters')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) setFilterOptions(data)
+        })
+        .catch((err) => console.error('Gagal memuat opsi filter kalender:', err))
+    }
+  }, [initialFilterOptions])
 
   const weeks = useMemo(() => getMonthGrid(anchorDate), [anchorDate])
 
@@ -199,6 +227,10 @@ export function CalendarClient() {
   }, [queryRange, selectedStatus, selectedPic, selectedProject, selectedPriority])
 
   useEffect(() => {
+    if (initialFetchSkipped.current) {
+      initialFetchSkipped.current = false
+      return
+    }
     fetchEvents()
   }, [fetchEvents])
 
@@ -600,6 +632,32 @@ export function CalendarClient() {
               ) : (
                 /* Month Grid (Default) */
                 <div className="flex-1 overflow-auto">
+                  {events && events.length === 0 && !loading && (
+                    <div className="mx-4 my-3 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                          <CalendarDays size={18} />
+                        </div>
+                        <div>
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            Belum ada Action Plan di periode {periodLabel}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Mulai jadwalkan rencana kerja atau ubah navigasi bulan untuk melihat periode lain.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCreateModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shrink-0 shadow-xs cursor-pointer"
+                      >
+                        <Plus size={13} />
+                        + Buat Action Plan
+                      </button>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800">
                     {WEEKDAY_LABELS.map((label) => (
                       <div
