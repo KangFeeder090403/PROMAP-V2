@@ -14,3 +14,29 @@ next-env.d.ts
 lib/generated/
 skills-lock.json
 catatan kecil.txt
+
+# Artefak review Playwright
+.playwright-mcp/
+
+# Screenshot verifikasi UI — hanya di root, asset produk tetap boleh
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+
+# Konfigurasi editor — bisa memuat kredensial MCP
+.vscode/
+
+# Mockup referensi Stitch — unduh lokal, jangan di-commit
+docs/design-reference/
+
+# Catatan/laporan lokal — bukan dokumentasi repo
+docs/DASHBOARD.md
+docs/LAPORAN-PROGRESS-2026-09-08.md
+
+# AI Agent tools (Claude, Windsurf, Agents)
+.agents/
+.claude/
+.windsurf/
+# Dokumentasi & mockup lokal — tidak di-commit
+docs/

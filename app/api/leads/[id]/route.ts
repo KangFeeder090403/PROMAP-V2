@@ -21,9 +21,20 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     const body = await req.json()
-    const data: { notes?: string; status?: LeadStatus } = {}
+    const data: {
+      notes?: string | null
+      status?: LeadStatus
+      trialStartAt?: Date | null
+      trialEndAt?: Date | null
+    } = {}
 
     if (body.notes !== undefined) data.notes = body.notes
+    if (body.trialStartAt !== undefined) {
+      data.trialStartAt = body.trialStartAt ? new Date(body.trialStartAt) : null
+    }
+    if (body.trialEndAt !== undefined) {
+      data.trialEndAt = body.trialEndAt ? new Date(body.trialEndAt) : null
+    }
     if (body.status !== undefined) {
       if (!VALID_STATUS.includes(body.status)) {
         return NextResponse.json({ error: 'status tidak valid' }, { status: 400 })

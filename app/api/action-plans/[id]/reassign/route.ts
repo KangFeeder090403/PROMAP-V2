@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, canReassignAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { logActivity } from '@/lib/activity-log'
 
 const REASSIGNABLE = ['NOT_STARTED', 'IN_PROGRESS', 'REJECTED']
 
@@ -54,13 +55,31 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       data: { picId: newPic.id }
     })
 
+    await logActivity({
+      userId: user.id,
+      actionPlanId: id,
+      action: 'REASSIGNED',
+      oldValue: existing.picId,
+      newValue: newPic.id,
+    })
+
     await notify({
       userIds: [newPic.id],
-      title: 'Action Plan di-reassign',
-      message: `Kamu ditugaskan ke Action Plan: ${result.title}`,
-      link: `/action-plans/${id}`,
+      title: 'Action Plan dialihkan kepada Anda',
+      message: `Rencana aksi "${result.title}" dialihkan kepada Anda oleh ${user.name}.`,
+      link: `/action-plans?open=${id}`,
       companyId: existing.companyId
     })
+
+    if (existing.picId && existing.picId !== user.id && existing.picId !== newPic.id) {
+      await notify({
+        userIds: [existing.picId],
+        title: 'Action Plan dialihkan',
+        message: `Rencana aksi "${result.title}" telah dialihkan kepada ${newPic.name}.`,
+        link: `/action-plans?open=${id}`,
+        companyId: existing.companyId
+      })
+    }
 
     return NextResponse.json(result)
   } catch (error) {

@@ -54,14 +54,10 @@ export function companyScope(user: User) {
   return { id: user.companyId! }
 }
 
-/** Scope untuk query model Division */
+/** Scope untuk query model Division (Tenant-scoped: semua role di company boleh melihat daftar divisi perusahaannya) */
 export function divisionScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
-  if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  // MANAGER + PIC boleh lihat divisi sendiri saja
-  if (user.divisionId) return { id: user.divisionId }
-  // divisionId null → kembalikan empty result (bukan error)
-  return { id: '__none__' }
+  return { companyId: user.companyId! }
 }
 
 /** Scope generik PRD (untuk model dengan picId + divisionId + companyId) */
@@ -73,11 +69,36 @@ export function buildWhereClause(user: User) {
 }
 
 /** Scope untuk query model Project */
-export function projectScope(user: User) {
+export function projectScope(user: User): Record<string, unknown> {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  // MANAGER + PIC: read-only, terbatas divisi sendiri
-  return { companyId: user.companyId!, divisionId: user.divisionId }
+
+  if (user.role === 'MANAGER') {
+    const conditions: Record<string, unknown>[] = [
+      { divisionId: null },
+      { tasks: { some: { divisionId: user.divisionId, deletedAt: null } } },
+    ]
+    if (user.divisionId) {
+      conditions.unshift({ divisionId: user.divisionId })
+    }
+    return {
+      companyId: user.companyId!,
+      OR: conditions,
+    }
+  }
+
+  // PIC: project yang menugaskan PIC via task, project divisinya, atau project umum lintas divisi
+  const conditions: Record<string, unknown>[] = [
+    { tasks: { some: { picId: user.id, deletedAt: null } } },
+    { divisionId: null },
+  ]
+  if (user.divisionId) {
+    conditions.push({ divisionId: user.divisionId })
+  }
+  return {
+    companyId: user.companyId!,
+    OR: conditions,
+  }
 }
 
 /** Siapa boleh create/edit/delete Project. MANAGER hanya utk divisi sendiri. */
@@ -103,6 +124,11 @@ export function canAssignTask(user: User) {
   return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 }
 
+/** Siapa boleh update status Task saja (drag Kanban). PIC hanya task miliknya sendiri. */
+export function canUpdateTaskStatus(user: User, task: { picId: string }) {
+  return canAssignTask(user) || task.picId === user.id
+}
+
 /** Hanya Super Admin boleh kelola Lead (lintas-tenant by design). */
 export function canManageLeads(user: User) {
   return user.role === 'SUPER_ADMIN'
@@ -120,20 +146,26 @@ export function canManageUsers(user: User) {
 export function proposalScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { proposer: { companyId: user.companyId! } }
-  if (user.role === 'MANAGER') return { proposer: { divisionId: user.divisionId } }
+  if (user.role === 'MANAGER') {
+    if (!user.divisionId) return { proposerId: user.id }
+    return { proposer: { divisionId: user.divisionId } }
+  }
   return { proposerId: user.id }
 }
 
-/** Manager boleh review proposal divisi sendiri, kecuali proposal miliknya sendiri. */
+/** Manager boleh review proposal divisi sendiri, Admin Ops & Super Admin boleh review semua (kecuali milik sendiri). */
 export function canReviewProposal(
   user: User,
   proposal: { proposerId: string },
   proposerDivisionId: string | null
 ) {
-  if (user.role !== 'MANAGER') return false
-  if (user.divisionId !== proposerDivisionId) return false
   if (proposal.proposerId === user.id) return false
-  return true
+  if (user.role === 'SUPER_ADMIN') return true
+  if (user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') {
+    return user.divisionId !== null && user.divisionId !== undefined && user.divisionId === proposerDivisionId
+  }
+  return false
 }
 
 /** Hanya proposer sendiri, dan hanya selagi status DRAFT. */
@@ -145,7 +177,12 @@ export function canEditProposal(user: User, proposal: { proposerId: string; stat
 export function apScope(user: User) {
   if (user.role === 'SUPER_ADMIN') return {}
   if (user.role === 'ADMIN_OPERATIONAL') return { companyId: user.companyId! }
-  if (user.role === 'MANAGER') return { divisionId: user.divisionId }
+  if (user.role === 'MANAGER') {
+    // Guard: Manager tanpa divisi fallback ke PIC milik sendiri agar tidak
+    // menghasilkan { divisionId: null } yang match semua AP personal lintas tenant.
+    if (!user.divisionId) return { picId: user.id }
+    return { divisionId: user.divisionId }
+  }
   return { picId: user.id }
 }
 
@@ -179,6 +216,17 @@ export function canReviewActionPlan(
   if (user.role === 'MANAGER') return ap.divisionId !== null && ap.divisionId === user.divisionId
   return false
 }
+
+/**
+ * Siapa boleh kelola Checklist AP (create/toggle/delete).
+ * - Hanya PIC pemilik AP (tidak ada delegasi ke Manager).
+ * - Hanya selagi status AP masih bisa dikerjakan: NOT_STARTED/IN_PROGRESS/EVIDENCE_REQUIRED.
+ */
+export function canManageChecklist(user: User, ap: { picId: string; status: string }) {
+  if (ap.picId !== user.id) return false
+  return ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status)
+}
+
 
 /**
  * Siapa boleh sentuh UserLabel dan apa efeknya:

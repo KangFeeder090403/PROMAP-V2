@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma, ActionPlanStatus, Priority } from '@/lib/generated/prisma/client'
 import { getSessionUser, apScope, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { shortRef } from '@/lib/dashboard-aggregate'
+import { logActivity } from '@/lib/activity-log'
+import {
+  getJakartaTodayRange,
+  getJakartaWeekRange,
+  getJakartaMonthRange,
+} from '@/lib/date-utils'
 
 export async function GET(req: Request) {
   try {
@@ -14,18 +22,128 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
     const taskId = searchParams.get('taskId')
+    const projectId = searchParams.get('projectId')
+    const picId = searchParams.get('picId')
+    const divisionId = searchParams.get('divisionId')
+    const dateRange = searchParams.get('dateRange')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const sortBy = searchParams.get('sortBy') ?? 'newest'
+    const view = searchParams.get('view')
+    const search = searchParams.get('search')?.trim()
 
-    const where: any = { ...apScope(user), deletedAt: null }
-    if (status) where.status = status
-    if (priority) where.priority = priority
+    const isBoardView = view === 'board'
+    const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
+    const pageSize = isBoardView
+      ? 2000
+      : Math.min(50, Math.max(1, Number(searchParams.get('pageSize') ?? '10') || 10))
+
+    // Buku besar (scope penuh, tanpa filter baris) — dipakai untuk chips.
+    const baseWhere: Prisma.ActionPlanWhereInput = { ...apScope(user), deletedAt: null }
+
+    const where: Prisma.ActionPlanWhereInput = { ...baseWhere }
+    if (status) where.status = status as ActionPlanStatus
+    if (priority) where.priority = priority as Priority
     if (taskId) where.taskId = taskId
+    if (picId) where.picId = picId
+    if (divisionId) where.divisionId = divisionId
+    if (projectId) {
+      where.task = { projectId, deletedAt: null }
+    }
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { id: { contains: search, mode: 'insensitive' } },
+      ]
+    }
 
-    const data = await prisma.actionPlan.findMany({
-      where,
-      orderBy: { createdAt: 'desc' }
+    if (dateRange) {
+      if (dateRange === 'today') {
+        const { start, end } = getJakartaTodayRange()
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      } else if (dateRange === 'week') {
+        const { start, end } = getJakartaWeekRange()
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      } else if (dateRange === 'month') {
+        const { start, end } = getJakartaMonthRange()
+        where.startDate = { lte: end }
+        where.endDate = { gte: start }
+      }
+    } else if (dateFrom || dateTo) {
+      if (dateFrom) where.endDate = { gte: new Date(dateFrom) }
+      if (dateTo) where.startDate = { lte: new Date(dateTo) }
+    }
+
+    let orderBy: Prisma.ActionPlanOrderByWithRelationInput = { createdAt: 'desc' }
+    if (sortBy === 'oldest' || sortBy === 'createdAt_asc') {
+      orderBy = { createdAt: 'asc' }
+    } else if (sortBy === 'deadline_asc' || sortBy === 'due_asc') {
+      orderBy = { endDate: 'asc' }
+    } else if (sortBy === 'deadline_desc' || sortBy === 'due_desc') {
+      orderBy = { endDate: 'desc' }
+    } else if (sortBy === 'priority_desc') {
+      orderBy = { priority: 'asc' } // HIGH, MEDIUM, LOW
+    }
+
+    // Chips workflow state: hitung per status dari seluruh AP in-scope.
+    const statusGroups = await prisma.actionPlan.groupBy({
+      by: ['status'],
+      where: baseWhere,
+      _count: { _all: true },
     })
+    const counts = Object.fromEntries(statusGroups.map((g) => [g.status, g._count._all]))
 
-    return NextResponse.json(data)
+    const skip = isBoardView ? 0 : (page - 1) * pageSize
+    const take = pageSize
+
+    const [total, items] = await Promise.all([
+      prisma.actionPlan.count({ where }),
+      prisma.actionPlan.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        include: {
+          pic: { select: { id: true, name: true, role: true } },
+          task: {
+            select: {
+              id: true,
+              title: true,
+              project: { select: { id: true, name: true } },
+            },
+          },
+          division: { select: { id: true, name: true } },
+          _count: { select: { comments: true } },
+        },
+      }),
+    ])
+
+    // Progress checklist per AP — satu query agregasi, bukan N+1.
+    const agg = await prisma.checklist.groupBy({
+      by: ['actionPlanId', 'isDone'],
+      where: { actionPlanId: { in: items.map((a) => a.id) } },
+      _count: { _all: true },
+    })
+    const checklistStats: Record<string, { done: number; total: number }> = {}
+    for (const row of agg) {
+      const stat = (checklistStats[row.actionPlanId] ??= { done: 0, total: 0 })
+      stat.total += row._count._all
+      if (row.isDone) stat.done += row._count._all
+    }
+
+    const withMeta = items.map((a) => ({
+      ...a,
+      // shortRef: derivasi dari id, jadi stabil tanpa query urutan seluruh ledger
+      // dan tidak bergeser saat ada AP lama di-soft-delete. Sama dengan dashboard.
+      code: shortRef(a.id, 'AP'),
+      commentCount: a._count.comments,
+      checklistDone: checklistStats[a.id]?.done ?? 0,
+      checklistTotal: checklistStats[a.id]?.total ?? 0,
+    }))
+
+    return NextResponse.json({ items: withMeta, counts, total, page, pageSize })
   } catch (error) {
     console.error('[ACTION_PLANS_GET]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
@@ -133,12 +251,20 @@ export async function POST(req: Request) {
       }
     })
 
+    await logActivity({
+      userId: user.id,
+      actionPlanId: result.id,
+      action: 'STATUS_CHANGED',
+      oldValue: null,
+      newValue: 'NOT_STARTED',
+    })
+
     if (target.id !== user.id) {
       await notify({
         userIds: [target.id],
         title: 'Action Plan baru',
-        message: `Kamu mendapat Action Plan baru: ${result.title}`,
-        link: `/action-plans/${result.id}`,
+        message: `Ditugaskan oleh ${user.name}: "${result.title}"`,
+        link: `/action-plans?open=${result.id}`,
         companyId
       })
     }

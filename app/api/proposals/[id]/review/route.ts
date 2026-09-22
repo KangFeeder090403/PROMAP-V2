@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.role !== 'MANAGER') {
+    if (user.role !== 'MANAGER' && user.role !== 'ADMIN_OPERATIONAL' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -30,6 +30,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     })
     if (!proposal || proposal.deletedAt) {
       return NextResponse.json({ error: 'Proposal not found' }, { status: 404 })
+    }
+
+    if (user.role === 'ADMIN_OPERATIONAL' && proposal.proposer.companyId !== user.companyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (!canReviewProposal(user, proposal, proposal.proposer.divisionId)) {
@@ -55,7 +59,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       userIds: [proposal.proposerId],
       title: newStatus === 'APPROVED' ? 'Proposal disetujui' : 'Proposal ditolak',
       message: `Proposal "${proposal.title}" telah di${newStatus === 'APPROVED' ? 'setujui' : 'tolak'}`,
-      link: `/proposals/${id}`,
+      link: '/proposals',
       companyId: proposal.proposer.companyId ?? undefined
     })
 

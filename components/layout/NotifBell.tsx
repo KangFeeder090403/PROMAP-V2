@@ -1,36 +1,169 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 
-// PLACEHOLDER — API notifikasi belum ada (roadmap #11 di CLAUDE.md).
-// count di bawah dummy hardcode. Ganti ke fetch('/api/notifications')
-// begitu roadmap #11 selesai.
+interface Notification {
+  id: string
+  title: string
+  message: string
+  link: string | null
+  isRead: boolean
+  createdAt: string
+}
+
+function relativeTime(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diffMs / 60000)
+  if (min < 1) return 'baru saja'
+  if (min < 60) return `${min}m lalu`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}j lalu`
+  const day = Math.floor(hr / 24)
+  return `${day}h lalu`
+}
+
 export function NotifBell() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const count = 3
+  const [items, setItems] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [onlyUnread, setOnlyUnread] = useState(false)
+
+  async function fetchNotifs(unread = onlyUnread) {
+    try {
+      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`)
+      if (!res.ok) return
+      const { data, unreadCount } = await res.json()
+      setItems(data)
+      setUnreadCount(unreadCount)
+    } catch {
+      // silent — polling akan retry di interval berikutnya
+    }
+  }
+
+  useEffect(() => {
+    fetchNotifs()
+    const interval = setInterval(fetchNotifs, 15000)
+
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifs()
+      }
+    }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [onlyUnread])
+
+  async function toggleOpen() {
+    const nextState = !open
+    setOpen(nextState)
+    if (nextState) {
+      fetchNotifs()
+    }
+  }
+
+  async function onClickNotif(n: Notification) {
+    setOpen(false)
+    if (!n.isRead) {
+      await fetch(`/api/notifications/${n.id}/read`, { method: 'POST' })
+      fetchNotifs()
+    }
+    if (n.link) router.push(n.link)
+  }
+
+  async function onReadAll() {
+    await fetch('/api/notifications/read-all', { method: 'POST' })
+    fetchNotifs()
+  }
 
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="relative rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+        onClick={toggleOpen}
+        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
         aria-label="Notifikasi"
       >
-        <Bell className="h-5 w-5" />
-        {count > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-            {count}
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute 1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-md">
-            <p className="text-sm text-slate-500">Belum ada notifikasi</p>
+          <button
+            type="button"
+            aria-label="Tutup panel notifikasi"
+            className="fixed inset-0 z-10 cursor-default bg-transparent border-0"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-1 rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
+                {([false, true] as const).map((u) => (
+                  <button
+                    key={String(u)}
+                    type="button"
+                    onClick={() => {
+                      setOnlyUnread(u)
+                      fetchNotifs(u)
+                    }}
+                    aria-pressed={onlyUnread === u}
+                    className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                      onlyUnread === u
+                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {u ? 'Belum dibaca' : 'Semua'}
+                  </button>
+                ))}
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onReadAll}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Tandai semua dibaca
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto">
+              {items.length === 0 ? (
+                <p className="text-sm text-slate-500 p-4">
+                  {onlyUnread ? 'Semua notifikasi sudah dibaca' : 'Belum ada notifikasi'}
+                </p>
+              ) : (
+                items.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => onClickNotif(n)}
+                    className={`block w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${
+                      !n.isRead ? 'bg-blue-50/50 dark:bg-blue-950/30' : ''
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{n.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
+                    <p className="text-[11px] text-slate-400 mt-1">{relativeTime(n.createdAt)}</p>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </>
       )}
