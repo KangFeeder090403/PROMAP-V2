@@ -23,15 +23,20 @@ import {
   Layers,
   LayoutDashboard,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { FilterPopover } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
-import { ExecutionVelocityChart } from '@/components/dashboard/ExecutionVelocityChart'
 import { PriorityRiskMatrix } from '@/components/dashboard/PriorityRiskMatrix'
 import { DivisionVelocityCard } from '@/components/dashboard/DivisionVelocityCard'
+
+const ExecutionVelocityChart = dynamic(
+  () => import('@/components/dashboard/ExecutionVelocityChart').then((m) => m.ExecutionVelocityChart),
+  { ssr: false }
+)
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,

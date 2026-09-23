@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react'
 import { Settings, History } from 'lucide-react'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 import { AuditLogModal } from '@/components/settings/AuditLogModal'
+import { LogoutConfirmDialog } from '@/components/layout/LogoutConfirmDialog'
 
 function initials(name: string) {
   return name
@@ -19,6 +20,7 @@ function initials(name: string) {
 export function UserMenu({ user }: { user: SessionUser }) {
   const [open, setOpen] = useState(false)
   const [auditLogOpen, setAuditLogOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
   const canAccessSettings =
     user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
@@ -109,7 +111,10 @@ export function UserMenu({ user }: { user: SessionUser }) {
             <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={() => {
+                setOpen(false)
+                setLogoutConfirmOpen(true)
+              }}
               className="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-slate-50 dark:text-red-400 dark:hover:bg-slate-800"
             >
               Logout
@@ -117,6 +122,15 @@ export function UserMenu({ user }: { user: SessionUser }) {
           </div>
         </>
       )}
+
+      {/* Modal Konfirmasi Logout */}
+      <LogoutConfirmDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+        onConfirm={async () => {
+          await signOut({ callbackUrl: '/login' })
+        }}
+      />
 
       {/* Modal Audit Log Global */}
       <AuditLogModal

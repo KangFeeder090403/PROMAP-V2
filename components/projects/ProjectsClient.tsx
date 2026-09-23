@@ -12,12 +12,22 @@ import {
   MoreHorizontal,
   Plus,
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import type { Role } from '@/lib/generated/prisma/client'
-import { ProjectForm } from '@/components/projects/ProjectForm'
-import { ProjectDrawer } from '@/components/projects/ProjectDrawer'
 import { FilterToolbar } from '@/components/ui/FilterToolbar'
 import { FilterEmptyState } from '@/components/ui/FilterEmptyState'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useFilterState } from '@/lib/use-filter-state'
+
+const ProjectForm = dynamic(
+  () => import('@/components/projects/ProjectForm').then((m) => m.ProjectForm),
+  { ssr: false }
+)
+
+const ProjectDrawer = dynamic(
+  () => import('@/components/projects/ProjectDrawer').then((m) => m.ProjectDrawer),
+  { ssr: false }
+)
 
 export interface Project {
   id: string
@@ -69,15 +79,17 @@ export function ProjectsClient({
   currentUserDivisionId = null,
   openCreate,
   initialOpenId,
+  initialData,
 }: {
   role: Role
   currentUserDivisionId?: string | null
   openCreate?: boolean
   initialOpenId?: string
+  initialData?: Project[]
 }) {
   const router = useRouter()
-  const [data, setData] = useState<Project[] | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<Project[] | null>(initialData ?? null)
+  const [loading, setLoading] = useState(!initialData)
   const [error, setError] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
@@ -90,8 +102,10 @@ export function ProjectsClient({
   const canManage = CAN_MANAGE.includes(role)
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (!initialData) {
+      fetchData()
+    }
+  }, [initialData])
 
   useEffect(() => {
     if (initialOpenId) {
@@ -262,39 +276,30 @@ export function ProjectsClient({
 
       {/* Zero-Data: tenant/belum ada project sama sekali */}
       {data.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-12 text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center text-blue-500 mb-4">
-            <FolderKanban className="h-8 w-8" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Belum ada inisiatif program kerja
-          </h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
-            {canManage
+        <EmptyState
+          icon={FolderKanban}
+          title="Belum ada inisiatif program kerja"
+          description={
+            canManage
               ? 'Mulai inisiatif pertama Anda untuk menyusun sasaran besar dan program kerja tim lintas divisi.'
-              : 'Saat ini belum ada inisiatif yang ditugaskan ke divisi Anda. Tugas dan komitmen kerja harian Anda dapat dipantau langsung di My Work.'}
-          </p>
-          {canManage ? (
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(null)
-                setFormOpen(true)
-              }}
-              className="mt-6 inline-flex items-center gap-2 px-4 h-9 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold transition-colors shadow-sm"
-            >
-              <Plus className="h-4 w-4" />
-              Buat Project Baru
-            </button>
-          ) : (
-            <Link
-              href="/my-work"
-              className="mt-6 inline-flex items-center gap-2 px-4 h-9 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors shadow-sm"
-            >
-              Buka Konsol My Work
-            </Link>
-          )}
-        </div>
+              : 'Saat ini belum ada inisiatif yang ditugaskan ke divisi Anda. Tugas dan komitmen kerja harian Anda dapat dipantau langsung di My Work.'
+          }
+          action={
+            canManage
+              ? {
+                  label: 'Buat Project Baru',
+                  icon: Plus,
+                  onClick: () => {
+                    setEditing(null)
+                    setFormOpen(true)
+                  },
+                }
+              : {
+                  label: 'Buka Konsol My Work',
+                  href: '/my-work',
+                }
+          }
+        />
       ) : filtered.length === 0 ? (
         /* Keadaan 3: Keadaan Tanpa Hasil (Empty State) */
         <FilterEmptyState

@@ -34,6 +34,7 @@ import { ImportCsvModal } from '@/components/action-plans/ImportCsvModal'
 import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 import { FilterPopover, type FilterDraftValues } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 export interface ActionPlan {
   id: string
@@ -791,13 +792,27 @@ export function ActionPlansClient({
 
       {/* ===== Ledger table ===== */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
-        {data.items.length === 0 ? (
+        {data.total === 0 && !search && !statusFilter && !priorityFilter && !divisionFilter ? (
+          <EmptyState
+            icon={CheckCircle2}
+            title="Belum ada Action Plan"
+            description="Mulai susun rencana kerja dan target eksekusi tim Anda untuk mencapai sasaran inisiatif program kerja."
+            action={{
+              label: 'Buat Action Plan Baru',
+              icon: Plus,
+              onClick: () => {
+                setEditing(null)
+                setFormOpen(true)
+              },
+            }}
+          />
+        ) : data.items.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm text-slate-600 dark:text-slate-400">Tidak ada Action Plan yang cocok dengan filter.</p>
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-3 inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600"
+              className="mt-3 inline-flex h-9 items-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
             >
               Reset Filter
             </button>
