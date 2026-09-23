@@ -92,6 +92,9 @@ export async function getCalendarFilterOptions(user: User): Promise<CalendarFilt
     user.role,
     user.companyId ?? 'all',
     user.divisionId ?? 'all',
+    // projectScope() memfilter PIC by picId === user.id — tanpa ini dua PIC
+    // di perusahaan+divisi sama berbagi satu cache entry (kebocoran antar-user).
+    user.id,
   ]
 
   return unstable_cache(

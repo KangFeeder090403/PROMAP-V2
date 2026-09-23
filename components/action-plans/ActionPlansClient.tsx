@@ -812,7 +812,7 @@ export function ActionPlansClient({
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-3 inline-flex h-9 items-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 transition-colors cursor-pointer"
+              className="mt-3 inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600 transition-colors cursor-pointer"
             >
               Reset Filter
             </button>

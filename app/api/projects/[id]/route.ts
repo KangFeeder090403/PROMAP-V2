@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, canManageProject } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { revalidateProjectCaches } from '@/lib/cache-tags'
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
@@ -305,6 +306,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         })
       }
 
+      revalidateProjectCaches(existing.companyId)
       return NextResponse.json(result)
     }
 
@@ -313,6 +315,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       data: updateData,
     })
 
+    revalidateProjectCaches(existing.companyId)
     return NextResponse.json(result)
   } catch (error) {
     console.error('[PROJECT_PUT]', error)
@@ -351,6 +354,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
       data: { deletedAt: new Date() }
     })
 
+    revalidateProjectCaches(existing.companyId)
     return NextResponse.json({ success: true, message: 'Project softly deleted' })
   } catch (error) {
     console.error('[PROJECT_DELETE]', error)

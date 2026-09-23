@@ -6,25 +6,23 @@ import type { Role } from '@/lib/generated/prisma/client'
 import { Building2, LayoutGrid, Users, Tag, TrendingUp, History } from 'lucide-react'
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
 
+// Tanpa `ssr: false` — section ini tidak memakai API browser-only, jadi tetap
+// ikut dirender di server (tab pertama langsung terisi) sambil tetap dipecah
+// jadi chunk terpisah oleh dynamic().
 const CompanySection = dynamic(
-  () => import('@/components/settings/CompanySection').then((m) => m.CompanySection),
-  { ssr: false }
+  () => import('@/components/settings/CompanySection').then((m) => m.CompanySection)
 )
 const DivisionSection = dynamic(
-  () => import('@/components/settings/DivisionSection').then((m) => m.DivisionSection),
-  { ssr: false }
+  () => import('@/components/settings/DivisionSection').then((m) => m.DivisionSection)
 )
 const UserSection = dynamic(
-  () => import('@/components/settings/UserSection').then((m) => m.UserSection),
-  { ssr: false }
+  () => import('@/components/settings/UserSection').then((m) => m.UserSection)
 )
 const UserLabelSection = dynamic(
-  () => import('@/components/settings/UserLabelSection').then((m) => m.UserLabelSection),
-  { ssr: false }
+  () => import('@/components/settings/UserLabelSection').then((m) => m.UserLabelSection)
 )
 const LeadSection = dynamic(
-  () => import('@/components/settings/LeadSection').then((m) => m.LeadSection),
-  { ssr: false }
+  () => import('@/components/settings/LeadSection').then((m) => m.LeadSection)
 )
 const AuditLogModal = dynamic(
   () => import('@/components/settings/AuditLogModal').then((m) => m.AuditLogModal),

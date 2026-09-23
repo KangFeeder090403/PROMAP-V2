@@ -35,8 +35,8 @@ export function LogoutConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
-      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-800">
-        <DialogHeader className="flex flex-row items-start gap-3 text-left">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto dark:bg-slate-900 dark:border-slate-800">
+        <DialogHeader className="flex flex-row items-start gap-3 pr-8 text-left">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400">
             <LogOut className="h-5 w-5" />
           </div>
@@ -50,11 +50,16 @@ export function LogoutConfirmDialog({
           </div>
         </DialogHeader>
 
-        <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+        {/* Tanpa override arah: `flex-col-reverse` bawaan DialogFooter membalik
+            DOM order [Batal, Keluar] jadi visual Keluar-atas, Batal-bawah, agar
+            tombol paling mudah tersentuh di layar sempit bukan yang destruktif.
+            DOM order tetap Batal dulu supaya autoFocus dan tab order aman. */}
+        <DialogFooter className="mt-4 sm:flex-row gap-2 sm:justify-end">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            autoFocus
             className="inline-flex items-center justify-center h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors disabled:opacity-50"
           >
             Batal

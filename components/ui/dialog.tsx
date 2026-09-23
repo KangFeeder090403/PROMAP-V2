@@ -44,7 +44,11 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-100 data-[state=open]:text-slate-500 dark:ring-offset-slate-950 dark:focus:ring-slate-300 dark:data-[state=open]:bg-slate-800 dark:data-[state=open]:text-slate-400">
+      {/* Warna tanpa syarat: varian `data-[state=open]` tidak pernah aktif di sini
+          (atribut itu hanya ada di Content), jadi X sempat hitam-di-hitam pada
+          dark mode. Padding negatif memperbesar target sentuh 16px -> 28px
+          tanpa menggeser posisi visual ikon. */}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm p-1.5 -m-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 ring-offset-white transition-colors focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:pointer-events-none dark:ring-offset-slate-950 dark:focus:ring-slate-300">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

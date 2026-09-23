@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { revalidateProjectCaches } from '@/lib/cache-tags'
 import { getSessionUser, canManageProject } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { createProjectWithTasks, ProjectInputError } from '@/lib/projects'
@@ -61,11 +61,7 @@ export async function POST(req: Request) {
       })
     }
 
-    try {
-      revalidateTag(`projects-${project.companyId ?? 'all'}`)
-    } catch {
-      // ignore outside request context
-    }
+    revalidateProjectCaches(project.companyId)
 
     return NextResponse.json(project, { status: 201 })
   } catch (error) {
