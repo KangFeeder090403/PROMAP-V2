@@ -21,6 +21,7 @@ import type { Role } from '@/lib/generated/prisma/client'
 import { KanbanColumn } from '@/components/kanban/KanbanColumn'
 import { KanbanFloatingBar } from '@/components/kanban/KanbanFloatingBar'
 import { useKanbanMarquee } from '@/hooks/useKanbanMarquee'
+import { edgeScrollVelocity } from '@/lib/edge-scroll'
 import { ActionPlanDetail } from '@/components/action-plans/ActionPlanDetail'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
@@ -133,6 +134,58 @@ export function KanbanClient({
   useEffect(() => {
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current)
+    }
+  }, [])
+
+  // Auto-scroll tepi viewport selama drag kartu.
+  // Chromium di Windows/Linux mengikuti spec HTML DnD: wheel & keyboard
+  // di-suppress dari dragstart sampai dragend, jadi halaman tidak bisa digulir
+  // saat menyeret kartu ke kolom yang berada di luar layar.
+  // ponytail: hanya sumbu Y — grid lg:grid-cols-5 menampilkan 5 kolom tanpa
+  // scroll horizontal. Tambah sumbu X kalau board kelak pakai container overflow-x.
+  useEffect(() => {
+    let velocity = 0
+    let frame: number | null = null
+    let lastDragOver = 0
+
+    function stop() {
+      if (frame !== null) cancelAnimationFrame(frame)
+      frame = null
+      velocity = 0
+      lastDragOver = 0
+    }
+
+    function tick() {
+      // dragend TIDAK selalu fires (node sumber dicopot dari DOM, Esc di
+      // sebagian kondisi). Selama drag hidup, dragover fires terus-menerus —
+      // bahkan saat pointer diam. Begitu berhenti fires, dragnya sudah selesai.
+      // Pakai itu sebagai tanda hidup, bukan hitungan frame diam: kalau drag
+      // putus sementara pointer ada di zona tepi, velocity tetap bukan nol dan
+      // halaman akan menggulir selamanya.
+      if (performance.now() - lastDragOver > 200) {
+        stop()
+        return
+      }
+      if (velocity !== 0) window.scrollBy(0, velocity)
+      frame = requestAnimationFrame(tick)
+    }
+
+    function handleDragOver(e: DragEvent) {
+      lastDragOver = performance.now()
+      velocity = edgeScrollVelocity(e.clientY, window.innerHeight)
+      // idempoten: satu loop saja walau dragover fires puluhan kali per detik
+      if (frame === null) frame = requestAnimationFrame(tick)
+    }
+
+    document.addEventListener('dragover', handleDragOver, { passive: true })
+    document.addEventListener('dragend', stop)
+    document.addEventListener('drop', stop)
+
+    return () => {
+      stop()
+      document.removeEventListener('dragover', handleDragOver)
+      document.removeEventListener('dragend', stop)
+      document.removeEventListener('drop', stop)
     }
   }, [])
 
