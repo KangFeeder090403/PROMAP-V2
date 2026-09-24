@@ -52,8 +52,8 @@ check('PUBLIC_PAGES contains exactly /login, /demo, /landing', () => {
 
 // --- PUBLIC_PREFIX ---
 
-check('PUBLIC_PREFIX contains exactly /api/auth/, /api/guest/', () => {
-  assert.deepEqual([...PUBLIC_PREFIX], ['/api/auth/', '/api/guest/'])
+check('PUBLIC_PREFIX contains exactly /api/auth/, /api/guest/, /api/cron/', () => {
+  assert.deepEqual([...PUBLIC_PREFIX], ['/api/auth/', '/api/guest/', '/api/cron/'])
 })
 
 check('PUBLIC_PREFIX entries end with slash', () => {

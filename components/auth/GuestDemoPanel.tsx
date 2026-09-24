@@ -95,6 +95,7 @@ export function GuestDemoPanel() {
         redirect: false,
       })
 
+      router.push('/demo/active')
       setPhase('active')
     } catch {
       if (gen === generation.current) {
@@ -129,7 +130,7 @@ export function GuestDemoPanel() {
         </p>
         <Button
           onClick={() => {
-            router.push('/')
+            router.push('/dashboard')
             router.refresh()
           }}
           className={CTA}

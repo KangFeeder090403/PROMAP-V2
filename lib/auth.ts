@@ -100,8 +100,26 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null
 
+        const reqEmail = credentials.email.toLowerCase().trim()
+        const demoEmail = (process.env.NEXT_PUBLIC_DEMO_EMAIL ?? 'hendra.sobat@promap.id').toLowerCase().trim()
+        const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? 'Demo12345'
+
+        // Demo persona credentials (Hendra Wijaya - Manager IT Operasional Guest)
+        if (reqEmail === demoEmail && credentials.password === demoPassword) {
+          return {
+            id: 'guest-hendra-wijaya',
+            email: demoEmail,
+            name: 'Hendra Wijaya',
+            role: 'GUEST' as Role,
+            status: 'ACTIVE' as UserStatus,
+            companyId: 'demo-company-id',
+            divisionId: 'demo-division-id',
+            isGuest: true,
+          } as never
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase().trim() },
+          where: { email: reqEmail },
           include: { company: { select: { deletedAt: true, isActive: true } } },
         })
 
@@ -182,6 +200,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         const u = user as unknown as {
           id: string
+          name?: string
           role: Role
           status: UserStatus
           companyId: string | null
@@ -189,6 +208,7 @@ export const authOptions: NextAuthOptions = {
           isGuest: boolean
         }
         token.uid = u.id
+        if (u.name) token.name = u.name
         token.role = u.role
         token.status = u.status
         token.companyId = u.companyId

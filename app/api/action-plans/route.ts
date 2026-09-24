@@ -11,6 +11,8 @@ import {
   getJakartaMonthRange,
 } from '@/lib/date-utils'
 
+import { getGuestDummyData } from '@/lib/guest-dummy-data'
+
 export async function GET(req: Request) {
   try {
     const user = await getSessionUser()
@@ -33,6 +35,48 @@ export async function GET(req: Request) {
     const search = searchParams.get('search')?.trim()
 
     const isBoardView = view === 'board'
+
+    // Data dummy khusus untuk role GUEST (Hendra Wijaya)
+    if (user.role === 'GUEST') {
+      const dummy = getGuestDummyData(new Date())
+      const counts: Record<string, number> = { ALL: dummy.actionPlans.length }
+      for (const a of dummy.actionPlans) {
+        counts[a.status] = (counts[a.status] ?? 0) + 1
+      }
+      const items = dummy.actionPlans.map((a) => ({
+        ...a,
+        code: shortRef(a.id, 'AP'),
+        isPersonal: false,
+        divisionId: 'demo-division-id',
+        companyId: 'demo-company-id',
+        evaluationNote: null,
+        reviewNote: null,
+        startDate: a.createdAt.toISOString(),
+        endDate: a.endDate.toISOString(),
+        createdAt: a.createdAt.toISOString(),
+        updatedAt: a.createdAt.toISOString(),
+        deletedAt: null,
+        commentCount: 2,
+        checklistDone: 3,
+        checklistTotal: 4,
+        pic: { id: a.picId, name: a.pic.name, userLabel: { name: 'Manager' } },
+        task: {
+          id: 'task-demo-1',
+          title: 'Tugas Operasional IT',
+          projectId: 'proj-demo-1',
+          project: { id: 'proj-demo-1', name: 'Transformasi Digital Operasional 2026' },
+        },
+        division: { id: 'demo-division-id', name: 'IT Operasional' },
+      }))
+
+      return NextResponse.json({
+        items,
+        counts,
+        total: items.length,
+        page: 1,
+        pageSize: isBoardView ? 2000 : 10,
+      })
+    }
     const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
     const pageSize = isBoardView
       ? 2000

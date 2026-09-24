@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const token = await signGuestToken(lead.id, lead.name)
+    const token = await signGuestToken(lead.id, lead.name, lead.email, lead.companyName)
 
     const superAdmins = await prisma.user.findMany({
       where: { role: 'SUPER_ADMIN', status: 'ACTIVE', deletedAt: null },
