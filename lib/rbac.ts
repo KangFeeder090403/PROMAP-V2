@@ -31,7 +31,27 @@ export const GUEST_USER: User = {
 export async function getSessionUser(): Promise<User | null> {
   const session = await getServerSession(authOptions)
 
-  // 1. Cek sesi NextAuth dengan role GUEST atau isGuest
+  // 1. Akun riil terautentikasi (SUPER_ADMIN, ADMIN_OPERATIONAL, MANAGER, PIC).
+  // WAJIB dicek PERTAMA dari database agar tidak pernah tertimpa oleh cookie guest_session yang tersisa.
+  if (
+    session?.user?.id &&
+    session.user.id !== 'guest-hendra-wijaya' &&
+    session.user.role !== 'GUEST' &&
+    !session.user.isGuest
+  ) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })
+
+    if (user && !user.deletedAt && user.status === 'ACTIVE') {
+      if (user.role === 'SUPER_ADMIN' || user.companyId) {
+        return user
+      }
+    }
+    return null
+  }
+
+  // 2. Cek sesi NextAuth khusus persona demo Guest (Hendra Wijaya)
   if (
     session?.user?.role === 'GUEST' ||
     session?.user?.isGuest ||
@@ -45,7 +65,7 @@ export async function getSessionUser(): Promise<User | null> {
     }
   }
 
-  // 2. Cek cookie guest_session jika sesi NextAuth belum ada
+  // 3. Fallback: Cek cookie guest_session HANYA jika TIDAK ADA sesi user riil
   try {
     const { cookies } = await import('next/headers')
     const cookieStore = cookies()
@@ -73,28 +93,7 @@ export async function getSessionUser(): Promise<User | null> {
     // Abaikan jika cookies() dipanggil di luar konteks request
   }
 
-  if (!session?.user?.id) return null
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-  })
-
-  if (!user) return null
-  if (user.deletedAt) return null
-  if (user.status !== 'ACTIVE') return null
-  if (user.isGuest || user.role === 'GUEST') {
-    return {
-      ...GUEST_USER,
-      id: user.id,
-      name: user.name || GUEST_USER.name,
-      email: user.email || GUEST_USER.email,
-    }
-  }
-
-  // Non-SUPER_ADMIN wajib punya companyId
-  if (user.role !== 'SUPER_ADMIN' && !user.companyId) return null
-
-  return user
+  return null
 }
 
 /**

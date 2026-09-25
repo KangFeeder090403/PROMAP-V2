@@ -64,6 +64,10 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
     setError('')
     setLoading(true)
 
+    try {
+      await fetch('/api/guest/logout', { method: 'POST' })
+    } catch {}
+
     const res = await signIn('credentials', {
       email,
       password,
@@ -77,15 +81,21 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       return
     }
 
-    router.push(safeCallbackUrl(searchParams.get('callbackUrl')))
-    router.refresh()
+    const rawCallback = searchParams.get('callbackUrl')
+    const target = !rawCallback || rawCallback === '/' ? '/dashboard' : safeCallbackUrl(rawCallback, '/dashboard')
+    window.location.href = target
   }
 
-  function onGoogle() {
+  async function onGoogle() {
     setError('')
     setGoogleLoading(true)
+    try {
+      await fetch('/api/guest/logout', { method: 'POST' })
+    } catch {}
     // redirect penuh ke Google — state loading tidak perlu direset.
-    void signIn('google', { callbackUrl: safeCallbackUrl(searchParams.get('callbackUrl')) })
+    const rawCallback = searchParams.get('callbackUrl')
+    const target = !rawCallback || rawCallback === '/' ? '/dashboard' : safeCallbackUrl(rawCallback, '/dashboard')
+    void signIn('google', { callbackUrl: target })
   }
 
   return (

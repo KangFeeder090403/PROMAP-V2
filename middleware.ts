@@ -16,30 +16,46 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret })
   const guestToken = await getGuestToken(req)
 
-  const isGuest =
-    token?.role === 'GUEST' ||
-    Boolean(token?.isGuest) ||
-    Boolean(guestToken?.isGuest) ||
-    guestToken?.role === 'GUEST'
+  // User terautentikasi DB (SUPER_ADMIN, ADMIN_OPERATIONAL, MANAGER, PIC).
+  // Sesi riil WAJIB mengabaikan cookie guest jika ada.
+  const hasRealUserSession = Boolean(token?.uid) && token?.role !== 'GUEST' && !token?.isGuest
 
-  // jwt callback mengembalikan { ...token, uid: null } saat tenant ditolak (lib/auth.ts).
+  const isGuest =
+    !hasRealUserSession &&
+    (token?.role === 'GUEST' ||
+      Boolean(token?.isGuest) ||
+      Boolean(guestToken?.isGuest) ||
+      guestToken?.role === 'GUEST')
+
   // Sesi sah = token yang membawa uid (cuid user di DB / id demo guest) ATAU memiliki guestToken aktif.
   const authed = Boolean(token?.uid) || Boolean(guestToken)
 
   // Rute root '/'
   if (pathname === '/') {
-    if (authed) return NextResponse.next()
+    if (authed) {
+      const res = NextResponse.redirect(new URL('/dashboard', req.url))
+      if (hasRealUserSession) {
+        res.cookies.set(GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+        res.cookies.set(LEGACY_GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+      }
+      return res
+    }
     return NextResponse.rewrite(new URL('/landing', req.url))
   }
 
   // Halaman login
   if (pathname === '/login') {
-    // Jika ada sinyal signout / sesi berakhir / error auth, bersihkan cookie sesi
-    // di response header agar sesi stale tidak mengunci browser.
-    if (req.nextUrl.searchParams.has('signout') || req.nextUrl.searchParams.has('error')) {
+    const hasGuestCookie = req.cookies.has(GUEST_COOKIE_NAME) || req.cookies.has(LEGACY_GUEST_COOKIE_NAME)
+    const isSignout = req.nextUrl.searchParams.has('signout') || req.nextUrl.searchParams.has('error')
+
+    // Jika ada sinyal signout / error / atau ada cookie demo guest saat membuka login perusahaan,
+    // bersihkan cookie guest agar tidak tertimpa ke akun login.
+    if (isSignout || hasGuestCookie) {
       const res = NextResponse.next()
-      res.cookies.set('next-auth.session-token', '', { maxAge: 0, path: '/' })
-      res.cookies.set('__Secure-next-auth.session-token', '', { maxAge: 0, path: '/' })
+      if (isSignout) {
+        res.cookies.set('next-auth.session-token', '', { maxAge: 0, path: '/' })
+        res.cookies.set('__Secure-next-auth.session-token', '', { maxAge: 0, path: '/' })
+      }
       res.cookies.set(GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
       res.cookies.set(LEGACY_GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
       return res
@@ -47,7 +63,7 @@ export async function middleware(req: NextRequest) {
 
     // User yang benar-benar aktif login (bukan guest) tidak perlu akses halaman auth
     if (authed && !isGuest) {
-      return NextResponse.redirect(new URL('/', req.url))
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
     return NextResponse.next()
   }

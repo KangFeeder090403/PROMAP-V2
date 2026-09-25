@@ -328,7 +328,12 @@ export function Sidebar({
                 {/* Tombol Logout */}
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/guest/logout', { method: 'POST' })
+                    } catch {}
+                    await signOut({ callbackUrl: '/login?signout=1' })
+                  }}
                   className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-colors"
                 >
                   <LogOut className="h-3.5 w-3.5" />
@@ -366,9 +371,15 @@ export function Sidebar({
               )}
             </button>
 
-            <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
-              <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
-            </div>
+            {user.role !== 'GUEST' && !user.isGuest && !user.id.startsWith('guest-') && (
+              <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
+                <DevAccountSwitcher
+                  currentUserId={user.id}
+                  isImpersonating={Boolean(user.isImpersonating)}
+                  userRole={user.role}
+                />
+              </div>
+            )}
           </div>
         </div>
       </aside>

@@ -128,7 +128,10 @@ export function UserMenu({ user }: { user: SessionUser }) {
         open={logoutConfirmOpen}
         onOpenChange={setLogoutConfirmOpen}
         onConfirm={async () => {
-          await signOut({ callbackUrl: '/login' })
+          try {
+            await fetch('/api/guest/logout', { method: 'POST' })
+          } catch {}
+          await signOut({ callbackUrl: '/login?signout=1' })
         }}
       />
 

@@ -39,6 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     divisionId: user.divisionId,
     divisionName: user.role === 'GUEST' ? 'IT Operasional' : (division?.name ?? null),
     isImpersonating,
+    isGuest: Boolean(user.isGuest || user.role === 'GUEST' || user.id.startsWith('guest-')),
   }
 
   return <DashboardShell user={safeUser}>{children}</DashboardShell>

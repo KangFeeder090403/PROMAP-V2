@@ -18,6 +18,7 @@ export interface SessionUser {
   divisionId?: string | null
   divisionName?: string | null
   isImpersonating?: boolean
+  isGuest?: boolean
 }
 
 export function DashboardShell({ user, children }: Readonly<{ user: SessionUser; children: React.ReactNode }>) {
