@@ -679,7 +679,11 @@ export function ProposalsClient({
                 </div>
 
                 {/* Card footer actions */}
-                <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-3">
+                <footer
+                  className="border-t border-slate-100 dark:border-slate-800 px-4 py-3"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   {/* DRAFT owner: Edit + Ajukan */}
                   {isOwner && p.status === 'DRAFT' && (
                     <div className="flex items-center gap-2">
@@ -817,11 +821,12 @@ export function ProposalsClient({
                       </button>
                     </div>
                   )}
-                </div>
+                </footer>
               </div>
             )
           })}
         </div>
+
       )}
 
       {/* ── Modals ── */}

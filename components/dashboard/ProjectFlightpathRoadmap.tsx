@@ -251,6 +251,8 @@ export function ProjectFlightpathRoadmap({
                         key={`left-${p.id}`}
                         onMouseEnter={() => setHoveredProjectId(p.id)}
                         onMouseLeave={() => setHoveredProjectId(null)}
+                        onFocus={() => setHoveredProjectId(p.id)}
+                        onBlur={() => setHoveredProjectId(null)}
                         onClick={() => onInspectProject?.(p.id)}
                         className={`w-full text-left h-14 px-4 flex flex-col justify-center cursor-pointer transition-colors ${
                           isHovered
@@ -382,8 +384,6 @@ export function ProjectFlightpathRoadmap({
                     return (
                       <div
                         key={`row-${p.id}`}
-                        onMouseEnter={() => setHoveredProjectId(p.id)}
-                        onMouseLeave={() => setHoveredProjectId(null)}
                         className={`h-14 relative flex items-center transition-colors ${
                           isHovered
                             ? 'bg-blue-50/25 dark:bg-blue-950/15'
@@ -394,6 +394,10 @@ export function ProjectFlightpathRoadmap({
                           <button
                             type="button"
                             onClick={() => onInspectProject?.(p.id)}
+                            onMouseEnter={() => setHoveredProjectId(p.id)}
+                            onMouseLeave={() => setHoveredProjectId(null)}
+                            onFocus={() => setHoveredProjectId(p.id)}
+                            onBlur={() => setHoveredProjectId(null)}
                             style={{
                               left: `${geo.leftPercent}%`,
                               width: `${geo.widthPercent}%`,
@@ -426,6 +430,10 @@ export function ProjectFlightpathRoadmap({
                           <button
                             type="button"
                             onClick={() => onInspectProject?.(p.id)}
+                            onMouseEnter={() => setHoveredProjectId(p.id)}
+                            onMouseLeave={() => setHoveredProjectId(null)}
+                            onFocus={() => setHoveredProjectId(p.id)}
+                            onBlur={() => setHoveredProjectId(null)}
                             className="text-left px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500 italic cursor-pointer hover:underline"
                           >
                             {geo.isBeforeViewport

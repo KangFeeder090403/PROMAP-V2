@@ -18,6 +18,9 @@ catatan kecil.txt
 # Artefak review Playwright
 .playwright-mcp/
 
+# SonarQube scanner cache
+.scannerwork/
+
 # Screenshot verifikasi UI — hanya di root, asset produk tetap boleh
 /*.png
 /*.jpg

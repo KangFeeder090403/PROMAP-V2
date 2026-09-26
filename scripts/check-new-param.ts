@@ -64,8 +64,8 @@ check('CAN_MANAGE ProjectsClient = roles item Project', () => {
   assert.ok(m, 'CAN_MANAGE tidak ditemukan di ProjectsClient')
   const roles = [...m[1].matchAll(/'([A-Z_]+)'/g)].map((r) => r[1])
   assert.deepEqual(
-    roles.sort((a, b) => a.localeCompare(b)),
-    [...project.roles].sort((a, b) => a.localeCompare(b)),
+    [...roles].sort((a, b) => a.localeCompare(b, 'id')),
+    [...project.roles].sort((a, b) => a.localeCompare(b, 'id')),
     'CAN_MANAGE lepas sinkron dengan CREATE_ITEMS'
   )
 })
