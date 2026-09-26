@@ -101,11 +101,11 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials.password) return null
 
         const reqEmail = credentials.email.toLowerCase().trim()
-        const demoEmail = (process.env.NEXT_PUBLIC_DEMO_EMAIL ?? 'hendra.sobat@promap.id').toLowerCase().trim()
-        const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? 'Demo12345'
+        const demoEmail = (process.env.NEXT_PUBLIC_DEMO_EMAIL || 'hendra.sobat@promap.id').toLowerCase().trim()
+        const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD
 
         // Demo persona credentials (Hendra Wijaya - Manager IT Operasional Guest)
-        if (reqEmail === demoEmail && credentials.password === demoPassword) {
+        if (demoPassword && reqEmail === demoEmail && credentials.password === demoPassword) {
           return {
             id: 'guest-hendra-wijaya',
             email: demoEmail,

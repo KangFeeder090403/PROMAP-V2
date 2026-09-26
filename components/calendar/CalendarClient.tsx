@@ -943,7 +943,7 @@ export function CalendarClient({
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Terhubung
+                  <span>Terhubung</span>
                 </span>
               </div>
 

@@ -57,7 +57,7 @@ export function DevAccountSwitcher({
     if (!open) return
     let cancelled = false
     fetch('/api/dev/impersonate/accounts')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => {
         if (!cancelled) setAccounts(data.accounts ?? [])
       })

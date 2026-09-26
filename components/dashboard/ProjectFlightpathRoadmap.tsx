@@ -246,12 +246,13 @@ export function ProjectFlightpathRoadmap({
                   {filteredProjects.map((p) => {
                     const isHovered = hoveredProjectId === p.id
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={`left-${p.id}`}
                         onMouseEnter={() => setHoveredProjectId(p.id)}
                         onMouseLeave={() => setHoveredProjectId(null)}
                         onClick={() => onInspectProject?.(p.id)}
-                        className={`h-14 px-4 flex flex-col justify-center cursor-pointer transition-colors ${
+                        className={`w-full text-left h-14 px-4 flex flex-col justify-center cursor-pointer transition-colors ${
                           isHovered
                             ? 'bg-blue-50/40 dark:bg-blue-950/20'
                             : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/30'
@@ -281,7 +282,7 @@ export function ProjectFlightpathRoadmap({
                             aria-hidden="true"
                           />
                         </div>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -390,7 +391,8 @@ export function ProjectFlightpathRoadmap({
                         }`}
                       >
                         {geo.isVisibleInViewport ? (
-                          <div
+                          <button
+                            type="button"
                             onClick={() => onInspectProject?.(p.id)}
                             style={{
                               left: `${geo.leftPercent}%`,
@@ -400,7 +402,7 @@ export function ProjectFlightpathRoadmap({
                               p.startDate || p.createdAt,
                               p.endDate
                             )}`}
-                            className={`absolute h-7.5 rounded-lg border ${barColors.border} ${barColors.bg} cursor-pointer transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 z-10`}
+                            className={`text-left absolute h-7.5 rounded-lg border ${barColors.border} ${barColors.bg} cursor-pointer transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 z-10`}
                           >
                             {/* Progres Fill Bar */}
                             <div
@@ -419,16 +421,17 @@ export function ProjectFlightpathRoadmap({
                                 {p.progress}%
                               </span>
                             </div>
-                          </div>
+                          </button>
                         ) : (
-                          <div
+                          <button
+                            type="button"
                             onClick={() => onInspectProject?.(p.id)}
-                            className="px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500 italic cursor-pointer hover:underline"
+                            className="text-left px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500 italic cursor-pointer hover:underline"
                           >
                             {geo.isBeforeViewport
                               ? 'Selesai sebelum periode ini'
                               : 'Jadwal di masa mendatang'}
-                          </div>
+                          </button>
                         )}
                       </div>
                     )

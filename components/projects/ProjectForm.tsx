@@ -304,8 +304,9 @@ export function ProjectForm({
             <div className="space-y-1.5">
               <Label className="text-slate-700 dark:text-slate-300">Status Inisiatif</Label>
               <div className="flex items-center gap-4 pt-1">
-                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label htmlFor="project-status-active" className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input
+                    id="project-status-active"
                     type="radio"
                     name="isActive"
                     checked={isActive}
@@ -314,11 +315,12 @@ export function ProjectForm({
                   />
                   <span className="inline-flex items-center gap-1.5 font-medium">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Aktif (Sedang Berjalan)
+                    <span>Aktif (Sedang Berjalan)</span>
                   </span>
                 </label>
-                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                <label htmlFor="project-status-archived" className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input
+                    id="project-status-archived"
                     type="radio"
                     name="isActive"
                     checked={!isActive}
@@ -327,7 +329,7 @@ export function ProjectForm({
                   />
                   <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                     <span className="h-2 w-2 rounded-full bg-slate-400" />
-                    Diarsipkan / Nonaktif
+                    <span>Diarsipkan / Nonaktif</span>
                   </span>
                 </label>
               </div>

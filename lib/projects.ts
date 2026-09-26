@@ -69,7 +69,7 @@ export async function createProjectWithTasks(
   const startDate = input.startDate ?? null
   const endDate = input.endDate ?? null
 
-  if ((startDate && isNaN(startDate.getTime())) || (endDate && isNaN(endDate.getTime()))) {
+  if ((startDate && Number.isNaN(startDate.getTime())) || (endDate && Number.isNaN(endDate.getTime()))) {
     throw new ProjectInputError('Format tanggal tidak valid', 400)
   }
   if (startDate && endDate && startDate > endDate) {

@@ -86,9 +86,8 @@ export function GuestDemoPanel() {
       }
 
       // NOSONAR: Public demo persona credentials for prospective guest visitors (PRD §Demo Persona).
-      // Sesi demo otomatis masuk ke tenant demo publik (Hendra Wijaya - Manager SobatUMKM pro).
       const demoEmail = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? 'hendra.sobat@promap.id'
-      const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? 'Demo12345'
+      const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD || ''
       await signIn('credentials', {
         email: demoEmail,
         password: demoPassword,

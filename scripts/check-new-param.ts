@@ -63,7 +63,11 @@ check('CAN_MANAGE ProjectsClient = roles item Project', () => {
   const m = src.match(/const CAN_MANAGE: Role\[\] = \[([^\]]*)\]/)
   assert.ok(m, 'CAN_MANAGE tidak ditemukan di ProjectsClient')
   const roles = [...m[1].matchAll(/'([A-Z_]+)'/g)].map((r) => r[1])
-  assert.deepEqual(roles.sort(), [...project.roles].sort(), 'CAN_MANAGE lepas sinkron dengan CREATE_ITEMS')
+  assert.deepEqual(
+    roles.sort((a, b) => a.localeCompare(b)),
+    [...project.roles].sort((a, b) => a.localeCompare(b)),
+    'CAN_MANAGE lepas sinkron dengan CREATE_ITEMS'
+  )
 })
 
 // 5. Assert NEGATIF — 'Personal Task' tidak boleh kembali sebelum UI-4 siap.

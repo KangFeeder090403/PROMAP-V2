@@ -23,8 +23,8 @@ export default function DemoActivePage() {
           Sesi demo Anda aktif sebagai{' '}
           <strong className="font-semibold text-slate-800 dark:text-slate-200">
             Hendra Wijaya (Manager IT Operasional)
-          </strong>
-          . Anda dapat langsung menjelajahi dashboard dengan data contoh lengkap.
+          </strong>{'. '}
+          Anda dapat langsung menjelajahi dashboard dengan data contoh lengkap.
         </p>
         <Link
           href="/dashboard"

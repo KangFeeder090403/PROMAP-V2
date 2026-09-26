@@ -49,7 +49,7 @@ const AVATAR_COLORS = [
 
 function colorForString(s: string): string {
   let hash = 0
-  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
+  for (let i = 0; i < s.length; i++) hash = (s.codePointAt(i) ?? 0) + ((hash << 5) - hash)
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
@@ -679,16 +679,13 @@ export function ProposalsClient({
                 </div>
 
                 {/* Card footer actions */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="border-t border-slate-100 dark:border-slate-800 px-4 py-3"
-                >
+                <div className="border-t border-slate-100 dark:border-slate-800 px-4 py-3">
                   {/* DRAFT owner: Edit + Ajukan */}
                   {isOwner && p.status === 'DRAFT' && (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => { setEditing(p); setFormOpen(true) }}
+                        onClick={(e) => { e.stopPropagation(); setEditing(p); setFormOpen(true) }}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors"
                       >
                         <FileEdit className="h-3.5 w-3.5" />
@@ -696,7 +693,7 @@ export function ProposalsClient({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleSubmit(p)}
+                        onClick={(e) => { e.stopPropagation(); handleSubmit(p) }}
                         disabled={submittingId === p.id}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors disabled:opacity-50"
                       >
@@ -716,7 +713,7 @@ export function ProposalsClient({
                       {['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'].includes(role) && (
                         <button
                           type="button"
-                          onClick={() => { setEditing(p); setFormOpen(true) }}
+                          onClick={(e) => { e.stopPropagation(); setEditing(p); setFormOpen(true) }}
                           className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           Buka Draft &rsaquo;
@@ -730,7 +727,7 @@ export function ProposalsClient({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setReviewing(p)}
+                        onClick={(e) => { e.stopPropagation(); setReviewing(p) }}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -738,7 +735,7 @@ export function ProposalsClient({
                       </button>
                       <button
                         type="button"
-                        onClick={() => setReviewing(p)}
+                        onClick={(e) => { e.stopPropagation(); setReviewing(p) }}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg border border-red-200 dark:border-red-800 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-semibold transition-colors"
                       >
                         <XCircle className="h-3.5 w-3.5" />
@@ -768,7 +765,7 @@ export function ProposalsClient({
                         canCreateProject && (
                           <button
                             type="button"
-                            onClick={() => setProjectFromProposal(p)}
+                            onClick={(e) => { e.stopPropagation(); setProjectFromProposal(p) }}
                             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold transition-colors"
                             title="Wujudkan usulan ini menjadi Project lintas divisi"
                           >
@@ -780,7 +777,7 @@ export function ProposalsClient({
 
                       <button
                         type="button"
-                        onClick={() => setConvertingProposal(p)}
+                        onClick={(e) => { e.stopPropagation(); setConvertingProposal(p) }}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
                         title="Jadikan usulan ini Action Plan eksekusi nyata"
                       >
@@ -791,6 +788,7 @@ export function ProposalsClient({
                       {p.projectId ? (
                         <Link
                           href={`/projects/${p.projectId}`}
+                          onClick={(e) => e.stopPropagation()}
                           className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
                         >
                           Lihat Project &rsaquo;
@@ -798,7 +796,7 @@ export function ProposalsClient({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setReviewing(p)}
+                          onClick={(e) => { e.stopPropagation(); setReviewing(p) }}
                           className="ml-auto text-xs text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium"
                         >
                           Detail &rsaquo;
@@ -812,7 +810,7 @@ export function ProposalsClient({
                     <div className="flex items-center justify-end">
                       <button
                         type="button"
-                        onClick={() => setReviewing(p)}
+                        onClick={(e) => { e.stopPropagation(); setReviewing(p) }}
                         className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium"
                       >
                         Detail Penolakan &rsaquo;

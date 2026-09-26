@@ -290,12 +290,12 @@ export function AuditLogModal({
     const rows = logs.map((l) => [
       `"${l.id}"`,
       `"${l.createdAt}"`,
-      `"${(l.user?.name ?? 'Sistem').replace(/"/g, '""')}"`,
+      `"${(l.user?.name ?? 'Sistem').replaceAll('"', '""')}"`,
       `"${l.user?.role ?? ''}"`,
       `"${l.action}"`,
-      `"${(l.actionPlan?.title ?? '').replace(/"/g, '""')}"`,
-      `"${(l.oldValue ?? '').replace(/"/g, '""')}"`,
-      `"${(l.newValue ?? '').replace(/"/g, '""')}"`,
+      `"${(l.actionPlan?.title ?? '').replaceAll('"', '""')}"`,
+      `"${(l.oldValue ?? '').replaceAll('"', '""')}"`,
+      `"${(l.newValue ?? '').replaceAll('"', '""')}"`,
     ])
 
     const csvContent = 'data:text/csv;charset=utf-8,﻿' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')

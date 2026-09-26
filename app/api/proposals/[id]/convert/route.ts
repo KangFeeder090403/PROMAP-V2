@@ -209,7 +209,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       ? new Date(body.endDate)
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return NextResponse.json({ error: 'Format tanggal tidak valid' }, { status: 400 })
     }
 

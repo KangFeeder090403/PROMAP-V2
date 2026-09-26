@@ -169,6 +169,7 @@ export function MentionTextarea({
               key={u.id}
               id={`${listboxId}-opt-${i}`}
               role="option"
+              tabIndex={-1}
               aria-selected={i === activeIndex}
               // onMouseDown + preventDefault: klik tidak boleh merebut fokus
               // dari textarea (blur akan menutup dropdown sebelum klik terproses).

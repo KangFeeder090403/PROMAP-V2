@@ -24,7 +24,7 @@ async function testHttpEndpoints() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       email: 'admin@promap.com',
-      password: 'Demo12345',
+      password: process.env.TEST_PASSWORD || process.env.NEXT_PUBLIC_DEMO_PASSWORD || '',
       csrfToken: '',
     }),
   })

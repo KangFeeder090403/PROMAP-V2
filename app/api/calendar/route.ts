@@ -47,7 +47,7 @@ export async function GET(req: Request) {
       year: yearRaw,
     })
 
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
       return NextResponse.json({ error: 'Rentang tanggal tidak valid' }, { status: 400 })
     }
 

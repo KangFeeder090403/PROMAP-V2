@@ -217,6 +217,17 @@ export function ActionPlanFormModal({
     onSuccess(false)
   }
 
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        handleSubmit(onSubmit)()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open, handleSubmit, onSubmit])
+
   return (
     <Dialog open={open} onOpenChange={requestClose}>
       <DialogContent className="sm:max-w-md">
@@ -228,9 +239,6 @@ export function ActionPlanFormModal({
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit(onSubmit)()
-          }}
           className="space-y-4"
           noValidate
         >
@@ -348,7 +356,7 @@ export function ActionPlanFormModal({
                   onChange={(e) => setCreateMore(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                 />
-                Buat lagi
+                <span>Buat lagi</span>
               </label>
             ) : (
               <span />

@@ -119,10 +119,10 @@ export async function POST(req: Request) {
       const status = rawStatus as CreatableStatus
 
       let startDate = item.startDate ? new Date(item.startDate) : defaultStart
-      if (isNaN(startDate.getTime())) startDate = defaultStart
+      if (Number.isNaN(startDate.getTime())) startDate = defaultStart
 
       let endDate = item.endDate ? new Date(item.endDate) : defaultEnd
-      if (isNaN(endDate.getTime())) endDate = defaultEnd
+      if (Number.isNaN(endDate.getTime())) endDate = defaultEnd
 
       const isPersonal = !item.taskId
 

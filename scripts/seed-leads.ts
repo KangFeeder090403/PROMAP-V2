@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import crypto from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import type { LeadStatus } from '@/lib/generated/prisma/client'
 
@@ -202,7 +203,7 @@ export async function seedLeads() {
       status: 'TRIAL_ACTIVE',
       trialStartAt: daysAgo(daysPassed as number),
       trialEndAt: daysFromNow(daysRemaining as number),
-      loginCount: Math.floor(Math.random() * 20) + 3,
+      loginCount: crypto.randomInt(3, 24),
       lastLoginAt: hoursAgo(idx * 2 + 1),
       notes: `Evaluasi 30 hari tim operasional (${daysRemaining} hari tersisa)`,
       createdAt: daysAgo(daysPassed as number),

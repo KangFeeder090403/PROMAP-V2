@@ -603,10 +603,11 @@ export function ActionPlanWorkspaceClient({
             {isEditingEvidence ? (
               <div className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="temp-evidence-link" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Tautan Bukti Kerja (URL)
                   </label>
                   <input
+                    id="temp-evidence-link"
                     type="url"
                     value={tempEvidenceLink}
                     onChange={(e) => setTempEvidenceLink(e.target.value)}
@@ -615,10 +616,11 @@ export function ActionPlanWorkspaceClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="temp-evaluation-note" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Catatan Evaluasi / Keterangan PIC
                   </label>
                   <textarea
+                    id="temp-evaluation-note"
                     rows={3}
                     value={tempEvaluationNote}
                     onChange={(e) => setTempEvaluationNote(e.target.value)}
@@ -854,7 +856,7 @@ export function ActionPlanWorkspaceClient({
                       <span>{timeAgo(log.createdAt, new Date())}</span>
                     </div>
                     <p className="text-slate-600 dark:text-slate-400 font-medium">
-                      {log.action.replace(/_/g, ' ')}
+                      {log.action.replaceAll('_', ' ')}
                     </p>
                     {(log.oldValue || log.newValue) && (
                       <p className="text-[10px] text-slate-400 truncate">
