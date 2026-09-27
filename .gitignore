@@ -17,6 +17,11 @@ catatan kecil.txt
 
 # Artefak review Playwright
 .playwright-mcp/
+playwright-report/
+test-results/
+
+# Temporary office files
+~$*
 
 # SonarQube scanner cache
 .scannerwork/

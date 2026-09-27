@@ -1,4 +1,4 @@
-  {
+{
   "name": "promap-v2",
   "version": "2.2.0",
   "private": true,
@@ -11,6 +11,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:all": "node scripts/run-e2e-all.js",
+    "report:pdf": "node scripts/generate-pdf-report.js",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -52,8 +55,9 @@
     "zod": "3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "2.4.6",
-    "@types/node": "20.17.6",
+    "@types/node": "^26.6.3",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "autoprefixer": "^10.4.20",
