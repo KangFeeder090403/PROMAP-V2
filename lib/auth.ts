@@ -100,8 +100,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null
 
-        const reqEmail = credentials.email.toLowerCase().trim()
-        const demoEmail = (process.env.NEXT_PUBLIC_DEMO_EMAIL || 'hendra.sobat@promap.id').toLowerCase().trim()
+        const reqEmail = credentials.email.normalize('NFKC').toLowerCase().trim()
+        const demoEmail = (process.env.NEXT_PUBLIC_DEMO_EMAIL || 'hendra.sobat@promap.id').normalize('NFKC').toLowerCase().trim()
         const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD
 
         // Demo persona credentials (Hendra Wijaya - Manager IT Operasional Guest)
@@ -167,7 +167,7 @@ export const authOptions: NextAuthOptions = {
       if (!g?.email || g.email_verified !== true) return false
 
       const user = await prisma.user.findUnique({
-        where: { email: g.email.toLowerCase().trim() },
+        where: { email: g.email.normalize('NFKC').toLowerCase().trim() },
         select: SSO_SELECT,
       })
 
@@ -184,7 +184,7 @@ export const authOptions: NextAuthOptions = {
       // supaya token.uid valid untuk getSessionUser() dan scope tenant tidak bocor.
       if (account?.provider === 'google' && token.email) {
         const db = await prisma.user.findUnique({
-          where: { email: String(token.email).toLowerCase().trim() },
+          where: { email: String(token.email).normalize('NFKC').toLowerCase().trim() },
           select: SSO_SELECT,
         })
         if (!db || !tenantAllows(db)) return { ...token, uid: null }

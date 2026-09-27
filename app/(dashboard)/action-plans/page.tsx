@@ -2,18 +2,19 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/rbac'
 import { ActionPlansClient } from '@/components/action-plans/ActionPlansClient'
 
-export default async function ActionPlansPage({
-  searchParams,
-}: {
-  searchParams: {
-    new?: string
-    open?: string
-    id?: string
-    highlight?: string
-    division?: string
-    status?: string
+export default async function ActionPlansPage(
+  props: {
+    searchParams: Promise<{
+      new?: string
+      open?: string
+      id?: string
+      highlight?: string
+      division?: string
+      status?: string
+    }>
   }
-}) {
+) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser()
   if (!user) redirect('/login')
 

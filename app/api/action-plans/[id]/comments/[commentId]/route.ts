@@ -15,8 +15,9 @@ import { logActivity } from '@/lib/activity-log'
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; commentId: string } }
+  props: { params: Promise<{ id: string; commentId: string }> }
 ) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

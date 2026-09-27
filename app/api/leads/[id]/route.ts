@@ -5,7 +5,8 @@ import type { LeadStatus } from '@/lib/generated/prisma/client'
 
 const VALID_STATUS: LeadStatus[] = ['NEW', 'TRIAL_ACTIVE', 'CONVERTED', 'COLD']
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

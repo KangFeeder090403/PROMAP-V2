@@ -6,11 +6,12 @@ import { ProjectsClient } from '@/components/projects/ProjectsClient'
 // Cermin canManageProject — PIC tidak bisa bikin project.
 const CAN_CREATE = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER']
 
-export default async function ProjectsPage({
-  searchParams,
-}: {
-  searchParams: { new?: string; open?: string }
-}) {
+export default async function ProjectsPage(
+  props: {
+    searchParams: Promise<{ new?: string; open?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser()
   if (!user) redirect('/login')
 

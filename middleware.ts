@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { PUBLIC_PAGES, PUBLIC_PREFIX } from '@/lib/auth-redirect'
+import { PUBLIC_PAGES, PUBLIC_PREFIX, safeCallbackUrl } from '@/lib/auth-redirect'
 import { getGuestToken, GUEST_COOKIE_NAME, LEGACY_GUEST_COOKIE_NAME } from '@/lib/guest-auth'
 
 export async function middleware(req: NextRequest) {
@@ -33,14 +33,18 @@ export async function middleware(req: NextRequest) {
   // Rute root '/'
   if (pathname === '/') {
     if (authed) {
-      const res = NextResponse.redirect(new URL('/dashboard', req.url))
+      const dashUrl = req.nextUrl.clone()
+      dashUrl.pathname = '/dashboard'
+      const res = NextResponse.redirect(dashUrl)
       if (hasRealUserSession) {
         res.cookies.set(GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
         res.cookies.set(LEGACY_GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
       }
       return res
     }
-    return NextResponse.rewrite(new URL('/landing', req.url))
+    const landingUrl = req.nextUrl.clone()
+    landingUrl.pathname = '/landing'
+    return NextResponse.rewrite(landingUrl)
   }
 
   // Halaman login
@@ -63,7 +67,9 @@ export async function middleware(req: NextRequest) {
 
     // User yang benar-benar aktif login (bukan guest) tidak perlu akses halaman auth
     if (authed && !isGuest) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      const dashUrl = req.nextUrl.clone()
+      dashUrl.pathname = '/dashboard'
+      return NextResponse.redirect(dashUrl)
     }
     return NextResponse.next()
   }
@@ -78,10 +84,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Proteksi rute privat untuk pengunjung tanpa sesi
+  // Proteksi rute privat untuk pengunjung tanpa sesi (Aman SSRF: clone nextUrl & sanitisasi callbackUrl)
   if (!authed) {
-    const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
+    const loginUrl = req.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(pathname))
     return NextResponse.redirect(loginUrl)
   }
 
@@ -96,7 +103,8 @@ export async function middleware(req: NextRequest) {
       pathname.startsWith('/action-plans')
 
     if (isForbidden) {
-      const dashboardUrl = new URL('/dashboard', req.url)
+      const dashboardUrl = req.nextUrl.clone()
+      dashboardUrl.pathname = '/dashboard'
       dashboardUrl.searchParams.set('trial', '1')
       return NextResponse.redirect(dashboardUrl)
     }

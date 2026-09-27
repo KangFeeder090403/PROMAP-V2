@@ -6,7 +6,8 @@ import { logActivity } from '@/lib/activity-log'
 
 const REASSIGNABLE = ['NOT_STARTED', 'IN_PROGRESS', 'REJECTED']
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

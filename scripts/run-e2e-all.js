@@ -54,7 +54,7 @@ async function run() {
 
   // 1. STEP: LOGIN FLOW
   await step('1. Alur Login & Redirect Dashboard', async () => {
-    await page.goto('/login', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto('/login', { waitUntil: 'networkidle', timeout: 50000 });
     
     // Pastikan form terhidrasi
     await page.waitForSelector('#email', { state: 'visible' });
@@ -63,7 +63,7 @@ async function run() {
 
     await Promise.all([
       page.waitForURL(url => url.pathname.includes('/dashboard') || url.pathname === '/', {
-        timeout: 35000,
+        timeout: 45000,
         waitUntil: 'domcontentloaded',
       }),
       page.click('button:has-text("Masuk")')

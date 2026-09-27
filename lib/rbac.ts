@@ -68,7 +68,7 @@ export async function getSessionUser(): Promise<User | null> {
   // 3. Fallback: Cek cookie guest_session HANYA jika TIDAK ADA sesi user riil
   try {
     const { cookies } = await import('next/headers')
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const guestCookie =
       cookieStore.get('guest_session')?.value ??
       cookieStore.get('promap-guest-token')?.value

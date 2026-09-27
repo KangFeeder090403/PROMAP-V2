@@ -5,7 +5,8 @@ import { logActivity } from '@/lib/activity-log'
 
 // PIC menyelesaikan Action Plan pribadi sendiri tanpa review atasan.
 // Hanya berlaku untuk isPersonal: true (atau taskId: null).
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {
