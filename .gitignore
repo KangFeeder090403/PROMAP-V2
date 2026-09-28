@@ -43,3 +43,4 @@ scripts/
 .windsurf/
 # Dokumentasi & mockup lokal — tidak di-commit
 docs/
+.gstack/
