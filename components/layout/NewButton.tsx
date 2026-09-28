@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
@@ -46,10 +46,19 @@ export function NewButton({ role }: Readonly<{ role: Role }>) {
   const router = useRouter()
   const items = CREATE_ITEMS.filter((item) => item.roles.includes(role))
 
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
   if (items.length === 0) return null
 
   return (
-    <div className="relative" onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
+    <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

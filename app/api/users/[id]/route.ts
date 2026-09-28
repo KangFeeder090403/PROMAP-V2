@@ -20,7 +20,8 @@ const SAFE_SELECT = {
   updatedAt: true,
 } as const
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {
@@ -154,7 +155,8 @@ async function validateUpdateRelations(
   return { updateData }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

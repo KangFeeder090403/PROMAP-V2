@@ -2,11 +2,12 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/rbac'
 import { ProposalsClient } from '@/components/proposals/ProposalsClient'
 
-export default async function ProposalsPage({
-  searchParams,
-}: {
-  searchParams: { new?: string }
-}) {
+export default async function ProposalsPage(
+  props: {
+    searchParams: Promise<{ new?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser()
   if (!user) redirect('/login')
 

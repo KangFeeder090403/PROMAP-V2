@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { PageTransition } from '@/components/animation/PageTransition'
 import { GlobalAnimationProvider } from '@/components/animation/GlobalAnimationProvider'
+import { TrialActivationModal } from '@/components/guest/TrialActivationModal'
 
 export interface SessionUser {
   id: string
@@ -17,6 +18,7 @@ export interface SessionUser {
   divisionId?: string | null
   divisionName?: string | null
   isImpersonating?: boolean
+  isGuest?: boolean
 }
 
 export function DashboardShell({ user, children }: Readonly<{ user: SessionUser; children: React.ReactNode }>) {
@@ -99,6 +101,8 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
           </GlobalAnimationProvider>
         </main>
       </div>
+
+      {user.role === 'GUEST' && <TrialActivationModal />}
     </div>
   )
 }

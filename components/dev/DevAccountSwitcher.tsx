@@ -38,10 +38,15 @@ const DEV = process.env.NODE_ENV !== 'production'
 export function DevAccountSwitcher({
   currentUserId,
   isImpersonating,
+  userRole,
 }: {
   currentUserId: string
   isImpersonating: boolean
+  userRole?: Role | string
 }) {
+  const isGuestUser = userRole === 'GUEST' || currentUserId.startsWith('guest-')
+  if (!DEV || isGuestUser) return null
+
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
@@ -52,7 +57,7 @@ export function DevAccountSwitcher({
     if (!open) return
     let cancelled = false
     fetch('/api/dev/impersonate/accounts')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => {
         if (!cancelled) setAccounts(data.accounts ?? [])
       })

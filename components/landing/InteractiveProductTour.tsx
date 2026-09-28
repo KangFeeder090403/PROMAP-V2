@@ -146,7 +146,7 @@ export function InteractiveProductTour() {
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-              Data Tersinkronisasi
+              <span>Data Tersinkronisasi</span>
             </div>
           </div>
 
@@ -467,9 +467,9 @@ function TourEvidenceView() {
             </p>
 
             <div className="mt-4 space-y-2.5">
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300">
+              <span className="block text-[11px] font-medium text-slate-600 dark:text-slate-300">
                 Catatan Tinjauan Manajer:
-              </label>
+              </span>
               <div className="rounded-md border border-slate-200 bg-white p-2.5 text-xs text-slate-700 italic dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 &ldquo;Seluruh angka anggaran sesuai batas pagu divisi. Dokumen pendukung lengkap.&rdquo;
               </div>

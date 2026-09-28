@@ -157,8 +157,55 @@ export async function getCalendarEvents(
   }))
 }
 
+import { getGuestDummyData } from '@/lib/guest-dummy-data'
+
 export async function getCalendarInitialData(user: User) {
   const now = new Date()
+
+  if (user.role === 'GUEST') {
+    const dummy = getGuestDummyData(now)
+    const filterOptions: CalendarFilterOptions = {
+      statuses: [
+        { key: 'NOT_STARTED', label: 'Belum Mulai' },
+        { key: 'IN_PROGRESS', label: 'Dalam Pengerjaan' },
+        { key: 'PENDING_APPROVAL', label: 'Menunggu Approval' },
+        { key: 'EVIDENCE_REQUIRED', label: 'Perlu Bukti' },
+        { key: 'APPROVED', label: 'Disetujui' },
+        { key: 'OVERDUE', label: 'Lewat Tenggat' },
+        { key: 'COMPLETE', label: 'Selesai' },
+      ],
+      priorities: [
+        { key: 'HIGH', label: 'Tinggi' },
+        { key: 'MEDIUM', label: 'Sedang' },
+        { key: 'LOW', label: 'Rendah' },
+      ],
+      pics: [{ id: 'guest-hendra-wijaya', name: 'Hendra Wijaya', division: { name: 'IT Operasional' } }],
+      projects: [
+        { id: 'personal', name: 'Personal (Tanpa Project)' },
+        { id: 'proj-demo-1', name: 'Transformasi Digital Operasional 2026' },
+        { id: 'proj-demo-2', name: 'Modernisasi Infrastruktur & DevOps' },
+      ],
+      divisions: [{ id: 'demo-division-id', name: 'IT Operasional' }],
+    }
+    const events: CalendarEvent[] = dummy.actionPlans.map((a) => ({
+      id: a.id,
+      code: shortRef(a.id, 'AP'),
+      title: a.title,
+      status: a.status,
+      priority: a.priority,
+      startDate: a.createdAt.toISOString(),
+      endDate: a.endDate.toISOString(),
+      picId: a.picId,
+      picName: a.pic.name,
+      labelName: 'Manager',
+      projectId: 'proj-demo-1',
+      projectName: 'Transformasi Digital Operasional 2026',
+      divisionId: 'demo-division-id',
+      divisionName: 'IT Operasional',
+    }))
+    return { filterOptions, events }
+  }
+
   const range = resolveCalendarRange('month', now)
   const from = new Date(range.from)
   const to = new Date(range.to)

@@ -462,7 +462,7 @@ export function ProjectDetailClient({
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium">
               <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-              Nonaktif
+              <span>Nonaktif</span>
             </span>
           )}
         </div>

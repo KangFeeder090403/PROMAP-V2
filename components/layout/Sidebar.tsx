@@ -382,9 +382,15 @@ export function Sidebar({
               )}
             </button>
 
-            <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
-              <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
-            </div>
+            {user.role !== 'GUEST' && !user.isGuest && !user.id.startsWith('guest-') && (
+              <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
+                <DevAccountSwitcher
+                  currentUserId={user.id}
+                  isImpersonating={Boolean(user.isImpersonating)}
+                  userRole={user.role}
+                />
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -410,7 +416,12 @@ export function Sidebar({
       <LogoutConfirmDialog
         open={logoutConfirmOpen}
         onOpenChange={setLogoutConfirmOpen}
-        onConfirm={() => signOut({ callbackUrl: '/login' })}
+        onConfirm={async () => {
+          try {
+            await fetch('/api/guest/logout', { method: 'POST' })
+          } catch {}
+          await signOut({ callbackUrl: '/login?signout=1' })
+        }}
       />
     </>
   )

@@ -417,12 +417,12 @@ export function ProjectsClient({
                           {p.isActive ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Aktif
+                              <span>Aktif</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium">
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                              Nonaktif
+                              <span>Nonaktif</span>
                             </span>
                           )}
                         </td>

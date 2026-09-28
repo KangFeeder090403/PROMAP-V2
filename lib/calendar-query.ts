@@ -86,7 +86,7 @@ export function resolveDateRange(params: {
   // 1. Jika ada quarter spesifik (1..4 atau Q1..Q4)
   if (params.quarter) {
     const rawQ = params.quarter.toUpperCase().replace('Q', '')
-    const q = Math.min(4, Math.max(1, parseInt(rawQ, 10) || 1))
+    const q = Math.min(4, Math.max(1, Number.parseInt(rawQ, 10) || 1))
     const startMonth = (q - 1) * 3
     const from = new Date(targetYear, startMonth, 1, 0, 0, 0, 0)
     const to = new Date(targetYear, startMonth + 3, 0, 23, 59, 59, 999)
@@ -125,7 +125,7 @@ export function resolveDateRange(params: {
     }
 
     if (['q1', 'q2', 'q3', 'q4'].includes(range)) {
-      const q = parseInt(range.replace('q', ''), 10)
+      const q = Number.parseInt(range.replace('q', ''), 10)
       const startMonth = (q - 1) * 3
       const from = new Date(targetYear, startMonth, 1, 0, 0, 0, 0)
       const to = new Date(targetYear, startMonth + 3, 0, 23, 59, 59, 999)
@@ -137,7 +137,7 @@ export function resolveDateRange(params: {
   if (params.from && params.to) {
     const from = new Date(params.from)
     const to = new Date(params.to)
-    if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
       // Jika to dikirim tanpa jam/menit (misal 2026-09-30), pastikan mencakup hingga akhir hari
       if (params.to.length <= 10) {
         to.setHours(23, 59, 59, 999)

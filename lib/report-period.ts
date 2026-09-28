@@ -12,8 +12,8 @@ export function getQuarterRange(quarterStr?: string | null) {
     // Format "Q3-2026" atau "Q3 2026"
     const m = quarterStr.match(/Q(\d)[\s-]?(\d{4})/)
     if (m) {
-      const parsedQ = parseInt(m[1])
-      const parsedYear = parseInt(m[2])
+      const parsedQ = Number.parseInt(m[1], 10)
+      const parsedYear = Number.parseInt(m[2], 10)
       // Clamp kuartal 1-4, tahun realistis; kalau invalid fallback ke kuartal berjalan
       if (parsedQ >= 1 && parsedQ <= 4 && parsedYear >= 2000 && parsedYear <= 2100) {
         qNum = parsedQ

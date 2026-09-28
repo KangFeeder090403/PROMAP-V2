@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser, canReviewProposal } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

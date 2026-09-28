@@ -72,11 +72,11 @@ function normalizeDate(val: string | undefined, defaultDate: Date): { dateStr: s
   // Format YYYY-MM-DD
   const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
   if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10)
-    const month = parseInt(isoMatch[2], 10) - 1
-    const day = parseInt(isoMatch[3], 10)
+    const year = Number.parseInt(isoMatch[1], 10)
+    const month = Number.parseInt(isoMatch[2], 10) - 1
+    const day = Number.parseInt(isoMatch[3], 10)
     const testDate = new Date(year, month, day)
-    if (!isNaN(testDate.getTime()) && testDate.getFullYear() === year && testDate.getMonth() === month && testDate.getDate() === day) {
+    if (!Number.isNaN(testDate.getTime()) && testDate.getFullYear() === year && testDate.getMonth() === month && testDate.getDate() === day) {
       return {
         dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
       }
@@ -86,11 +86,11 @@ function normalizeDate(val: string | undefined, defaultDate: Date): { dateStr: s
   // Format DD/MM/YYYY atau DD-MM-YYYY
   const dmyMatch = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10)
-    const month = parseInt(dmyMatch[2], 10) - 1
-    const year = parseInt(dmyMatch[3], 10)
+    const day = Number.parseInt(dmyMatch[1], 10)
+    const month = Number.parseInt(dmyMatch[2], 10) - 1
+    const year = Number.parseInt(dmyMatch[3], 10)
     const testDate = new Date(year, month, day)
-    if (!isNaN(testDate.getTime()) && testDate.getFullYear() === year && testDate.getMonth() === month && testDate.getDate() === day) {
+    if (!Number.isNaN(testDate.getTime()) && testDate.getFullYear() === year && testDate.getMonth() === month && testDate.getDate() === day) {
       return {
         dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
       }
@@ -454,8 +454,8 @@ export function generateActionPlanTemplateCsv(): string {
 
     day.tasks.forEach((t) => {
       rows.push([
-        `"${t.title.replace(/"/g, '""')}"`,
-        `"${t.outcomeKpi.replace(/"/g, '""')}"`,
+        `"${t.title.replaceAll('"', '""')}"`,
+        `"${t.outcomeKpi.replaceAll('"', '""')}"`,
         t.priority,
         dateStr,
         dateStr,

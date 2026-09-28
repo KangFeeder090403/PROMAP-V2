@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, apScope, canManageChecklist } from '@/lib/rbac'
 
-export async function PATCH(req: Request, { params }: { params: { id: string; checklistId: string } }) {
+export async function PATCH(
+  req: Request,
+  props: { params: Promise<{ id: string; checklistId: string }> }
+) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -38,7 +42,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ch
 }
 
 // EXCEPTION larangan-keras#4: Checklist bukan data transaksi utama, hard delete diizinkan by design (schema tidak punya deletedAt)
-export async function DELETE(_req: Request, { params }: { params: { id: string; checklistId: string } }) {
+export async function DELETE(
+  _req: Request,
+  props: { params: Promise<{ id: string; checklistId: string }> }
+) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

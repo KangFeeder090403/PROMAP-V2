@@ -32,7 +32,7 @@ const AVATAR_COLORS = [
 
 function colorForString(s: string, palette: string[]): string {
   let hash = 0
-  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
+  for (let i = 0; i < s.length; i++) hash = (s.codePointAt(i) ?? 0) + ((hash << 5) - hash)
   return palette[Math.abs(hash) % palette.length]
 }
 

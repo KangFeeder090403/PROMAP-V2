@@ -66,7 +66,7 @@ function getInitials(name: string): string {
 function getAvatarColor(name: string): string {
   let hash = 0
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    hash = (name.codePointAt(i) ?? 0) + ((hash << 5) - hash)
   }
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
@@ -295,11 +295,11 @@ export function LeadsManagementClient() {
   // Helper XML Escaping
   function escapeXml(str: string): string {
     return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;')
   }
 
   // 1. Ekspor ke Excel Spreadsheet XML (.xls) — Format paling rapi di Microsoft Excel
@@ -483,16 +483,16 @@ export function LeadsManagementClient() {
     ]
 
     const rows = filteredLeads.map((l) => [
-      `"${l.name.replace(/"/g, '""')}"`,
-      `"${l.email.replace(/"/g, '""')}"`,
-      `"${(l.phone ?? '').replace(/"/g, '""')}"`,
-      `"${l.companyName.replace(/"/g, '""')}"`,
+      `"${l.name.replaceAll('"', '""')}"`,
+      `"${l.email.replaceAll('"', '""')}"`,
+      `"${(l.phone ?? '').replaceAll('"', '""')}"`,
+      `"${l.companyName.replaceAll('"', '""')}"`,
       `"${l.status}"`,
       `"${l.trialStartAt ? new Date(l.trialStartAt).toLocaleDateString('id-ID') : '-'}"`,
       `"${l.trialEndAt ? new Date(l.trialEndAt).toLocaleDateString('id-ID') : '-'}"`,
       `"${l.loginCount}"`,
       `"${l.lastLoginAt ? new Date(l.lastLoginAt).toLocaleString('id-ID') : 'Belum login'}"`,
-      `"${(l.notes ?? '').replace(/"/g, '""')}"`,
+      `"${(l.notes ?? '').replaceAll('"', '""')}"`,
     ])
 
     // "sep=;" di baris paling atas memberitahu Excel di semua versi OS untuk otomatis membagi kolom pakai titik koma
@@ -641,7 +641,7 @@ export function LeadsManagementClient() {
           </div>
           <p className="mt-2 text-xs font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-            Sedang evaluasi 30 hari
+            <span>Sedang evaluasi 30 hari</span>
           </p>
         </div>
 
@@ -822,25 +822,25 @@ export function LeadsManagementClient() {
                       {lead.status === 'TRIAL_ACTIVE' && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80">
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                          TRIAL_ACTIVE
+                          <span>TRIAL_ACTIVE</span>
                         </span>
                       )}
                       {lead.status === 'NEW' && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/80">
                           <span className="h-1.5 w-1.5 rounded-full bg-sky-600 dark:bg-sky-400" />
-                          NEW
+                          <span>NEW</span>
                         </span>
                       )}
                       {lead.status === 'CONVERTED' && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 border border-slate-900 dark:border-slate-100">
                           <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-slate-900" />
-                          CONVERTED
+                          <span>CONVERTED</span>
                         </span>
                       )}
                       {lead.status === 'COLD' && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                           <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                          COLD
+                          <span>COLD</span>
                         </span>
                       )}
                     </td>
@@ -888,7 +888,7 @@ export function LeadsManagementClient() {
             Menampilkan <span className="font-semibold text-slate-700 dark:text-slate-200">{startIndex}</span>
             {filteredLeads.length > 0 && (
               <>
-                -
+                {' - '}
                 <span className="font-semibold text-slate-700 dark:text-slate-200">{endIndex}</span>
               </>
             )}{' '}
@@ -1003,10 +1003,11 @@ export function LeadsManagementClient() {
 
               {/* Ubah Status */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label htmlFor="edit-status-select" className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Status Pipeline Lead
                 </label>
                 <select
+                  id="edit-status-select"
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as any)}
                   className="w-full h-9 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1021,10 +1022,11 @@ export function LeadsManagementClient() {
               {/* Periode Trial */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="edit-trial-start" className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Tanggal Mulai Trial
                   </label>
                   <input
+                    id="edit-trial-start"
                     type="date"
                     value={editTrialStart}
                     onChange={(e) => setEditTrialStart(e.target.value)}
@@ -1032,10 +1034,11 @@ export function LeadsManagementClient() {
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  <label htmlFor="edit-trial-end" className="block font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Tanggal Selesai Trial
                   </label>
                   <input
+                    id="edit-trial-end"
                     type="date"
                     value={editTrialEnd}
                     onChange={(e) => setEditTrialEnd(e.target.value)}
@@ -1046,10 +1049,11 @@ export function LeadsManagementClient() {
 
               {/* Catatan Follow Up */}
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label htmlFor="edit-notes-textarea" className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Catatan Follow Up &amp; Kebutuhan Tenant
                 </label>
                 <textarea
+                  id="edit-notes-textarea"
                   rows={3}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}

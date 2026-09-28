@@ -2,11 +2,12 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/rbac'
 import { KanbanClient } from '@/components/kanban/KanbanClient'
 
-export default async function KanbanPage({
-  searchParams,
-}: {
-  searchParams: { projectId?: string }
-}) {
+export default async function KanbanPage(
+  props: {
+    searchParams: Promise<{ projectId?: string }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getSessionUser()
   if (!user) redirect('/login')
 

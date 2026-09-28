@@ -7,7 +7,7 @@ import type { ActionPlanStatus, Priority } from '../lib/generated/prisma/client'
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
-const DEMO_PASSWORD = 'Demo12345'
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || process.env.NEXT_PUBLIC_DEMO_PASSWORD || ''
 const DAY = 86_400_000
 
 function at(offsetDays: number, hour = 12) {

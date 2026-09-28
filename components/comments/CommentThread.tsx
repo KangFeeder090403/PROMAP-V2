@@ -39,7 +39,7 @@ function initials(name: string): string {
 /** Warna avatar deterministik per user id — id sama selalu warna sama. */
 function avatarTone(id: string): string {
   let sum = 0
-  for (let i = 0; i < id.length; i++) sum = (sum + id.charCodeAt(i)) % 997
+  for (let i = 0; i < id.length; i++) sum = (sum + (id.codePointAt(i) ?? 0)) % 997
   return AVATAR_TONES[sum % AVATAR_TONES.length]
 }
 

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { PUBLIC_PAGES, PUBLIC_PREFIX } from '@/lib/auth-redirect'
+import { PUBLIC_PAGES, PUBLIC_PREFIX, safeCallbackUrl } from '@/lib/auth-redirect'
+import { getGuestToken, GUEST_COOKIE_NAME, LEGACY_GUEST_COOKIE_NAME } from '@/lib/guest-auth'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -11,41 +12,70 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET
+  const token = await getToken({ req, secret })
+  const guestToken = await getGuestToken(req)
 
-  // jwt callback mengembalikan { ...token, uid: null } saat tenant ditolak (lib/auth.ts).
-  // Sesi sah = token yang membawa uid (cuid user di DB).
-  // JANGAN gunakan token.email / token.sub karena token OAuth Google dari akun
-  // non-aktif / belum terdaftar tetap memiliki email dan sub, yang bisa memicu
-  // bouncing loop 307 jika diloloskan oleh middleware ke layout dashboard.
-  const authed = Boolean(token?.uid)
+  // User terautentikasi DB (SUPER_ADMIN, ADMIN_OPERATIONAL, MANAGER, PIC).
+  // Sesi riil WAJIB mengabaikan cookie guest jika ada.
+  const hasRealUserSession = Boolean(token?.uid) && token?.role !== 'GUEST' && !token?.isGuest
+
+  const isGuest =
+    !hasRealUserSession &&
+    (token?.role === 'GUEST' ||
+      Boolean(token?.isGuest) ||
+      Boolean(guestToken?.isGuest) ||
+      guestToken?.role === 'GUEST')
+
+  // Sesi sah = token yang membawa uid (cuid user di DB / id demo guest) ATAU memiliki guestToken aktif.
+  const authed = Boolean(token?.uid) || Boolean(guestToken)
 
   // Rute root '/'
   if (pathname === '/') {
-    if (authed) return NextResponse.next()
-    return NextResponse.rewrite(new URL('/landing', req.url))
+    if (authed) {
+      const dashUrl = req.nextUrl.clone()
+      dashUrl.pathname = '/dashboard'
+      const res = NextResponse.redirect(dashUrl)
+      if (hasRealUserSession) {
+        res.cookies.set(GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+        res.cookies.set(LEGACY_GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+      }
+      return res
+    }
+    const landingUrl = req.nextUrl.clone()
+    landingUrl.pathname = '/landing'
+    return NextResponse.rewrite(landingUrl)
   }
 
   // Halaman login
   if (pathname === '/login') {
-    // Jika ada sinyal signout / sesi berakhir / error auth, bersihkan cookie sesi
-    // di response header agar sesi stale tidak mengunci browser.
-    if (req.nextUrl.searchParams.has('signout') || req.nextUrl.searchParams.has('error')) {
+    const hasGuestCookie = req.cookies.has(GUEST_COOKIE_NAME) || req.cookies.has(LEGACY_GUEST_COOKIE_NAME)
+    const isSignout = req.nextUrl.searchParams.has('signout') || req.nextUrl.searchParams.has('error')
+
+    // Jika ada sinyal signout / error / atau ada cookie demo guest saat membuka login perusahaan,
+    // bersihkan cookie guest agar tidak tertimpa ke akun login.
+    if (isSignout || hasGuestCookie) {
       const res = NextResponse.next()
-      res.cookies.set('next-auth.session-token', '', { maxAge: 0, path: '/' })
-      res.cookies.set('__Secure-next-auth.session-token', '', { maxAge: 0, path: '/' })
+      if (isSignout) {
+        res.cookies.set('next-auth.session-token', '', { maxAge: 0, path: '/' })
+        res.cookies.set('__Secure-next-auth.session-token', '', { maxAge: 0, path: '/' })
+      }
+      res.cookies.set(GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
+      res.cookies.set(LEGACY_GUEST_COOKIE_NAME, '', { maxAge: 0, path: '/' })
       return res
     }
 
-    // User yang benar-benar aktif login tidak perlu akses halaman auth
-    if (authed) {
-      return NextResponse.redirect(new URL('/', req.url))
+    // User yang benar-benar aktif login (bukan guest) tidak perlu akses halaman auth
+    if (authed && !isGuest) {
+      const dashUrl = req.nextUrl.clone()
+      dashUrl.pathname = '/dashboard'
+      return NextResponse.redirect(dashUrl)
     }
     return NextResponse.next()
   }
 
-  // Public pages — exact match
-  if ((PUBLIC_PAGES as readonly string[]).includes(pathname)) {
+  // Public pages — exact match atau turunan rute demo
+  if ((PUBLIC_PAGES as readonly string[]).includes(pathname) || pathname.startsWith('/demo')) {
     return NextResponse.next()
   }
 
@@ -54,11 +84,32 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Proteksi rute privat lainnya
+  // Proteksi rute privat untuk pengunjung tanpa sesi (Aman SSRF: clone nextUrl & sanitisasi callbackUrl)
   if (!authed) {
-    const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
+    const loginUrl = req.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('callbackUrl', safeCallbackUrl(pathname))
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Aturan otorisasi rute untuk role GUEST:
+  // - Guest BOLEH akses /dashboard, /, /board, /calendar (view-only, data dummy)
+  // - Guest DILARANG akses /settings, /projects, /action-plans (dialihkan ke dashboard dengan CTA trial)
+  // - Guest TIDAK BOLEH di-redirect ke / atau /login saat akses /dashboard
+  if (isGuest) {
+    const isForbidden =
+      pathname.startsWith('/settings') ||
+      pathname.startsWith('/projects') ||
+      pathname.startsWith('/action-plans')
+
+    if (isForbidden) {
+      const dashboardUrl = req.nextUrl.clone()
+      dashboardUrl.pathname = '/dashboard'
+      dashboardUrl.searchParams.set('trial', '1')
+      return NextResponse.redirect(dashboardUrl)
+    }
+
+    return NextResponse.next()
   }
 
   return NextResponse.next()
