@@ -52,3 +52,8 @@ scripts/
 # Dokumentasi & mockup lokal — tidak di-commit
 docs/
 .gstack/
+
+# Laporan pengujian biner & presentasi lokal
+*.pdf
+*.pptx
+sonar_bugs_out.json

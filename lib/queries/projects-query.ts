@@ -27,6 +27,43 @@ export async function fetchProjectsDataRaw(
   user: User,
   options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }
 ): Promise<ProjectQueryResult[]> {
+  if (user.role === 'GUEST') {
+    const { getGuestDummyData } = await import('@/lib/guest-dummy-data')
+    const dummy = getGuestDummyData()
+    const now = new Date()
+    return dummy.portfolioProjects.map((p) => {
+      const ts = dummy.portfolioTasks.filter((t) => t.projectId === p.id)
+      const completedTasks = ts.filter((t) => t.status === 'COMPLETE' || t.status === 'APPROVED').length
+      const inProgressTasks = ts.filter((t) => t.status === 'IN_PROGRESS').length
+      const overdueTasks = ts.filter((t) => {
+        if (t.status === 'OVERDUE') return true
+        if (t.status !== 'COMPLETE' && t.status !== 'APPROVED' && t.endDate && new Date(t.endDate) < now) {
+          return true
+        }
+        return false
+      }).length
+      return {
+        id: p.id,
+        name: p.name,
+        description: 'Inisiatif strategis operasional IT untuk demo ProMaP.',
+        companyId: 'demo-company-id',
+        divisionId: p.divisionId,
+        isActive: true,
+        startDate: p.startDate ? p.startDate.toISOString() : null,
+        endDate: p.endDate ? p.endDate.toISOString() : null,
+        createdAt: p.createdAt ? p.createdAt.toISOString() : now.toISOString(),
+        company: { id: 'demo-company-id', name: 'SobatUMKM Pro' },
+        division: { id: 'demo-division-id', name: 'IT Operasional' },
+        divisions: [{ id: 'demo-division-id', name: 'IT Operasional' }],
+        taskCount: ts.length,
+        completedTasks,
+        inProgressTasks,
+        overdueTasks,
+        actionPlanCount: dummy.actionPlans.length,
+      }
+    })
+  }
+
   const sortBy = options?.sortBy || 'createdAt'
   const sortOrder = options?.sortOrder === 'asc' ? 'asc' : 'desc'
 

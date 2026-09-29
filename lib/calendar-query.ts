@@ -1,6 +1,7 @@
 import type { User, Prisma, ActionPlanStatus, Priority } from '@/lib/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apScope } from '@/lib/rbac'
+import { getGuestDummyData } from '@/lib/guest-dummy-data'
 
 export interface CalendarFilterOptions {
   status?: string | null
@@ -190,20 +191,29 @@ export async function getQuarterlyAggregation(
   const startOfYear = new Date(targetYear, 0, 1, 0, 0, 0, 0)
   const endOfYear = new Date(targetYear, 11, 31, 23, 59, 59, 999)
 
-  const items = await prisma.actionPlan.findMany({
-    where: {
-      ...apScope(user),
-      deletedAt: null,
-      AND: [{ startDate: { lte: endOfYear } }, { endDate: { gte: startOfYear } }],
-    },
-    select: {
-      id: true,
-      status: true,
-      priority: true,
-      startDate: true,
-      endDate: true,
-    },
-  })
+  const items =
+    user.role === 'GUEST'
+      ? getGuestDummyData().actionPlans.map((ap) => ({
+          id: ap.id,
+          status: ap.status,
+          priority: ap.priority,
+          startDate: ap.createdAt,
+          endDate: ap.endDate,
+        }))
+      : await prisma.actionPlan.findMany({
+          where: {
+            ...apScope(user),
+            deletedAt: null,
+            AND: [{ startDate: { lte: endOfYear } }, { endDate: { gte: startOfYear } }],
+          },
+          select: {
+            id: true,
+            status: true,
+            priority: true,
+            startDate: true,
+            endDate: true,
+          },
+        })
 
   const quarterDefs: Array<{
     quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'

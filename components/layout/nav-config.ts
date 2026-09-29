@@ -67,7 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Settings',
         href: '/settings',
         icon: Settings,
-        roles: GUEST_ROLES,
+        roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'] as Role[],
       },
     ],
   },
