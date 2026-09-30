@@ -11,11 +11,15 @@ export const metadata: Metadata = {
 }
 
 // Jalan sebelum paint pertama supaya tidak ada kedip putih saat tema gelap aktif.
+// Landing page ('/' dan '/landing') dikunci ke full light mode.
 const themeScript = `
 try {
-  var t = localStorage.getItem('promap-theme')
-  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  if (t === 'dark') document.documentElement.classList.add('dark')
+  var p = window.location.pathname
+  if (p !== '/' && p !== '/landing') {
+    var t = localStorage.getItem('promap-theme')
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    if (t === 'dark') document.documentElement.classList.add('dark')
+  }
 } catch (e) {}
 `
 

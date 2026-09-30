@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { BarChart3, CalendarDays, Kanban, MoveHorizontal, type LucideIcon } from 'lucide-react'
+import { BarChart3, CalendarDays, Kanban, type LucideIcon } from 'lucide-react'
 
 type TabKey = 'board' | 'kalender' | 'laporan'
 
@@ -153,57 +153,50 @@ function Panel({
 function BoardView() {
   return (
     <div className="min-w-0">
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         Papan Eksekusi — 5 Kolom
       </p>
 
-      {/* Scroll horizontal terkurung di sini, bukan di body halaman. */}
-      <div className="-mx-1 overflow-x-auto px-1 pb-2">
-        <div className="flex gap-2">
-          {BOARD_COLUMNS.map((col) => (
-            <div
-              key={col.title}
-              className="min-w-[132px] flex-1 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50"
-            >
-              <p className="mb-2 flex items-baseline justify-between gap-1 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
-                <span className="truncate">{col.title}</span>
-                <span className="tabular-nums text-slate-400">{col.count}</span>
+      {/* 5 Kolom fluid tanpa side-scroll */}
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+        {BOARD_COLUMNS.map((col) => (
+          <div
+            key={col.title}
+            className="flex min-w-0 flex-1 flex-col rounded-lg border border-slate-100 bg-slate-50 p-1.5 sm:p-2"
+          >
+            <p className="mb-2 flex items-baseline justify-between gap-1 text-[10px] font-semibold text-slate-600">
+              <span className="truncate">{col.title}</span>
+              <span className="tabular-nums text-slate-400">{col.count}</span>
+            </p>
+
+            {col.cards.length === 0 ? (
+              <p className="rounded-md border border-dashed border-slate-200 py-3 text-center text-[10px] text-slate-400">
+                Tidak ada item
               </p>
-
-              {col.cards.length === 0 ? (
-                <p className="rounded-md border border-dashed border-slate-200 py-3 text-center text-[10px] text-slate-400 dark:border-slate-700 dark:text-slate-500">
-                  Tidak ada item
-                </p>
-              ) : (
-                col.cards.map((card) => (
-                  <div
-                    key={card.code}
-                    className="rounded-md border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-                  >
-                    <p className="text-[9px] font-medium tabular-nums text-slate-400">{card.code}</p>
-                    <p className="mt-0.5 text-[11px] font-semibold leading-snug text-slate-800 dark:text-slate-100">
-                      {card.title}
-                    </p>
-                    {card.overdue && (
-                      <span className="mt-1.5 inline-block rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-semibold text-orange-700 dark:bg-orange-950/60 dark:text-orange-300">
-                        Terlambat
-                      </span>
-                    )}
-                    <p className="mt-1.5 truncate text-[9px] text-slate-500 dark:text-slate-400">
-                      {card.pic}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          ))}
-        </div>
+            ) : (
+              col.cards.map((card) => (
+                <div
+                  key={card.code}
+                  className="rounded-md border border-slate-200 bg-white p-1.5 sm:p-2 shadow-sm"
+                >
+                  <p className="text-[9px] font-medium tabular-nums text-slate-400">{card.code}</p>
+                  <p className="mt-0.5 text-[11px] font-semibold leading-snug text-slate-800 line-clamp-2">
+                    {card.title}
+                  </p>
+                  {card.overdue && (
+                    <span className="mt-1.5 inline-block rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-semibold text-orange-700">
+                      Terlambat
+                    </span>
+                  )}
+                  <p className="mt-1.5 truncate text-[9px] text-slate-500">
+                    {card.pic}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        ))}
       </div>
-
-      <p className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">
-        <MoveHorizontal className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-        Geser mendatar untuk kolom lainnya
-      </p>
     </div>
   )
 }
