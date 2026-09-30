@@ -1,6 +1,7 @@
 import type { User, Prisma, ActionPlanStatus, Priority } from '@/lib/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apScope } from '@/lib/rbac'
+import { getGuestDummyData } from '@/lib/guest-dummy-data'
 
 export interface CalendarFilterOptions {
   status?: string | null
@@ -86,7 +87,7 @@ export function resolveDateRange(params: {
   // 1. Jika ada quarter spesifik (1..4 atau Q1..Q4)
   if (params.quarter) {
     const rawQ = params.quarter.toUpperCase().replace('Q', '')
-    const q = Math.min(4, Math.max(1, parseInt(rawQ, 10) || 1))
+    const q = Math.min(4, Math.max(1, Number.parseInt(rawQ, 10) || 1))
     const startMonth = (q - 1) * 3
     const from = new Date(targetYear, startMonth, 1, 0, 0, 0, 0)
     const to = new Date(targetYear, startMonth + 3, 0, 23, 59, 59, 999)
@@ -125,7 +126,7 @@ export function resolveDateRange(params: {
     }
 
     if (['q1', 'q2', 'q3', 'q4'].includes(range)) {
-      const q = parseInt(range.replace('q', ''), 10)
+      const q = Number.parseInt(range.replace('q', ''), 10)
       const startMonth = (q - 1) * 3
       const from = new Date(targetYear, startMonth, 1, 0, 0, 0, 0)
       const to = new Date(targetYear, startMonth + 3, 0, 23, 59, 59, 999)
@@ -137,7 +138,7 @@ export function resolveDateRange(params: {
   if (params.from && params.to) {
     const from = new Date(params.from)
     const to = new Date(params.to)
-    if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
       // Jika to dikirim tanpa jam/menit (misal 2026-09-30), pastikan mencakup hingga akhir hari
       if (params.to.length <= 10) {
         to.setHours(23, 59, 59, 999)
@@ -190,20 +191,29 @@ export async function getQuarterlyAggregation(
   const startOfYear = new Date(targetYear, 0, 1, 0, 0, 0, 0)
   const endOfYear = new Date(targetYear, 11, 31, 23, 59, 59, 999)
 
-  const items = await prisma.actionPlan.findMany({
-    where: {
-      ...apScope(user),
-      deletedAt: null,
-      AND: [{ startDate: { lte: endOfYear } }, { endDate: { gte: startOfYear } }],
-    },
-    select: {
-      id: true,
-      status: true,
-      priority: true,
-      startDate: true,
-      endDate: true,
-    },
-  })
+  const items =
+    user.role === 'GUEST'
+      ? getGuestDummyData().actionPlans.map((ap) => ({
+          id: ap.id,
+          status: ap.status,
+          priority: ap.priority,
+          startDate: ap.createdAt,
+          endDate: ap.endDate,
+        }))
+      : await prisma.actionPlan.findMany({
+          where: {
+            ...apScope(user),
+            deletedAt: null,
+            AND: [{ startDate: { lte: endOfYear } }, { endDate: { gte: startOfYear } }],
+          },
+          select: {
+            id: true,
+            status: true,
+            priority: true,
+            startDate: true,
+            endDate: true,
+          },
+        })
 
   const quarterDefs: Array<{
     quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'

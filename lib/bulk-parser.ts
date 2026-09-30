@@ -105,8 +105,8 @@ function parseDeadline(
   // Relative format: X hari, X hr, X d, +X
   const relativeMatch = clean.match(/^(\+)?\s*(\d+)\s*(hari|hr|h|d|days?)?$/i)
   if (relativeMatch) {
-    const days = parseInt(relativeMatch[2], 10)
-    if (!isNaN(days)) {
+    const days = Number.parseInt(relativeMatch[2], 10)
+    if (!Number.isNaN(days)) {
       const target = new Date(now)
       target.setDate(target.getDate() + days)
       target.setHours(23, 59, 59, 999)
@@ -117,12 +117,12 @@ function parseDeadline(
   // Absolute format: YYYY-MM-DD
   const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
   if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10)
-    const month = parseInt(isoMatch[2], 10) - 1
-    const day = parseInt(isoMatch[3], 10)
+    const year = Number.parseInt(isoMatch[1], 10)
+    const month = Number.parseInt(isoMatch[2], 10) - 1
+    const day = Number.parseInt(isoMatch[3], 10)
     const target = new Date(year, month, day, 23, 59, 59, 999)
     if (
-      !isNaN(target.getTime()) &&
+      !Number.isNaN(target.getTime()) &&
       target.getFullYear() === year &&
       target.getMonth() === month &&
       target.getDate() === day
@@ -135,12 +135,12 @@ function parseDeadline(
   // Absolute format: DD/MM/YYYY or DD-MM-YYYY
   const dmyMatch = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10)
-    const month = parseInt(dmyMatch[2], 10) - 1
-    const year = parseInt(dmyMatch[3], 10)
+    const day = Number.parseInt(dmyMatch[1], 10)
+    const month = Number.parseInt(dmyMatch[2], 10) - 1
+    const year = Number.parseInt(dmyMatch[3], 10)
     const target = new Date(year, month, day, 23, 59, 59, 999)
     if (
-      !isNaN(target.getTime()) &&
+      !Number.isNaN(target.getTime()) &&
       target.getFullYear() === year &&
       target.getMonth() === month &&
       target.getDate() === day
@@ -172,9 +172,15 @@ function formatDateDisplay(d: Date): string {
   return `${day}/${m}/${y}`
 }
 
+const DEFAULT_PARSER_DEFAULTS: BulkParserDefaults = Object.freeze({
+  priority: 'MEDIUM',
+  days: 7,
+  status: 'NOT_STARTED',
+})
+
 export function parseBulkActionPlans(
   text: string,
-  defaults: BulkParserDefaults = { priority: 'MEDIUM', days: 7, status: 'NOT_STARTED' }
+  defaults: BulkParserDefaults = DEFAULT_PARSER_DEFAULTS
 ): ParsedActionPlan[] {
   if (!text) return []
 

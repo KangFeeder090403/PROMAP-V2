@@ -93,7 +93,7 @@ export function InteractiveProductTour() {
   )
 
   return (
-    <section id="tur-produk" ref={containerRef} className="bg-slate-50/60 py-16 backdrop-blur-xs sm:py-20 dark:bg-slate-950/60">
+    <section id="tur-produk" ref={containerRef} className="bg-slate-50/60 py-16 backdrop-blur-sm sm:py-20 dark:bg-slate-950/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Header section */}
         <div className="tour-header mb-10 text-center">
@@ -146,7 +146,7 @@ export function InteractiveProductTour() {
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-              Data Tersinkronisasi
+              <span>Data Tersinkronisasi</span>
             </div>
           </div>
 
@@ -292,7 +292,7 @@ function TourKanbanView() {
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {col.title}
               </span>
-              <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500 shadow-xs dark:bg-slate-700 dark:text-slate-300">
+              <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500 shadow-sm dark:bg-slate-700 dark:text-slate-300">
                 {col.count}
               </span>
             </div>
@@ -302,7 +302,7 @@ function TourKanbanView() {
               {col.cards.map((card) => (
                 <div
                   key={card.code}
-                  className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-xs transition-shadow hover:shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                  className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm transition-shadow hover:shadow dark:border-slate-700 dark:bg-slate-800"
                 >
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="font-mono text-[10px] font-bold text-blue-700 dark:text-blue-400">
@@ -467,9 +467,9 @@ function TourEvidenceView() {
             </p>
 
             <div className="mt-4 space-y-2.5">
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300">
+              <span className="block text-[11px] font-medium text-slate-600 dark:text-slate-300">
                 Catatan Tinjauan Manajer:
-              </label>
+              </span>
               <div className="rounded-md border border-slate-200 bg-white p-2.5 text-xs text-slate-700 italic dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 &ldquo;Seluruh angka anggaran sesuai batas pagu divisi. Dokumen pendukung lengkap.&rdquo;
               </div>
@@ -480,7 +480,7 @@ function TourEvidenceView() {
             <button
               type="button"
               onClick={handleApprove}
-              className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-xs transition-colors ${
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-sm transition-colors ${
                 decision === 'APPROVED'
                   ? 'bg-emerald-600 hover:bg-emerald-700'
                   : 'bg-blue-800 hover:bg-blue-700'
@@ -536,7 +536,7 @@ function TourReportsView() {
         </div>
         <button
           type="button"
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
           <Download className="h-3.5 w-3.5 text-slate-500" />
           Ekspor PDF Direksi

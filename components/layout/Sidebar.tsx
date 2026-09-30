@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { signOut } from 'next-auth/react'
 import {
   ChevronsUpDown,
@@ -16,8 +17,19 @@ import {
 import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
-import { AuditLogModal } from '@/components/settings/AuditLogModal'
-import { ProfileModal } from '@/components/profile/ProfileModal'
+import { LogoutConfirmDialog } from '@/components/layout/LogoutConfirmDialog'
+
+// Modal berat (ProfileModal 433 baris, AuditLogModal 538 baris) dipisah jadi
+// chunk sendiri dan baru di-mount saat dibuka. Sebelumnya keduanya selalu ada
+// di pohon Sidebar, jadi ikut terekonsiliasi tiap kali menu profil di-toggle.
+const ProfileModal = dynamic(
+  () => import('@/components/profile/ProfileModal').then((m) => m.ProfileModal),
+  { ssr: false }
+)
+const AuditLogModal = dynamic(
+  () => import('@/components/settings/AuditLogModal').then((m) => m.AuditLogModal),
+  { ssr: false }
+)
 
 function initials(name: string) {
   return name
@@ -59,6 +71,7 @@ export function Sidebar({
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [auditLogOpen, setAuditLogOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
   const canAccessSettings =
     user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
@@ -328,7 +341,10 @@ export function Sidebar({
                 {/* Tombol Logout */}
                 <button
                   type="button"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={() => {
+                    setProfileOpen(false)
+                    setLogoutConfirmOpen(true)
+                  }}
                   className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-colors"
                 >
                   <LogOut className="h-3.5 w-3.5" />
@@ -366,24 +382,46 @@ export function Sidebar({
               )}
             </button>
 
-            <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
-              <DevAccountSwitcher currentUserId={user.id} isImpersonating={Boolean(user.isImpersonating)} />
-            </div>
+            {user.role !== 'GUEST' && !user.isGuest && !user.id.startsWith('guest-') && (
+              <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
+                <DevAccountSwitcher
+                  currentUserId={user.id}
+                  isImpersonating={Boolean(user.isImpersonating)}
+                  userRole={user.role}
+                />
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Modal Profile Saya */}
-      <ProfileModal
-        open={profileModalOpen}
-        onOpenChange={setProfileModalOpen}
-      />
+      {profileModalOpen && (
+        <ProfileModal
+          open={profileModalOpen}
+          onOpenChange={setProfileModalOpen}
+        />
+      )}
 
       {/* Modal Audit Log Global */}
-      <AuditLogModal
-        open={auditLogOpen}
-        onOpenChange={setAuditLogOpen}
-        companyId={user.companyId ?? null}
+      {auditLogOpen && (
+        <AuditLogModal
+          open={auditLogOpen}
+          onOpenChange={setAuditLogOpen}
+          companyId={user.companyId ?? null}
+        />
+      )}
+
+      {/* Modal Konfirmasi Logout */}
+      <LogoutConfirmDialog
+        open={logoutConfirmOpen}
+        onOpenChange={setLogoutConfirmOpen}
+        onConfirm={async () => {
+          try {
+            await fetch('/api/guest/logout', { method: 'POST' })
+          } catch {}
+          await signOut({ callbackUrl: '/login?signout=1' })
+        }}
       />
     </>
   )

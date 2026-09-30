@@ -156,7 +156,7 @@ export async function GET(req: Request) {
       })
       const sanitize = (str: string | null | undefined) => {
         if (!str) return '""'
-        const clean = str.replace(/"/g, '""').replace(/\r?\n/g, ' ')
+        const clean = str.replaceAll('"', '""').replace(/\r?\n/g, ' ')
         return `"${clean}"`
       }
 

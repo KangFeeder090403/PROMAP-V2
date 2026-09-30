@@ -494,7 +494,7 @@ export function ActionPlanDetail({
               <div className="space-y-2">
                 {conflict && (
                   <div className="flex items-center justify-between rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-                    Status sudah berubah, silakan refresh
+                    <span>Status sudah berubah, silakan refresh</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -583,7 +583,7 @@ export function ActionPlanDetail({
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                 >
-                  Work &amp; Evidence
+                  <span>Work &amp; Evidence</span>
                   <span
                     className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold ${
                       tab === 'work'
@@ -603,7 +603,7 @@ export function ActionPlanDetail({
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                 >
-                  Activity &amp; Discussion
+                  <span>Activity &amp; Discussion</span>
                   <span
                     className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold ${
                       tab === 'activity'
@@ -661,11 +661,12 @@ export function ActionPlanDetail({
                     {isEditingEvidence ? (
                       <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-3 dark:border-blue-900/60 dark:bg-blue-950/20 space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                          <label htmlFor="inline-evidence-input" className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                             Tautan Dokumen / Cloud Drive
                           </label>
                           <div className="relative mt-1">
                             <input
+                              id="inline-evidence-input"
                               type="url"
                               value={inlineEvidence}
                               onChange={(e) => setInlineEvidence(e.target.value)}
@@ -676,10 +677,11 @@ export function ActionPlanDetail({
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                          <label htmlFor="inline-note-input" className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                             Catatan Bukti / Hasil Kerja (Opsional)
                           </label>
                           <textarea
+                            id="inline-note-input"
                             rows={2}
                             value={inlineNote}
                             onChange={(e) => setInlineNote(e.target.value)}

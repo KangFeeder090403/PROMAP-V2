@@ -43,9 +43,14 @@ export function KanbanColumn({
     <div
       onDragOver={(e) => {
         e.preventDefault()
-        setIsDragOver(true)
+        if (!isDragOver) setIsDragOver(true)
       }}
-      onDragLeave={() => setIsDragOver(false)}
+      onDragLeave={(e) => {
+        // dragleave juga fires saat pointer melintasi elemen anak —
+        // hanya reset kalau benar-benar keluar dari kolom
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+        setIsDragOver(false)
+      }}
       onDrop={() => {
         setIsDragOver(false)
         onDrop(columnKey)

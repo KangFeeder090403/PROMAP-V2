@@ -565,8 +565,18 @@ export function MyWorkClient() {
                   {aksiItems.map((it) => (
                     <div
                       key={it.refCode}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         if (it.kind === 'ap') handleSelectAP(it.id)
+                        else window.location.href = it.href
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          if (it.kind === 'ap') handleSelectAP(it.id)
+                          else window.location.href = it.href
+                        }
                       }}
                       className="p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-800/50 bg-white dark:bg-slate-900/80 hover:bg-amber-50/50 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-between gap-2"
                     >

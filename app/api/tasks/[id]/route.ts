@@ -5,7 +5,8 @@ import { notify } from '@/lib/notifications'
 
 const PIC_ALLOWED_STATUS = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETE'] as const
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {
@@ -109,7 +110,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

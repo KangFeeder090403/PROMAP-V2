@@ -5,7 +5,8 @@ import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
 
 // PIC submit AP untuk direview. IN_PROGRESS/EVIDENCE_REQUIRED -> PENDING_APPROVAL.
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

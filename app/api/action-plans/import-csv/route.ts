@@ -170,7 +170,7 @@ function validateAndPrepareRow(
   const startDate = new Date(item.startDate)
   const endDate = new Date(item.endDate)
 
-  if (isNaN(startDate.getTime())) {
+  if (Number.isNaN(startDate.getTime())) {
     return {
       error: NextResponse.json(
         { error: `Baris ke-${rowNum}: Tanggal mulai "${item.startDate}" tidak valid` },
@@ -179,7 +179,7 @@ function validateAndPrepareRow(
     }
   }
 
-  if (isNaN(endDate.getTime())) {
+  if (Number.isNaN(endDate.getTime())) {
     return {
       error: NextResponse.json(
         { error: `Baris ke-${rowNum}: Tenggat waktu "${item.endDate}" tidak valid` },

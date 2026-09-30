@@ -47,8 +47,50 @@ export async function GET(req: Request) {
       year: yearRaw,
     })
 
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
       return NextResponse.json({ error: 'Rentang tanggal tidak valid' }, { status: 400 })
+    }
+
+    if (user.role === 'GUEST') {
+      const { getGuestDummyData } = await import('@/lib/guest-dummy-data')
+      const dummy = getGuestDummyData(new Date())
+      let flattened = dummy.actionPlans.map((ap) => ({
+        id: ap.id,
+        code: shortRef(ap.id, 'AP'),
+        title: ap.title,
+        status: ap.status,
+        priority: ap.priority,
+        startDate: ap.createdAt,
+        endDate: ap.endDate,
+        picId: ap.picId,
+        picName: ap.pic.name,
+        labelName: 'Manager IT',
+        projectId: 'proj-demo-1',
+        projectName: 'Transformasi Digital Operasional 2026',
+        divisionId: 'demo-division-id',
+        divisionName: 'IT Operasional',
+      }))
+
+      const status = searchParams.get('status')
+      const priority = searchParams.get('priority')
+      const projectId = searchParams.get('projectId')
+
+      if (status) flattened = flattened.filter((ap) => ap.status === status)
+      if (priority) flattened = flattened.filter((ap) => ap.priority === priority)
+      if (projectId && projectId !== 'all') {
+        flattened = flattened.filter((ap) => ap.projectId === projectId)
+      }
+
+      if (searchParams.get('includeQuarters') === 'true') {
+        const targetYear = Number(yearRaw) || from.getFullYear()
+        const quarterSummary = await getQuarterlyAggregation(user, targetYear)
+        return NextResponse.json({
+          events: flattened,
+          quarterSummary,
+        })
+      }
+
+      return NextResponse.json({ events: flattened })
     }
 
     const status = searchParams.get('status')

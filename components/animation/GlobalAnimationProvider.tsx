@@ -77,7 +77,7 @@ export function GlobalAnimationProvider({ children }: { children: React.ReactNod
     // 2. Delegasi Card Hover Lift 3D
     const handleMouseOver = (e: MouseEvent) => {
       const card = (e.target as HTMLElement).closest(
-        '[data-card], .hover-lift, [data-hover-lift], [data-kanban-card-id]'
+        '[data-card], .hover-lift, [data-hover-lift]'
       ) as HTMLElement | null
       if (!card || card.dataset.lifted === 'true') return
 

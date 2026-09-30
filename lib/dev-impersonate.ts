@@ -97,6 +97,16 @@ export async function devImpersonate(req: NextRequest, targetUserId: string) {
   const token = await readToken(req)
   if (!token) return null
 
+  // Cegah Guest / Demo switch ke akun manapun
+  if (
+    token.role === 'GUEST' ||
+    token.isGuest ||
+    token.uid === 'guest-hendra-wijaya' ||
+    token.uid?.startsWith('guest-')
+  ) {
+    return null
+  }
+
   // Snapshot identitas asli (diambil SEKALI, tidak ditimpa) supaya
   // "kembali ke akun asli" selalu restore ke actor awal.
   if (!token.impersonatorSnapshot) {
@@ -132,6 +142,15 @@ export async function devStopImpersonate(req: NextRequest) {
 
   const token = await readToken(req)
   if (!token) return null
+
+  if (
+    token.role === 'GUEST' ||
+    token.isGuest ||
+    token.uid === 'guest-hendra-wijaya' ||
+    token.uid?.startsWith('guest-')
+  ) {
+    return null
+  }
 
   const snap = token.impersonatorSnapshot
   if (!snap) {
@@ -185,5 +204,8 @@ export async function devListAccounts() {
 export async function devGetImpersonationFlag() {
   if (!DEV_IMPERSONATE_ENABLED) return false
   const session = await getServerSession(authOptions)
+  if (!session?.user || session.user.role === 'GUEST' || session.user.isGuest) {
+    return false
+  }
   return Boolean(session?.user?.isImpersonating)
 }

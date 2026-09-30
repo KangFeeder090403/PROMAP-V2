@@ -66,7 +66,7 @@ export function FaqSection() {
   }
 
   return (
-    <section id="faq" ref={containerRef} className="bg-slate-50/50 py-16 backdrop-blur-xs sm:py-20 dark:bg-slate-950/50">
+    <section id="faq" ref={containerRef} className="bg-slate-50/50 py-16 backdrop-blur-sm sm:py-20 dark:bg-slate-950/50">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
         {/* Header */}
         <div className="faq-header mb-12 text-center">

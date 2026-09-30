@@ -186,8 +186,8 @@ function StatCard({
   const numRef = useRef<HTMLSpanElement>(null)
 
   useGSAP(() => {
-    const rawNum = parseFloat(value)
-    if (!isNaN(rawNum) && numRef.current) {
+    const rawNum = Number.parseFloat(value)
+    if (!Number.isNaN(rawNum) && numRef.current) {
       const obj = { val: 0 }
       gsap.to(obj, {
         val: rawNum,

@@ -57,10 +57,56 @@ function isRange(value: unknown): value is Range {
   return typeof value === 'string' && (RANGES as readonly string[]).includes(value)
 }
 
+import { getGuestDummyData } from '@/lib/guest-dummy-data'
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // Handler data dummy khusus untuk role GUEST (Hendra Wijaya - Manager IT Operasional)
+    if (user.role === 'GUEST') {
+      const dummy = getGuestDummyData(new Date())
+      const pendingReviewApCount = dummy.actionPlans.filter(
+        (ap) => ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED'
+      ).length
+      const pendingProposalsCount = dummy.proposals.filter((p) => p.status === 'SUBMITTED').length
+
+      const portfolio = buildPortfolio(
+        dummy.portfolioProjects,
+        dummy.portfolioTasks,
+        dummy.divisionMap,
+        new Date(),
+        { pendingProposalsCount, pendingReviewApCount }
+      )
+
+      const agg = aggregateDashboard(
+        dummy.actionPlans,
+        dummy.proposals.map((p) => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          status: p.status,
+          proposerName: p.proposerName,
+          createdAt: p.createdAt,
+        }))
+      )
+
+      return NextResponse.json({
+        ...agg,
+        portfolio,
+        user: {
+          id: user.id,
+          role: 'GUEST',
+          name: user.name ?? 'Hendra Wijaya',
+          roleLabel: 'Manager IT Operasional (Demo)',
+          divisionName: 'IT Operasional',
+          companyName: 'SobatUMKM pro',
+          title: 'Manager IT Operasional',
+        },
+        greeting: timeGreeting(),
+      })
+    }
 
     const rangeParam = req.nextUrl.searchParams.get('range')
     const range: Range = isRange(rangeParam) ? rangeParam : 'week'

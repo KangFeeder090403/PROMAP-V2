@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, apScope, canReviewActionPlan } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
-import type { ActionPlanStatus } from '@/lib/generated/prisma/client'
+import { logActivityMany } from '@/lib/activity-log'
+import type { ActionPlanStatus, Prisma } from '@/lib/generated/prisma/client'
 
 const ALLOWED_BATCH_ACTIONS = ['start', 'complete', 'review-complete'] as const
 type AllowedBatchAction = (typeof ALLOWED_BATCH_ACTIONS)[number]
@@ -118,22 +119,72 @@ export async function POST(req: Request) {
     }
 
     if (toUpdate.length > 0) {
-      await prisma.$transaction(
-        toUpdate.map(({ id, newStatus }) =>
-          prisma.actionPlan.update({
-            where: { id },
-            data: { status: newStatus },
-          })
-        )
-      )
+      // Semua baris dalam satu batch menuju status yang sama (action = satu nilai
+      // per request), jadi N update() runtuh jadi SATU updateMany: satu round-trip,
+      // atomik di level DB, tanpa batas timeout $transaction.
+      const targetStatus = toUpdate[0].newStatus
+      const candidateIds = toUpdate.map(({ id }) => id)
 
-      toUpdate.forEach(({ id }) => updated.push(id))
+      // Penegakan ulang guard NON-status di level where: validasi per-item membaca
+      // snapshot sebelum penulisan, dan di antara baca-tulis ada balapan.
+      // canReviewActionPlan tidak bisa diekspresikan di where, jadi tetap di aplikasi.
+      const EXTRA_WHERE: Record<AllowedBatchAction, Prisma.ActionPlanWhereInput> = {
+        start: {
+          picId: user.id,
+          status: { in: ['NOT_STARTED', 'REJECTED', 'OVERDUE'] },
+        },
+        complete: {
+          picId: user.id,
+          OR: [{ isPersonal: true }, { taskId: null }],
+          status: { in: ['NOT_STARTED', 'IN_PROGRESS', 'EVIDENCE_REQUIRED', 'REJECTED', 'OVERDUE'] },
+        },
+        'review-complete': {
+          status: 'PENDING_APPROVAL',
+        },
+      }
+
+      await prisma.actionPlan.updateMany({
+        where: {
+          id: { in: candidateIds },
+          deletedAt: null,
+          ...apScope(user),
+          ...EXTRA_WHERE[action],
+        },
+        data: { status: targetStatus },
+      })
+
+      // updateMany hanya mengembalikan count. Ambil id yang benar-benar berubah
+      // agar baris yang kalah balapan tidak ikut dicatat maupun dinotifikasi.
+      const confirmedRows = await prisma.actionPlan.findMany({
+        where: {
+          id: { in: candidateIds },
+          deletedAt: null,
+          ...apScope(user),
+          status: targetStatus,
+        },
+        select: { id: true },
+      })
+      const updatedSet = new Set(confirmedRows.map((row) => row.id))
+
+      const appliedUpdates = toUpdate.filter(({ id }) => updatedSet.has(id))
+      appliedUpdates.forEach(({ id }) => updated.push(id))
+
+      // Audit trail: transisi lewat batch sebelumnya tidak tercatat sama sekali.
+      await logActivityMany(
+        appliedUpdates.map(({ id, newStatus, ap }) => ({
+          userId: user.id,
+          actionPlanId: id,
+          action: 'STATUS_CHANGED' as const,
+          oldValue: ap.status,
+          newValue: newStatus,
+        }))
+      )
 
       // Trigger notifikasi jika action adalah review-complete (menyetujui AP PIC)
       if (action === 'review-complete') {
         // Group notifikasi per PIC
         const picNotifications = new Map<string, { companyId: string; titles: string[] }>()
-        for (const { ap } of toUpdate) {
+        for (const { ap } of appliedUpdates) {
           if (ap.picId === user.id) continue
           const current = picNotifications.get(ap.picId) ?? { companyId: ap.companyId, titles: [] }
           current.titles.push(ap.title)

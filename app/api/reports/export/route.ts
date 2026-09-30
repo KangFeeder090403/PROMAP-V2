@@ -200,7 +200,7 @@ async function handleEvidenceCsv(
   ]
 
   const csvBody = rows
-    .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .map((r) => r.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
     .join('\r\n')
 
   const csvContent = '\uFEFFsep=,\r\n' + csvBody

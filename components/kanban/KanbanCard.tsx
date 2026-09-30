@@ -32,7 +32,7 @@ const AVATAR_COLORS = [
 
 function colorForString(s: string, palette: string[]): string {
   let hash = 0
-  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
+  for (let i = 0; i < s.length; i++) hash = (s.codePointAt(i) ?? 0) + ((hash << 5) - hash)
   return palette[Math.abs(hash) % palette.length]
 }
 
@@ -84,12 +84,14 @@ export function KanbanCard({
   function handleDragStart(e: React.DragEvent) {
     onDragStart(e, ap.id)
     requestAnimationFrame(() => {
-      if (cardRef.current) gsap.to(cardRef.current, { opacity: 0.45, scale: 0.98, duration: 0.18 })
+      // opacity saja — `scale` menulis ke `transform`, properti yang sama yang
+      // dipakai hover-lift Tailwind (`hover:-translate-y-0.5`).
+      if (cardRef.current) gsap.to(cardRef.current, { opacity: 0.45, duration: 0.18 })
     })
   }
 
   function handleDragEnd() {
-    if (cardRef.current) gsap.to(cardRef.current, { opacity: 1, scale: 1, duration: 0.2, clearProps: 'opacity,scale' })
+    if (cardRef.current) gsap.to(cardRef.current, { opacity: 1, duration: 0.2, clearProps: 'opacity' })
   }
 
   return (

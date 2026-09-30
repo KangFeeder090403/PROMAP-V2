@@ -79,7 +79,7 @@ export function FeatureCards() {
   )
 
   return (
-    <section id="fitur" ref={containerRef} className="bg-white/60 py-16 backdrop-blur-xs sm:py-20 dark:bg-slate-900/60">
+    <section id="fitur" ref={containerRef} className="bg-white/60 py-16 backdrop-blur-sm sm:py-20 dark:bg-slate-900/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section header */}
         <div className="feat-header mb-12 text-center">

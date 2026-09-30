@@ -1,15 +1,33 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { Role } from '@/lib/generated/prisma/client'
 import { Building2, LayoutGrid, Users, Tag, TrendingUp, History } from 'lucide-react'
-import { CompanySection } from '@/components/settings/CompanySection'
-import { DivisionSection } from '@/components/settings/DivisionSection'
-import { UserSection } from '@/components/settings/UserSection'
-import { UserLabelSection } from '@/components/settings/UserLabelSection'
-import { LeadSection } from '@/components/settings/LeadSection'
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
-import { AuditLogModal } from '@/components/settings/AuditLogModal'
+
+// Tanpa `ssr: false` — section ini tidak memakai API browser-only, jadi tetap
+// ikut dirender di server (tab pertama langsung terisi) sambil tetap dipecah
+// jadi chunk terpisah oleh dynamic().
+const CompanySection = dynamic(
+  () => import('@/components/settings/CompanySection').then((m) => m.CompanySection)
+)
+const DivisionSection = dynamic(
+  () => import('@/components/settings/DivisionSection').then((m) => m.DivisionSection)
+)
+const UserSection = dynamic(
+  () => import('@/components/settings/UserSection').then((m) => m.UserSection)
+)
+const UserLabelSection = dynamic(
+  () => import('@/components/settings/UserLabelSection').then((m) => m.UserLabelSection)
+)
+const LeadSection = dynamic(
+  () => import('@/components/settings/LeadSection').then((m) => m.LeadSection)
+)
+const AuditLogModal = dynamic(
+  () => import('@/components/settings/AuditLogModal').then((m) => m.AuditLogModal),
+  { ssr: false }
+)
 
 type Tab = 'company' | 'division' | 'user' | 'userLabel' | 'leads'
 

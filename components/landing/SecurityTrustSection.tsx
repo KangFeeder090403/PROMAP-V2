@@ -89,7 +89,7 @@ export function SecurityTrustSection() {
             return (
               <div
                 key={pillar.title}
-                className="sec-card flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-xs transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                className="sec-card flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
               >
                 <div>
                   <div className="mb-4 flex items-center justify-between">

@@ -10,7 +10,8 @@ const REMINDABLE = ['OVERDUE', 'EVIDENCE_REQUIRED']
 const REMINDER_ACTION = 'REMINDER_SENT'
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await getSessionUser()
     if (!user) {

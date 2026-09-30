@@ -25,6 +25,7 @@ export interface NavGroup {
 }
 
 export const ALL_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER', 'PIC']
+export const GUEST_ROLES: Role[] = ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER', 'PIC', 'GUEST']
 
 // Role filter di sini HANYA convenience tampilan (sembunyikan menu yang
 // user tidak punya akses). Backend API tetap WAJIB guard sendiri
@@ -34,16 +35,16 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Workspace',
     items: [
-      { label: 'Home', href: '/', icon: Home, roles: ALL_ROLES },
+      { label: 'Home', href: '/', icon: Home, roles: GUEST_ROLES },
       { label: 'My Work', href: '/my-work', icon: CheckSquare, roles: ALL_ROLES },
-      { label: 'Projects', href: '/projects', icon: FolderKanban, roles: ALL_ROLES },
+      { label: 'Projects', href: '/projects', icon: FolderKanban, roles: GUEST_ROLES },
     ],
   },
   {
     label: 'Execution',
     items: [
-      { label: 'Board', href: '/board', icon: Kanban, roles: ALL_ROLES },
-      { label: 'Calendar', href: '/calendar', icon: Calendar, roles: ALL_ROLES },
+      { label: 'Board', href: '/board', icon: Kanban, roles: GUEST_ROLES },
+      { label: 'Calendar', href: '/calendar', icon: Calendar, roles: GUEST_ROLES },
       { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
     ],
   },
@@ -66,7 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Settings',
         href: '/settings',
         icon: Settings,
-        roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'],
+        roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'] as Role[],
       },
     ],
   },

@@ -119,10 +119,10 @@ export async function POST(req: Request) {
       const status = rawStatus as CreatableStatus
 
       let startDate = item.startDate ? new Date(item.startDate) : defaultStart
-      if (isNaN(startDate.getTime())) startDate = defaultStart
+      if (Number.isNaN(startDate.getTime())) startDate = defaultStart
 
       let endDate = item.endDate ? new Date(item.endDate) : defaultEnd
-      if (isNaN(endDate.getTime())) endDate = defaultEnd
+      if (Number.isNaN(endDate.getTime())) endDate = defaultEnd
 
       const isPersonal = !item.taskId
 
@@ -228,41 +228,58 @@ export async function POST(req: Request) {
       })
     }
 
-    // Execute in transaction
-    const createdPlans = await prisma.$transaction(
-      preparedList.map((item) =>
-        prisma.actionPlan.create({
-          data: {
-            title: item.title,
-            outcomeKpi: item.outcomeKpi,
-            priority: item.priority,
-            startDate: item.startDate,
-            endDate: item.endDate,
-            taskId: item.taskId,
-            picId: item.picId,
-            companyId: item.companyId,
-            divisionId: item.divisionId,
-            isPersonal: item.isPersonal,
-            status: item.status,
-          },
-          include: {
-            pic: { select: { id: true, name: true, role: true } },
-            task: {
-              select: {
-                id: true,
-                title: true,
-                project: { select: { id: true, name: true } },
-              },
-            },
-            division: { select: { id: true, name: true } },
-            _count: { select: { comments: true } },
-          },
-        })
-      )
-    )
+    // Satu INSERT ... RETURNING — atomik di level DB, tidak butuh $transaction.
+    // N create() di dalam $transaction melewati batas default timeout 5000ms pada
+    // batch besar (P2028), apalagi dengan pool max: 1 di production.
+    const createdRows = await prisma.actionPlan.createManyAndReturn({
+      data: preparedList.map((item) => ({
+        title: item.title,
+        outcomeKpi: item.outcomeKpi,
+        priority: item.priority,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        taskId: item.taskId,
+        picId: item.picId,
+        companyId: item.companyId,
+        divisionId: item.divisionId,
+        isPersonal: item.isPersonal,
+        status: item.status,
+      })),
+    })
 
-    // Activity log untuk status selain NOT_STARTED (non-blocking)
-    const itemsToLog = createdPlans.filter((ap) => ap.status !== 'NOT_STARTED')
+    const createdIds = createdRows.map((row) => row.id)
+
+    // Hidrasi relasi lewat query terpisah: createManyAndReturn tidak mendukung
+    // include _count (ActionPlanIncludeCreateManyAndReturn hanya task/pic/division).
+    // Data SUDAH tersimpan di titik ini, jadi kegagalan hidrasi tidak boleh jadi 500.
+    let items: unknown[] = createdRows
+    try {
+      const hydrated = await prisma.actionPlan.findMany({
+        where: { id: { in: createdIds } },
+        include: {
+          pic: { select: { id: true, name: true, role: true } },
+          task: {
+            select: {
+              id: true,
+              title: true,
+              project: { select: { id: true, name: true } },
+            },
+          },
+          division: { select: { id: true, name: true } },
+          _count: { select: { comments: true } },
+        },
+      })
+      // Pemetaan by id, bukan by urutan: baris hasil insert berbagi createdAt
+      // identik dan cuid bukan urutan penyisipan.
+      const hydratedMap = new Map(hydrated.map((ap) => [ap.id, ap]))
+      items = createdRows.map((row) => hydratedMap.get(row.id) ?? row)
+    } catch (hydrateError) {
+      console.error('[ACTION_PLANS_BULK_HYDRATE]', hydrateError)
+    }
+
+    // Activity log untuk status selain NOT_STARTED (non-blocking).
+    // Sumber: hasil insert (sudah tervalidasi + punya id), bukan hasil hidrasi.
+    const itemsToLog = createdRows.filter((ap) => ap.status !== 'NOT_STARTED')
     if (itemsToLog.length > 0) {
       await Promise.allSettled(
         itemsToLog.map((ap) =>
@@ -278,7 +295,7 @@ export async function POST(req: Request) {
     }
 
     // Notify assignees (if not creator and not COMPLETE)
-    const notificationsToTrigger = createdPlans.filter(
+    const notificationsToTrigger = createdRows.filter(
       (ap) => ap.picId !== user.id && ap.status !== 'COMPLETE'
     )
     if (notificationsToTrigger.length > 0) {
@@ -295,7 +312,7 @@ export async function POST(req: Request) {
       )
     }
 
-    return NextResponse.json({ items: createdPlans, count: createdPlans.length }, { status: 201 })
+    return NextResponse.json({ items, count: createdRows.length }, { status: 201 })
   } catch (error) {
     console.error('[ACTION_PLANS_BULK_POST]', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
