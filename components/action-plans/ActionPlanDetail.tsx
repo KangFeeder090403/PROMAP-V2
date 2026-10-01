@@ -706,15 +706,23 @@ export function ActionPlanDetail({
                             className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                           >
                             <Check className="h-3 w-3" />
-                            {savingEvidence ? 'Menyimpan...' : 'Simpan Bukti'}
+                            {savingEvidence ? 'Menyimpan...' : 'Simpan Draft Bukti'}
                           </button>
                         </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Bukti hanya tersimpan sebagai draft. Tekan <span className="font-semibold">Submit untuk Review</span> di footer agar atasan menerima notifikasi dan bisa Approve / Tolak / Minta Revisi.
+                        </p>
                       </div>
                     ) : (
                       <EvidenceContentDisplay
                         evidenceLink={ap.evidenceLink}
                         evaluationNote={ap.evaluationNote}
                       />
+                    )}
+                    {isOwner && (ap.evidenceLink || ap.evaluationNote) && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status) && !isEditingEvidence && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        Draft bukti tersimpan — jangan lupa Submit untuk Review agar masuk ke atasan.
+                      </p>
                     )}
                   </div>
                 </section>

@@ -102,17 +102,46 @@ export async function POST(req: Request) {
       }
     })
 
-    if (status === 'SUBMITTED' && user.divisionId) {
-      const managers = await prisma.user.findMany({
-        where: { role: 'MANAGER', divisionId: user.divisionId, deletedAt: null, status: 'ACTIVE' }
+    if (status === 'SUBMITTED') {
+      const reviewerIds = new Set<string>()
+
+      // 1. Manager di divisi yang sama (jika PIC punya divisi)
+      if (user.divisionId) {
+        const managers = await prisma.user.findMany({
+          where: { role: 'MANAGER', divisionId: user.divisionId, deletedAt: null, status: 'ACTIVE' },
+          select: { id: true },
+        })
+        managers.forEach((m) => reviewerIds.add(m.id))
+      }
+
+      // 2. Admin Operasional di company yang sama
+      if (user.companyId) {
+        const admins = await prisma.user.findMany({
+          where: { role: 'ADMIN_OPERATIONAL', companyId: user.companyId, deletedAt: null, status: 'ACTIVE' },
+          select: { id: true },
+        })
+        admins.forEach((a) => reviewerIds.add(a.id))
+      }
+
+      // 3. Semua Super Admin (lintas tenant, global reviewer)
+      const superAdmins = await prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', deletedAt: null, status: 'ACTIVE' },
+        select: { id: true },
       })
-      await notify({
-        userIds: managers.map((m) => m.id),
-        title: 'Proposal baru',
-        message: `${user.name} mengajukan proposal: ${result.title}`,
-        link: '/proposals',
-        companyId: user.companyId ?? undefined
-      })
+      superAdmins.forEach((s) => reviewerIds.add(s.id))
+
+      // Jangan notify diri sendiri
+      reviewerIds.delete(user.id)
+
+      if (reviewerIds.size > 0) {
+        await notify({
+          userIds: [...reviewerIds],
+          title: 'Proposal baru',
+          message: `${user.name} mengajukan proposal: ${result.title}`,
+          link: '/proposals',
+          companyId: user.companyId ?? undefined,
+        })
+      }
     }
 
     return NextResponse.json(result, { status: 201 })
