@@ -32,6 +32,7 @@ import { timeAgo } from '@/lib/date-utils'
 import { SubmitDialog } from '@/components/action-plans/SubmitDialog'
 import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
+import { refreshNotifs } from '@/lib/notify-refresh'
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -375,6 +376,7 @@ export function ActionPlanDetail({
       setActionError(data.error || 'Gagal memulai Action Plan')
       return
     }
+    refreshNotifs()
     onChanged()
   }
 
@@ -418,6 +420,7 @@ export function ActionPlanDetail({
       setActionError(data.error || 'Gagal menyelesaikan Action Plan')
       return
     }
+    refreshNotifs()
     onChanged()
   }
 

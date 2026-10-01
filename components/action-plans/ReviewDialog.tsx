@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { reviewActionPlanSchema } from '@/lib/validations/actionPlan'
+import { refreshNotifs } from '@/lib/notify-refresh'
 
 type ReviewAction = 'COMPLETE' | 'REJECTED' | 'EVIDENCE_REQUIRED'
 
@@ -74,6 +75,7 @@ export function ReviewDialog({
       return
     }
 
+    refreshNotifs()
     onSuccess()
   }
 
