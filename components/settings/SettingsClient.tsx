@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { Role } from '@/lib/generated/prisma/client'
-import { Building2, LayoutGrid, Users, Tag, TrendingUp, History } from 'lucide-react'
+import { Building2, LayoutGrid, Users, Tag, TrendingUp, LayoutTemplate } from 'lucide-react'
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
 
 // Tanpa `ssr: false` — section ini tidak memakai API browser-only, jadi tetap
@@ -24,12 +24,11 @@ const UserLabelSection = dynamic(
 const LeadSection = dynamic(
   () => import('@/components/settings/LeadSection').then((m) => m.LeadSection)
 )
-const AuditLogModal = dynamic(
-  () => import('@/components/settings/AuditLogModal').then((m) => m.AuditLogModal),
-  { ssr: false }
+const ActionTemplateSection = dynamic(
+  () => import('@/components/settings/ActionTemplateSection').then((m) => m.ActionTemplateSection)
 )
 
-type Tab = 'company' | 'division' | 'user' | 'userLabel' | 'leads'
+type Tab = 'company' | 'division' | 'user' | 'userLabel' | 'leads' | 'templates'
 
 function defaultTabFor(role: Role): Tab {
   if (role === 'SUPER_ADMIN') return 'company'
@@ -81,16 +80,25 @@ const TAB_CONFIG: {
     icon: TrendingUp,
     roles: ['SUPER_ADMIN'],
   },
+  {
+    key: 'templates',
+    label: 'Template Aksi',
+    shortLabel: 'Template',
+    icon: LayoutTemplate,
+    roles: ['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'],
+  },
 ]
 
 export function SettingsClient({
   role,
   companyId,
+  divisionId,
   sessionUserId,
   initialTab,
 }: {
   role: Role
   companyId: string | null
+  divisionId?: string | null
   sessionUserId?: string
   initialTab?: string
 }) {
@@ -103,8 +111,6 @@ export function SettingsClient({
     }
     return defaultTabFor(role)
   })
-  const [auditLogOpen, setAuditLogOpen] = useState(false)
-
   const visibleTabs = TAB_CONFIG.filter((t) => (t.roles as string[]).includes(role))
   const showSidebar = role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER'
 
@@ -119,16 +125,6 @@ export function SettingsClient({
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-xl">
             Kelola konfigurasi perusahaan, struktur divisi, hak akses tim, approval jabatan, dan pipeline prospek.
           </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setAuditLogOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors cursor-pointer shadow-xs"
-          >
-            <History size={14} className="text-slate-500" />
-            Audit Log Ringkas
-          </button>
         </div>
       </div>
 
@@ -171,6 +167,9 @@ export function SettingsClient({
             <UserLabelSection role={role} companyId={companyId} />
           )}
           {tab === 'leads' && role === 'SUPER_ADMIN' && <LeadSection />}
+          {tab === 'templates' && (role === 'SUPER_ADMIN' || role === 'ADMIN_OPERATIONAL' || role === 'MANAGER') && (
+            <ActionTemplateSection role={role} divisionId={divisionId ?? null} />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -181,12 +180,6 @@ export function SettingsClient({
         )}
       </div>
 
-      {/* Audit Log Modal */}
-      <AuditLogModal
-        open={auditLogOpen}
-        onOpenChange={setAuditLogOpen}
-        companyId={companyId}
-      />
     </div>
   )
 }

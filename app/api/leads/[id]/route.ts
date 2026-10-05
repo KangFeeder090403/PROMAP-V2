@@ -27,9 +27,17 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       status?: LeadStatus
       trialStartAt?: Date | null
       trialEndAt?: Date | null
+      industri?: string | null
+      omzet?: string | null
+      teamSize?: number | null
     } = {}
 
     if (body.notes !== undefined) data.notes = body.notes
+    if (body.industri !== undefined) data.industri = body.industri
+    if (body.omzet !== undefined) data.omzet = body.omzet
+    if (body.teamSize !== undefined) {
+      data.teamSize = body.teamSize !== null ? Number(body.teamSize) || null : null
+    }
     if (body.trialStartAt !== undefined) {
       data.trialStartAt = body.trialStartAt ? new Date(body.trialStartAt) : null
     }
