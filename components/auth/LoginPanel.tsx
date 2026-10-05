@@ -15,17 +15,17 @@ export function LoginPanel({ googleEnabled }: { googleEnabled: boolean }) {
 
   return (
     <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-800">
-      <div className="px-6 pt-6">
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+      <div className="px-5 pt-5 sm:px-6">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl dark:text-white">
           Masuk ke Workspace
         </h2>
-        <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           Pilih cara masuk sesuai akun Anda.
         </p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mx-6 mt-6 grid w-auto grid-cols-2 gap-1 dark:border-slate-700 dark:bg-slate-900">
+        <TabsList className="mx-5 mt-4 grid w-auto grid-cols-2 gap-1 sm:mx-6 dark:border-slate-700 dark:bg-slate-900">
           <TabsTrigger value="enterprise" className={TRIGGER}>
             Akun Perusahaan
           </TabsTrigger>
@@ -50,8 +50,8 @@ export function LoginPanel({ googleEnabled }: { googleEnabled: boolean }) {
         Calon klien yang perusahaannya belum terdaftar diarahkan ke Guest Demo,
         yang tersimpan sebagai Lead untuk ditindaklanjuti tim sales.
       */}
-      <div className="border-t border-slate-200 px-6 py-4 dark:border-slate-700">
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+      <div className="border-t border-slate-200 px-5 py-3 sm:px-6 dark:border-slate-700">
+        <p className="text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           Perusahaan belum terdaftar?{' '}
           <button
             type="button"

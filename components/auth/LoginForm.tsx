@@ -99,14 +99,14 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
   }
 
   return (
-    <div className="p-6">
+    <div className="p-5 sm:p-6">
       {isSignedOut && (
-        <p className="mb-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           Sesi Anda sudah berakhir, silakan masuk lagi.
         </p>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-3.5" noValidate>
         <div className="space-y-1.5">
           <Label
             htmlFor="email"
@@ -194,7 +194,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       {/* SSO Google — hanya dirender kalau provider benar-benar terdaftar di lib/auth.ts */}
       {googleEnabled && (
         <>
-          <div className="relative py-4">
+          <div className="relative py-2.5 sm:py-3">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
               <div className="w-full border-t border-slate-200 dark:border-slate-700" />
             </div>
