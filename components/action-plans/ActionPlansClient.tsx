@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Plus,
   MoreHorizontal,
+  Trash2,
   X,
   FileSpreadsheet,
   Upload,
@@ -188,20 +189,28 @@ function ActionPlansErrorState({ error, onRetry }: Readonly<{ error: string; onR
 interface ActionPlanTableRowProps {
   ap: ActionPlan
   userId: string
+  userRole: string
   isSelected: boolean
   isHighlighted: boolean
   onSelect: (ap: ActionPlan) => void
   onEdit: (ap: ActionPlan) => void
+  onDelete: (ap: ActionPlan) => void
 }
 
 function ActionPlanTableRow({
   ap,
   userId,
+  userRole,
   isSelected,
   isHighlighted,
   onSelect,
   onEdit,
+  onDelete,
 }: Readonly<ActionPlanTableRowProps>) {
+  const canDelete =
+    userRole === 'SUPER_ADMIN' ||
+    userRole === 'ADMIN_OPERATIONAL' ||
+    ap.picId === userId
   const isOverdue =
     ap.status !== 'COMPLETE' &&
     new Date(ap.endDate).getTime() < Date.now() - 86400000
@@ -292,7 +301,7 @@ function ActionPlanTableRow({
         </div>
       </td>
       <td className="px-5 py-3">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-1">
           <button
             type="button"
             title="Edit"
@@ -304,6 +313,19 @@ function ActionPlanTableRow({
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
+          {canDelete && (
+            <button
+              type="button"
+              title="Hapus"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(ap)
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -349,6 +371,8 @@ export function ActionPlansClient({
   const [importOpen, setImportOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
+  const [deletingAp, setDeletingAp] = useState<ActionPlan | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [successBanner, setSuccessBanner] = useState<string | null>(null)
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -356,6 +380,27 @@ export function ActionPlansClient({
     setSuccessBanner(msg)
     if (bannerTimer.current) clearTimeout(bannerTimer.current)
     bannerTimer.current = setTimeout(() => setSuccessBanner(null), 4000)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingAp) return
+    setDeleteLoading(true)
+    try {
+      const res = await fetch(`/api/action-plans/${deletingAp.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        setError(json.error || 'Gagal menghapus Action Plan')
+        return
+      }
+      if (selected?.id === deletingAp.id) setSelected(null)
+      showSuccess(`Action Plan "${deletingAp.title}" berhasil dihapus.`)
+      setDeletingAp(null)
+      await fetchData()
+    } catch {
+      setError('Terjadi kesalahan jaringan saat menghapus Action Plan.')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   // Global Hotkey: 'c' or 'C' opens create modal when not typing in inputs
@@ -870,6 +915,7 @@ export function ActionPlansClient({
                   key={ap.id}
                   ap={ap}
                   userId={userId}
+                  userRole={role}
                   isSelected={selected?.id === ap.id}
                   isHighlighted={highlightedId === ap.id}
                   onSelect={(selectedAp) => {
@@ -880,6 +926,7 @@ export function ActionPlansClient({
                     setEditing(editingAp)
                     setFormOpen(true)
                   }}
+                  onDelete={(apToDelete) => setDeletingAp(apToDelete)}
                 />
               ))}
             </tbody>
@@ -980,6 +1027,56 @@ export function ActionPlansClient({
           setFormOpen(true)
         }}
       />
+
+      {/* Dialog Konfirmasi Hapus */}
+      {deletingAp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[1px] p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center shrink-0">
+                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-900 dark:text-slate-50">Hapus Action Plan?</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <span className="font-medium text-slate-700 dark:text-slate-200 break-words">
+                    &ldquo;{deletingAp.title}&rdquo;
+                  </span>{' '}
+                  akan dihapus secara permanen dan tidak bisa dikembalikan.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeletingAp(null)}
+                disabled={deleteLoading}
+                className="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                className="h-9 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors inline-flex items-center gap-2"
+              >
+                {deleteLoading ? (
+                  <>
+                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Menghapus…
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Ya, Hapus
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -216,6 +216,7 @@ export function ImportCsvModal({
           startDate: r.startDate,
           endDate: r.endDate,
           picEmail: r.picEmail,
+          evidenceLink: r.evidenceLink || undefined,
         }))
 
       const res = await fetch('/api/action-plans/import-csv', {
@@ -270,7 +271,7 @@ export function ImportCsvModal({
               Template CSV Siap Pakai (24 Baris / 6 Hari Kerja)
             </p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Format kolom: <code>title, outcomeKpi, priority, startDate, endDate, picEmail</code>
+              Format kolom: <code>title, outcomeKpi, priority, startDate, endDate, picEmail, evidenceLink</code>
             </p>
           </div>
           <button
@@ -447,6 +448,9 @@ export function ImportCsvModal({
                       <th className="py-2 px-2 w-16 text-center font-semibold border-b border-slate-200 dark:border-slate-700">
                         Prioritas
                       </th>
+                      <th className="py-2 px-2.5 font-semibold border-b border-slate-200 dark:border-slate-700 max-w-[140px]">
+                        Bukti (Drive)
+                      </th>
                       <th className="py-2 px-2 w-20 text-center font-semibold border-b border-slate-200 dark:border-slate-700">
                         Status
                       </th>
@@ -487,6 +491,21 @@ export function ImportCsvModal({
                           >
                             {AP_PRIORITY_LABEL[row.priority] || row.priority}
                           </span>
+                        </td>
+                        <td className="py-2 px-2.5 max-w-[140px]">
+                          {row.evidenceLink ? (
+                            <a
+                              href={row.evidenceLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-blue-600 dark:text-blue-400 underline truncate block max-w-[130px]"
+                              title={row.evidenceLink}
+                            >
+                              Lihat Bukti
+                            </a>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-600">—</span>
+                          )}
                         </td>
                         <td className="py-2 px-2 text-center whitespace-nowrap">
                           {row.isValid ? (
