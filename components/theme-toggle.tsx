@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { THEME_STORAGE_KEY } from '@/lib/theme'
 
 type Theme = 'light' | 'dark'
 
@@ -19,7 +20,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     function apply() {
       document.documentElement.classList.toggle('dark', next === 'dark')
       try {
-        localStorage.setItem('promap-theme', next)
+        localStorage.setItem(THEME_STORAGE_KEY, next)
       } catch {
         // storage diblokir (private mode) — tema tetap berubah untuk sesi ini
       }

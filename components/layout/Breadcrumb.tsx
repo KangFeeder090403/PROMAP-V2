@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
-import { findNavItem } from '@/components/layout/nav-config'
 
 /**
  * Segment level-1 → label grup navigasi.
@@ -15,7 +14,7 @@ const SEGMENT_GROUP: Record<string, string | null> = {
   projects: 'Workspace',
   board: 'Execution',
   calendar: 'Execution',
-  proposals: 'Execution',
+  proposals: 'Workspace',
   'action-plans': 'Execution',
   reports: 'Insights',
   settings: null,
@@ -29,7 +28,7 @@ const CUSTOM_LABELS: Record<string, string> = {
   new: 'Baru',
 }
 
-/** Fallback label untuk segment yang tidak ada di nav (mis. /action-plans). */
+/** Label segment: CUSTOM_LABELS dulu, lalu kebab-case → Title Case. */
 function titleize(segment: string) {
   return (
     CUSTOM_LABELS[segment] ??
@@ -66,7 +65,7 @@ export function Breadcrumb() {
     if (group) crumbs.push({ label: group })
 
     const href = '/' + first
-    crumbs.push({ label: CUSTOM_LABELS[first] ?? findNavItem(href)?.label ?? titleize(first), href })
+    crumbs.push({ label: titleize(first), href }) // titleize sudah cek CUSTOM_LABELS
 
     // Segment dinamis (id) tidak bisa jadi label bermakna tanpa fetch —
     // ponytail: render 'Detail'. Upgrade: page kirim nama entitas via context

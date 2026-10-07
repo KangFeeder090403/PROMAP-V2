@@ -185,7 +185,7 @@ export function ExecutionVelocityChart({
                 <Bar
                   dataKey="target"
                   name="Target Rencana"
-                  fill="#CBD5E1"
+                  fill="#E2E8F0"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                   className="dark:fill-slate-700"
@@ -193,7 +193,7 @@ export function ExecutionVelocityChart({
                 <Bar
                   dataKey="completed"
                   name="Selesai Mingguan"
-                  fill="#3B82F6"
+                  fill="#8CA0C8"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
@@ -201,10 +201,10 @@ export function ExecutionVelocityChart({
                   type="monotone"
                   dataKey="trend"
                   name="Tren Realisasi"
-                  stroke="#1E40AF"
+                  stroke="#102143"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: '#FFFFFF', stroke: '#1E40AF', strokeWidth: 2 }}
-                  activeDot={{ r: 5.5, fill: '#1E40AF', stroke: '#FFFFFF', strokeWidth: 2 }}
+                  dot={{ r: 4, fill: '#FFFFFF', stroke: '#102143', strokeWidth: 2 }}
+                  activeDot={{ r: 5.5, fill: '#102143', stroke: '#FFFFFF', strokeWidth: 2 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>

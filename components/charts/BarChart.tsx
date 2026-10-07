@@ -1,6 +1,6 @@
 export function BarChart({
   data,
-  barColor = '#3B82F6',
+  barColor = '#1E3A6E',
   colorByLabel,
   maxValue,
   valueSuffix = '',

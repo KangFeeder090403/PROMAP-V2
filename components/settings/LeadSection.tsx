@@ -309,7 +309,7 @@ export function LeadSection() {
               {loading && leads.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
-                    <RefreshCw size={16} className="animate-spin mx-auto mb-2 text-blue-500" />
+                    <RefreshCw size={16} className="animate-spin mx-auto mb-2 text-blue-500 dark:text-blue-300" />
                     Memuat data prospek...
                   </td>
                 </tr>

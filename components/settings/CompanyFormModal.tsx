@@ -159,7 +159,7 @@ export function CompanyFormModal({
             <input
               id="isActive"
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-slate-300 text-blue-500 dark:text-blue-300 focus:ring-blue-500"
               {...register('isActive')}
             />
             <Label htmlFor="isActive" className="text-slate-700">

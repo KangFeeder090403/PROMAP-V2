@@ -187,7 +187,7 @@ function ChangeValueViewer({
         {reviewNote && (
           <div className="p-2.5 rounded-md bg-slate-50 dark:bg-slate-800/60 border-l-2 border-blue-500 text-slate-700 dark:text-slate-200 text-xs">
             <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
-              <MessageSquare size={10} className="text-blue-500" />
+              <MessageSquare size={10} className="text-blue-500 dark:text-blue-300" />
               <span>Catatan Evaluasi</span>
             </div>
             <p className="italic leading-relaxed">{String(reviewNote)}</p>
@@ -426,7 +426,7 @@ export function AuditLogModal({
 
           {loading && logs.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-slate-400">
-              <RefreshCw size={18} className="animate-spin text-blue-500" />
+              <RefreshCw size={18} className="animate-spin text-blue-500 dark:text-blue-300" />
               <p className="text-xs">Memuat rekaman log audit...</p>
             </div>
           )}

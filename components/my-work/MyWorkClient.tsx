@@ -408,7 +408,7 @@ export function MyWorkClient() {
               styleMap={AP_STATUS_STYLE}
               labelMap={AP_STATUS_LABEL}
             />
-            <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSelected ? 'text-blue-600 translate-x-0.5' : ''}`} />
+            <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSelected ? 'text-blue-600 dark:text-blue-300 translate-x-0.5' : ''}`} />
           </div>
         </div>
 

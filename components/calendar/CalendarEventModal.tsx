@@ -60,7 +60,7 @@ export function CalendarEventModal({
           {/* PIC Card */}
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
             <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-semibold mb-1">
-              <User size={13} className="text-blue-500" />
+              <User size={13} className="text-blue-500 dark:text-blue-300" />
               <span>PENANGGUNG JAWAB (PIC)</span>
             </div>
             <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{event.picName || '—'}</p>

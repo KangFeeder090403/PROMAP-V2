@@ -11,8 +11,6 @@ import {
   AlarmClock,
   Flag,
   RefreshCw,
-  LayoutGrid,
-  LayoutList,
   CalendarDays,
   AlertTriangle,
   Clock,
@@ -60,7 +58,7 @@ const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 
 const STATUS_DOT_COLOR: Record<string, string> = {
   NOT_STARTED: 'bg-slate-400',
-  IN_PROGRESS: 'bg-blue-500',
+  IN_PROGRESS: 'bg-sky-500',
   PENDING_APPROVAL: 'bg-indigo-500',
   EVIDENCE_REQUIRED: 'bg-amber-500',
   APPROVED: 'bg-emerald-500',
@@ -71,7 +69,7 @@ const STATUS_DOT_COLOR: Record<string, string> = {
 
 const STATUS_BAR_COLOR: Record<string, string> = {
   NOT_STARTED: '#94a3b8',
-  IN_PROGRESS: '#3b82f6',
+  IN_PROGRESS: '#0EA5E9',
   PENDING_APPROVAL: '#6366f1',
   EVIDENCE_REQUIRED: '#f59e0b',
   APPROVED: '#10b981',
@@ -79,8 +77,6 @@ const STATUS_BAR_COLOR: Record<string, string> = {
   OVERDUE: '#f97316',
   COMPLETE: '#10b981',
 }
-
-type ViewTab = 'table' | 'board' | 'calendar'
 
 export interface FilterOptions {
   statuses: { key: string; label: string }[]
@@ -124,7 +120,6 @@ export function CalendarClient({
   const [error, setError] = useState<string | null>(null)
   const [denied, setDenied] = useState(false)
   const [selected, setSelected] = useState<CalendarEvent | null>(null)
-  const [activeView, setActiveView] = useState<ViewTab>('calendar')
   const [showSidebar, setShowSidebar] = useState(true)
   const [overflowDate, setOverflowDate] = useState<Date | null>(null)
 
@@ -330,13 +325,6 @@ export function CalendarClient({
 
       {/* Page Header */}
       <div className="flex flex-col gap-1">
-        <nav className="text-xs text-slate-400 flex items-center gap-1.5">
-          <span>Workspace</span>
-          <span>/</span>
-          <span>Execution</span>
-          <span>/</span>
-          <span className="text-blue-500 font-medium">Calendar &amp; Timeline Schedule</span>
-        </nav>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -375,38 +363,8 @@ export function CalendarClient({
         </div>
       </div>
 
-      {/* View Tabs & Quick Date Range */}
+      {/* View Mode & Quick Date Range */}
       <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-2 shadow-sm">
-        {/* Switcher View (PRD §B8: Table | Board | Calendar) */}
-        <div className="flex items-center gap-1">
-          {(
-            [
-              { key: 'table', icon: LayoutList, label: 'Table' },
-              { key: 'board', icon: LayoutGrid, label: 'Board' },
-              { key: 'calendar', icon: CalendarDays, label: 'Calendar' },
-            ] as { key: ViewTab; icon: React.ElementType; label: string }[]
-          ).map(({ key, icon: Icon, label }) => (
-            <button
-              key={key}
-              onClick={() => {
-                if (key === 'table') router.push('/action-plans')
-                else if (key === 'board') router.push('/board')
-                else setActiveView('calendar')
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                activeView === key
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:text-slate-400'
-              }`}
-            >
-              <Icon size={13} />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
-
         {/* View Mode Switcher (Bulan | Minggu | Hari) */}
         <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 p-0.5">
           {(

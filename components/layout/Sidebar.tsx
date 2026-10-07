@@ -7,7 +7,6 @@ import dynamic from 'next/dynamic'
 import { signOut } from 'next-auth/react'
 import {
   ChevronsUpDown,
-  Settings,
   History,
   LogOut,
   Building2,
@@ -73,8 +72,6 @@ export function Sidebar({
   const [auditLogOpen, setAuditLogOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
-  const canAccessSettings =
-    user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
   const canAccessAuditLog =
     user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 
@@ -108,13 +105,13 @@ export function Sidebar({
     <>
       <aside
         id="app-sidebar"
-        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
+        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-blue-900 border-r border-blue-950 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
           isCollapsed ? 'md:w-16 w-64' : 'w-64'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Header Tenant / Logo */}
         <div
-          className={`flex h-14 items-center border-b border-slate-200 dark:border-slate-800 ${
+          className={`flex h-14 items-center border-b border-white/10 ${
             isCollapsed ? 'justify-center px-2' : 'px-3'
           }`}
         >
@@ -124,7 +121,7 @@ export function Sidebar({
               href="/"
               onClick={onClose}
               aria-label="Beranda ProMaP"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-400 text-blue-900 font-bold text-xs shadow-sm hover:bg-gold-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
             >
               {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
             </Link>
@@ -136,17 +133,17 @@ export function Sidebar({
                   href="/"
                   onClick={onClose}
                   aria-label="Beranda ProMaP"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-400 text-blue-900 font-bold text-xs shadow-sm hover:bg-gold-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
                 >
                   {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
                 </Link>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-slate-900 dark:text-white leading-tight">
+                  <p className="truncate text-xs font-semibold text-white leading-tight">
                     {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
                   </p>
                   <div className="flex items-center gap-1.5 pt-0.5">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <p className="truncate text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-none">
+                    <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
                       {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
                     </p>
                   </div>
@@ -162,14 +159,14 @@ export function Sidebar({
             <div key={group.label ?? `group-${gi}`} className="space-y-1">
               {group.label ? (
                 !isCollapsed ? (
-                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                     {group.label}
                   </p>
                 ) : (
-                  <div className="my-2 border-t border-slate-200 dark:border-slate-800" />
+                  <div className="my-2 border-t border-white/10" />
                 )
               ) : (
-                <div className="mb-2 border-t border-slate-200 dark:border-slate-800" />
+                <div className="mb-2 border-t border-white/10" />
               )}
               {group.items.map((item) => {
                 const Icon = item.icon
@@ -188,14 +185,14 @@ export function Sidebar({
                             : item.label
                           : undefined
                       }
-                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
                         isCollapsed
                           ? 'justify-center p-2.5 h-10 w-full'
                           : 'gap-3 px-3 py-2'
                       } ${
                         active
-                          ? 'bg-blue-50 text-blue-600 font-medium border-l-2 border-blue-500 dark:bg-slate-800 dark:text-blue-400 dark:border-blue-500'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                          ? 'bg-white/10 text-white font-medium border-l-2 border-gold-400'
+                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -209,7 +206,7 @@ export function Sidebar({
                         </span>
                       )}
                       {isCollapsed && badge > 0 && (
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
+                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-blue-900" />
                       )}
                     </Link>
 
@@ -235,7 +232,7 @@ export function Sidebar({
         </nav>
 
         {/* Footer Profil User & Account Switcher */}
-        <div className="relative border-t border-slate-200 dark:border-slate-800 p-2">
+        <div className="relative border-t border-white/10 p-2">
           {/* Popover Dropup Profil User */}
           {profileOpen && (
             <>
@@ -255,7 +252,7 @@ export function Sidebar({
                 {/* Header Info Akun */}
                 <div className="px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200/80 dark:bg-slate-800/60 dark:border-slate-700/40 mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold-400 text-xs font-bold text-blue-900 shadow-sm">
                       {initials(user.name)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -309,20 +306,9 @@ export function Sidebar({
                   </button>
                 </div>
 
-                {/* Navigasi Pengaturan & Audit Log */}
-                {(canAccessSettings || canAccessAuditLog) && (
+                {/* Audit Log (Settings cukup lewat nav utama) */}
+                {canAccessAuditLog && (
                   <div className="px-1 py-1 space-y-0.5 border-b border-slate-200 dark:border-slate-800/80 mb-1">
-                    {canAccessSettings && (
-                      <Link
-                        href="/settings"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors"
-                      >
-                        <Settings className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-                        <span>Pengaturan &amp; Tata Kelola</span>
-                      </Link>
-                    )}
-                    {canAccessAuditLog && (
                       <button
                         type="button"
                         onClick={() => {
@@ -334,7 +320,6 @@ export function Sidebar({
                         <History className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                         <span>Audit Log Aktivitas</span>
                       </button>
-                    )}
                   </div>
                 )}
 
@@ -362,20 +347,20 @@ export function Sidebar({
               aria-expanded={profileOpen}
               aria-label={`Menu profil: ${user.name} (${ROLE_LABEL[user.role] || user.role})`}
               onClick={() => setProfileOpen((v) => !v)}
-              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
                 isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
-              } ${profileOpen ? 'bg-slate-100 dark:bg-slate-800' : ''}`}
+              } ${profileOpen ? 'bg-white/10' : ''}`}
             >
               <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold-400 text-xs font-bold text-blue-900 shadow-sm"
               >
                 {initials(user.name)}
               </div>
               {!isCollapsed && (
                 <>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-slate-900 dark:text-white">{user.name}</p>
-                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
+                    <p className="truncate text-xs font-medium text-white">{user.name}</p>
+                    <p className="truncate text-[11px] text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
                   </div>
                   <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 </>

@@ -3,7 +3,7 @@ import { AP_STATUS_LABEL } from '@/lib/status-labels'
 
 const STATUS_COLOR: Record<ActionPlanStatus, string> = {
   NOT_STARTED: '#94A3B8',
-  IN_PROGRESS: '#3B82F6',
+  IN_PROGRESS: '#0EA5E9',
   PENDING_APPROVAL: '#6366F1',
   EVIDENCE_REQUIRED: '#F59E0B',
   APPROVED: '#22C55E',

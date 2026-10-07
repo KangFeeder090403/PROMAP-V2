@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { THEME_STORAGE_KEY } from '@/lib/theme'
 import { LandingNav } from '@/components/landing/LandingNav'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { InteractiveProductTour } from '@/components/landing/InteractiveProductTour'
@@ -22,11 +23,7 @@ export function LandingPage() {
     return () => {
       // Kembalikan tema jika user berpindah ke rute lain (misal login/demo)
       try {
-        const t = localStorage.getItem('promap-theme')
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        if (t === 'dark' || (!t && prefersDark)) {
-          root.classList.add('dark')
-        }
+        if (localStorage.getItem(THEME_STORAGE_KEY) === 'dark') root.classList.add('dark')
       } catch {}
     }
   }, [])

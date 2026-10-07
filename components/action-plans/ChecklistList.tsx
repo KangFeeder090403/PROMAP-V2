@@ -109,7 +109,7 @@ export function ChecklistList({
                 checked={item.isDone}
                 disabled={!editable}
                 onChange={() => handleToggle(item)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 disabled:opacity-50"
+                className="h-4 w-4 rounded border-slate-300 text-blue-500 dark:text-blue-300 focus:ring-blue-500 disabled:opacity-50"
               />
               <span className={`text-sm flex-1 ${item.isDone ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                 {item.title}

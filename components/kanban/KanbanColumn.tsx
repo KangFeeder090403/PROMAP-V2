@@ -10,7 +10,7 @@ import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 // Warna dot per kolom, sesuai gambar
 const COLUMN_DOT: Record<KanbanColumnKey, string> = {
   NOT_STARTED: 'bg-slate-400',
-  IN_PROGRESS: 'bg-blue-500',
+  IN_PROGRESS: 'bg-sky-500',
   REVIEW: 'bg-indigo-500',
   NEEDS_REVISION: 'bg-red-500',
   DONE: 'bg-emerald-500',

@@ -129,7 +129,7 @@ function classifyEvidence(link: string | null): 'figma' | 'drive' | 'github' | '
 function EvidenceIcon({ type }: { type: 'figma' | 'drive' | 'github' | 'general' | 'none' }) {
   if (type === 'github') return <Github className="h-4 w-4 text-slate-700 dark:text-slate-300" />
   if (type === 'figma' || type === 'drive' || type === 'general') {
-    return <Globe className="h-4 w-4 text-blue-500" />
+    return <Globe className="h-4 w-4 text-blue-500 dark:text-blue-300" />
   }
   return <Paperclip className="h-4 w-4 text-slate-400" />
 }

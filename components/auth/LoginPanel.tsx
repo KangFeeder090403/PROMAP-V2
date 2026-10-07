@@ -56,7 +56,7 @@ export function LoginPanel({ googleEnabled }: { googleEnabled: boolean }) {
           <button
             type="button"
             onClick={() => setTab('guest')}
-            className="font-medium text-blue-500 transition-colors hover:underline"
+            className="font-medium text-blue-500 dark:text-blue-300 transition-colors hover:underline"
           >
             Coba Demo Gratis
           </button>

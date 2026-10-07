@@ -115,9 +115,9 @@ export function DevAccountSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Akun Testing (dev)"
-        className="relative inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800/90 px-2 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white"
+        className="relative inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-[11px] font-medium text-slate-200 transition-all hover:bg-white/15 hover:text-white"
       >
-        <Users className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+        <Users className="h-3.5 w-3.5 text-gold-400 shrink-0" />
         <span className="hidden sm:inline">Test</span>
         {isImpersonating && (
           <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
@@ -167,7 +167,7 @@ export function DevAccountSwitcher({
                 {companyGroups.map((cg) => (
                   <div key={cg.company} className="rounded-lg border border-slate-200/80 bg-slate-50/50 p-2.5">
                     <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-slate-200 text-xs font-semibold text-slate-700">
-                      <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                      <Building2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300 shrink-0" />
                       <span className="truncate">{cg.company}</span>
                       <span className="ml-auto text-[10px] font-normal text-slate-400">
                         {cg.items.length} akun
@@ -191,7 +191,7 @@ export function DevAccountSwitcher({
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
                                 <p className="truncate text-xs font-medium text-slate-900">{a.name}</p>
-                                {isCurrent && <span className="text-[10px] font-semibold text-blue-600 shrink-0">(aktif)</span>}
+                                {isCurrent && <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-300 shrink-0">(aktif)</span>}
                               </div>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${ROLE_BADGE[a.role] || 'bg-slate-100'}`}>

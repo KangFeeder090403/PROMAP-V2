@@ -340,8 +340,8 @@ export async function GET(req: Request) {
       doc.setFillColor(15, 23, 42)
       doc.rect(0, 0, pageW, 20, 'F')
 
-      // Aksen Garis Brand (Biru #2563EB)
-      doc.setFillColor(37, 99, 235)
+      // Aksen Garis Brand (Gold #D4AF37)
+      doc.setFillColor(212, 175, 55)
       doc.rect(0, 20, pageW, 1.2, 'F')
 
       // Teks Judul

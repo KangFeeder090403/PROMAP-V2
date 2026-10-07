@@ -513,11 +513,11 @@ export function DashboardClient() {
             <svg className="w-14 h-6 shrink-0 opacity-80" viewBox="0 0 56 20" fill="none">
               <path
                 d="M 2 16 C 12 14, 18 8, 30 10 C 40 12, 46 5, 54 3"
-                stroke="#3B82F6"
+                stroke="#1E3A6E"
                 strokeWidth="2"
                 strokeLinecap="round"
               />
-              <circle cx="54" cy="3" r="2" fill="#2563EB" />
+              <circle cx="54" cy="3" r="2" fill="#1A3260" />
             </svg>
           }
           footer="Target rencana aksi pada rentang ini"
@@ -759,7 +759,7 @@ export function DashboardClient() {
                     </span>
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-semibold text-blue-700">
+                        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">
                           #{item.refCode}
                         </span>
                         <span className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate max-w-sm">

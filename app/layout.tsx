@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { THEME_STORAGE_KEY } from '@/lib/theme'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -14,9 +15,10 @@ export const metadata: Metadata = {
 // Default selalu mode terang resmi ProMaP. Mode gelap hanya aktif jika user memilihnya via ThemeToggle.
 const themeScript = `
 try {
+  localStorage.removeItem('promap-theme')
   var p = window.location.pathname
   if (p !== '/' && p !== '/landing') {
-    var t = localStorage.getItem('promap-theme')
+    var t = localStorage.getItem('${THEME_STORAGE_KEY}')
     if (t === 'dark') document.documentElement.classList.add('dark')
   }
 } catch (e) {}

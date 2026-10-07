@@ -19,7 +19,7 @@ export const PROPOSAL_STATUS_LABEL: Record<string, string> = {
 // dead code di action buttons tapi tetap perlu render kalau ada data legacy).
 export const AP_STATUS_STYLE: Record<string, string> = {
   NOT_STARTED: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
-  IN_PROGRESS: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  IN_PROGRESS: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300',
   PENDING_APPROVAL: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
   EVIDENCE_REQUIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
@@ -42,7 +42,7 @@ export const AP_STATUS_LABEL: Record<string, string> = {
 // Aksen warna per status — bar vertikal di kolom "Title & ID" dan dot kecil.
 export const AP_STATUS_DOT: Record<string, string> = {
   NOT_STARTED: 'bg-slate-400',
-  IN_PROGRESS: 'bg-blue-500',
+  IN_PROGRESS: 'bg-sky-500',
   PENDING_APPROVAL: 'bg-indigo-500',
   EVIDENCE_REQUIRED: 'bg-amber-500',
   APPROVED: 'bg-green-500',

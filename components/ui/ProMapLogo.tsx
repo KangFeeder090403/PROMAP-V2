@@ -24,10 +24,10 @@ export function ProMapLogo({ className = 'h-8 w-8' }: { className?: string }) {
           strokeLinejoin="round"
           opacity="0.75"
         />
-        {/* Layer atas dengan panah puncak */}
+        {/* Layer atas dengan panah puncak — aksen gold brand */}
         <path
           d="M12 3L4 7.5L12 12L20 7.5L12 3Z"
-          stroke="currentColor"
+          stroke="#D4AF37"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

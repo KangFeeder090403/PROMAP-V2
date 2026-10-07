@@ -7,7 +7,7 @@ import type { CalendarEvent } from '@/lib/calendar-grid'
 // literal (bukan di-generate via template string) supaya kedeteksi Tailwind JIT.
 const SOLID_BAR_CLASS: Record<string, string> = {
   NOT_STARTED: 'bg-slate-500',
-  IN_PROGRESS: 'bg-blue-500',
+  IN_PROGRESS: 'bg-sky-500',
   PENDING_APPROVAL: 'bg-indigo-500',
   EVIDENCE_REQUIRED: 'bg-amber-500',
   APPROVED: 'bg-green-500',

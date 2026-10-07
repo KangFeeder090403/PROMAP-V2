@@ -172,7 +172,7 @@ function SortDropdown({
                 }`}
               >
                 <span>{opt.label}</span>
-                {active && <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />}
+                {active && <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300 shrink-0" />}
               </button>
             )
           })}

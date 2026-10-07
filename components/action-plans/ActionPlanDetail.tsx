@@ -65,7 +65,7 @@ type PresetReview = 'COMPLETE' | 'REJECTED' | 'EVIDENCE_REQUIRED'
 function getServiceIcon(url: string) {
   const lower = url.toLowerCase()
   if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
-    return <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+    return <FileText className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-300" />
   }
   if (lower.includes('figma.com')) {
     return <Target className="h-4 w-4 shrink-0 text-purple-500" />
@@ -73,7 +73,7 @@ function getServiceIcon(url: string) {
   if (lower.includes('github.com') || lower.includes('gitlab.com')) {
     return <Github className="h-4 w-4 shrink-0 text-slate-800 dark:text-slate-200" />
   }
-  return <Globe className="h-4 w-4 shrink-0 text-blue-500" />
+  return <Globe className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-300" />
 }
 
 function computeDetailPermissions(ap: ActionPlan, userId: string, role: Role) {

@@ -366,7 +366,7 @@ export function LeadsManagementClient() {
     <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#1E3A8A"/>
    </Borders>
    <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
-   <Interior ss:Color="#1E40AF" ss:Pattern="Solid"/>
+   <Interior ss:Color="#102143" ss:Pattern="Solid"/>
   </Style>
   <Style ss:ID="CellEven">
    <Alignment ss:Vertical="Center"/>
@@ -758,7 +758,7 @@ export function LeadsManagementClient() {
               {loading && leads.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-16 text-center text-slate-400">
-                    <RefreshCw size={18} className="animate-spin mx-auto mb-2 text-blue-600" />
+                    <RefreshCw size={18} className="animate-spin mx-auto mb-2 text-blue-600 dark:text-blue-300" />
                     Memuat data prospek B2B...
                   </td>
                 </tr>
@@ -1101,7 +1101,7 @@ export function LeadsManagementClient() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 flex items-center justify-center">
                   <Activity size={18} />
                 </div>
                 <div>
