@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
+import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
 
 // PIC menyelesaikan Action Plan pribadi sendiri tanpa review atasan.
@@ -53,6 +54,38 @@ export async function POST(_req: Request, props: { params: Promise<{ id: string 
       oldValue: existing.status,
       newValue: 'COMPLETE',
     })
+
+    // Notify atasan personal AP (manager divisi jika ada, admin ops company, + super admin)
+    // Tidak ada review, tapi atasan perlu tahu personal task selesai (audit trail)
+    const completeReviewerIds = new Set<string>()
+    if (existing.divisionId) {
+      const managers = await prisma.user.findMany({
+        where: { role: 'MANAGER', divisionId: existing.divisionId, deletedAt: null, status: 'ACTIVE' },
+        select: { id: true },
+      })
+      managers.forEach((m) => completeReviewerIds.add(m.id))
+    } else if (existing.companyId) {
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN_OPERATIONAL', companyId: existing.companyId, deletedAt: null, status: 'ACTIVE' },
+        select: { id: true },
+      })
+      admins.forEach((a) => completeReviewerIds.add(a.id))
+    }
+    const superAdminsComplete = await prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN', deletedAt: null, status: 'ACTIVE' },
+      select: { id: true },
+    })
+    superAdminsComplete.forEach((s) => completeReviewerIds.add(s.id))
+    completeReviewerIds.delete(user.id)
+    if (completeReviewerIds.size > 0) {
+      await notify({
+        userIds: [...completeReviewerIds],
+        title: 'AP personal selesai',
+        message: `"${existing.title}" diselesaikan oleh ${user.name}`,
+        link: `/action-plans?open=${id}`,
+        companyId: existing.companyId,
+      })
+    }
 
     return NextResponse.json({ success: true, status: 'COMPLETE' })
   } catch (error) {

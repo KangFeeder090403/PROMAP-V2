@@ -163,6 +163,9 @@ model Lead {
   loginCount   Int        @default(0) // Track berapa kali login Guest
   lastLoginAt  DateTime?
   notes        String? // Catatan follow-up dari Super Admin
+  industri     String? // Industri/bidang usaha perusahaan
+  omzet        String? // Estimasi omzet per bulan/tahun
+  teamSize     Int?    // Jumlah tim/karyawan
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -179,11 +182,12 @@ model Division {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  company     Company      @relation(fields: [companyId], references: [id])
-  users       User[]
-  tasks       Task[]
-  actionPlans ActionPlan[]
-  projects    Project[]
+  company          Company          @relation(fields: [companyId], references: [id])
+  users            User[]
+  tasks            Task[]
+  actionPlans      ActionPlan[]
+  projects         Project[]
+  actionTemplates  ActionTemplate[]
 
   // Unik per (companyId, name) HANYA untuk baris aktif — dipasang sebagai
   // partial unique index lewat SQL manual di migration
@@ -365,4 +369,17 @@ model ActivityLog {
   @@index([actionPlanId, createdAt])
   @@index([userId])
   @@index([projectId])
+}
+
+model ActionTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  divisionId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  division    Division @relation(fields: [divisionId], references: [id])
+
+  @@index([divisionId])
 }

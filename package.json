@@ -20,7 +20,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts && tsx scripts/seed-two-tenants.ts",
-    "db:seed:tenants": "tsx scripts/seed-two-tenants.ts"
+    "db:seed:tenants": "tsx scripts/seed-two-tenants.ts",
+    "seed:projects": "tsx prisma/seed-projects.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts && tsx scripts/seed-two-tenants.ts"

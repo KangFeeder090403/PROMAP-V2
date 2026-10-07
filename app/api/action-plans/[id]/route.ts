@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
+import { logActivity } from '@/lib/activity-log'
 import { shortRef } from '@/lib/dashboard-aggregate'
 
 function canViewAP(
@@ -121,6 +122,15 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
 
     const body = await req.json()
 
+    // Guard: jangan ubah evidence saat sedang di-review / sudah selesai
+    const isEvidenceField = body.evidenceLink !== undefined || body.evaluationNote !== undefined
+    if (isEvidenceField && ['PENDING_APPROVAL', 'COMPLETE', 'APPROVED'].includes(existing.status)) {
+      return NextResponse.json(
+        { error: 'Bukti tidak bisa diubah saat sedang review atau sudah selesai. Gunakan alur Submit / Review.' },
+        { status: 409 }
+      )
+    }
+
     // body.status SELALU diabaikan — status hanya berubah lewat alur submit/review/reassign
     const updateData: any = {}
     if (body.title !== undefined) updateData.title = body.title
@@ -132,6 +142,16 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null
 
     const result = await prisma.actionPlan.update({ where: { id }, data: updateData })
+
+    if (isEvidenceField) {
+      await logActivity({
+        userId: user.id,
+        actionPlanId: id,
+        action: 'EVIDENCE_SUBMITTED',
+        oldValue: JSON.stringify({ evidenceLink: existing.evidenceLink, evaluationNote: existing.evaluationNote }),
+        newValue: JSON.stringify({ evidenceLink: updateData.evidenceLink ?? existing.evidenceLink, evaluationNote: updateData.evaluationNote ?? existing.evaluationNote }),
+      })
+    }
 
     return NextResponse.json(result)
   } catch (error) {

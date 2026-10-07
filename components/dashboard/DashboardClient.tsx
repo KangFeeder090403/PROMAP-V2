@@ -32,6 +32,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
 import { PriorityRiskMatrix } from '@/components/dashboard/PriorityRiskMatrix'
 import { DivisionVelocityCard } from '@/components/dashboard/DivisionVelocityCard'
+import { ContributorAnalysisSection } from '@/components/dashboard/ContributorAnalysisSection'
 
 const ExecutionVelocityChart = dynamic(
   () => import('@/components/dashboard/ExecutionVelocityChart').then((m) => m.ExecutionVelocityChart),
@@ -1073,6 +1074,11 @@ export function DashboardClient() {
             overdueCount={metrics.overdue}
           />
         </div>
+      </div>
+
+      {/* Analisis Proyek Kontributor */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+        <ContributorAnalysisSection />
       </div>
 
       {/* TIER 3: CRITICAL OVERDUE DRILL-DOWN */}

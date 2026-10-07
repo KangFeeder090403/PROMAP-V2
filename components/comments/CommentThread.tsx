@@ -6,6 +6,7 @@ import { MentionTextarea } from '@/components/comments/MentionTextarea'
 import { tokenizeMentions, COMMENT_MAX_LENGTH } from '@/lib/mention-parse'
 import { timeAgo } from '@/lib/date-utils'
 import { editDeadline, isWithinEditWindow } from '@/lib/comment-edit'
+import { refreshNotifs } from '@/lib/notify-refresh'
 
 interface Comment {
   id: string
@@ -150,6 +151,7 @@ export function CommentThread({
       }
       setDraft('')
       await fetchComments()
+      refreshNotifs()
     } catch (e) {
       setSendError(e instanceof Error ? e.message : 'Gagal mengirim komentar')
     } finally {

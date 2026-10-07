@@ -12,6 +12,7 @@ interface CsvImportPayloadItem {
   startDate: string
   endDate: string
   picEmail?: string
+  evidenceLink?: string
 }
 
 interface CsvImportPayload {
@@ -40,6 +41,7 @@ type PreparedItem = {
   companyId: string
   divisionId: string | null
   isPersonal: boolean
+  evidenceLink?: string
 }
 
 type TaskWithDivision = {
@@ -232,6 +234,7 @@ function validateAndPrepareRow(
       companyId,
       divisionId,
       isPersonal,
+      evidenceLink: item.evidenceLink?.trim() || undefined,
     },
   }
 }
@@ -256,6 +259,7 @@ async function persistImportedActionPlans(preparedList: PreparedItem[]) {
         divisionId: p.divisionId,
         isPersonal: p.isPersonal,
         status: 'NOT_STARTED',
+        ...(p.evidenceLink ? { evidenceLink: p.evidenceLink } : {}),
       })),
       include,
     })
@@ -276,6 +280,7 @@ async function persistImportedActionPlans(preparedList: PreparedItem[]) {
             divisionId: p.divisionId,
             isPersonal: p.isPersonal,
             status: 'NOT_STARTED',
+            ...(p.evidenceLink ? { evidenceLink: p.evidenceLink } : {}),
           },
           include,
         })

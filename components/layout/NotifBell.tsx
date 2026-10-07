@@ -33,7 +33,7 @@ export function NotifBell() {
 
   async function fetchNotifs(unread = onlyUnread) {
     try {
-      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`)
+      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`, { cache: 'no-store' })
       if (!res.ok) return
       const { data, unreadCount } = await res.json()
       setItems(data)
@@ -52,14 +52,17 @@ export function NotifBell() {
         fetchNotifs()
       }
     }
+    const onNotifEvent = () => fetchNotifs()
 
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('promap:refresh-notifs', onNotifEvent as EventListener)
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('promap:refresh-notifs', onNotifEvent as EventListener)
     }
   }, [onlyUnread])
 
@@ -95,7 +98,7 @@ export function NotifBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute 1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

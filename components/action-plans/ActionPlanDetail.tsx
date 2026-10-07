@@ -32,6 +32,7 @@ import { timeAgo } from '@/lib/date-utils'
 import { SubmitDialog } from '@/components/action-plans/SubmitDialog'
 import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
+import { refreshNotifs } from '@/lib/notify-refresh'
 
 const ROLE_LABEL: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -375,6 +376,7 @@ export function ActionPlanDetail({
       setActionError(data.error || 'Gagal memulai Action Plan')
       return
     }
+    refreshNotifs()
     onChanged()
   }
 
@@ -418,6 +420,7 @@ export function ActionPlanDetail({
       setActionError(data.error || 'Gagal menyelesaikan Action Plan')
       return
     }
+    refreshNotifs()
     onChanged()
   }
 
@@ -706,15 +709,23 @@ export function ActionPlanDetail({
                             className="inline-flex items-center gap-1 rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                           >
                             <Check className="h-3 w-3" />
-                            {savingEvidence ? 'Menyimpan...' : 'Simpan Bukti'}
+                            {savingEvidence ? 'Menyimpan...' : 'Simpan Draft Bukti'}
                           </button>
                         </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Bukti hanya tersimpan sebagai draft. Tekan <span className="font-semibold">Submit untuk Review</span> di footer agar atasan menerima notifikasi dan bisa Approve / Tolak / Minta Revisi.
+                        </p>
                       </div>
                     ) : (
                       <EvidenceContentDisplay
                         evidenceLink={ap.evidenceLink}
                         evaluationNote={ap.evaluationNote}
                       />
+                    )}
+                    {isOwner && (ap.evidenceLink || ap.evaluationNote) && ['IN_PROGRESS', 'EVIDENCE_REQUIRED'].includes(ap.status) && !isEditingEvidence && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        Draft bukti tersimpan — jangan lupa Submit untuk Review agar masuk ke atasan.
+                      </p>
                     )}
                   </div>
                 </section>
