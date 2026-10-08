@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell } from 'lucide-react'
+import { Bell, BellOff, BellRing } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Notification {
   id: string
@@ -30,6 +31,7 @@ export function NotifBell() {
   const [items, setItems] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [onlyUnread, setOnlyUnread] = useState(false)
+  const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications()
 
   async function fetchNotifs(unread = onlyUnread) {
     try {
@@ -167,6 +169,38 @@ export function NotifBell() {
                 ))
               )}
             </div>
+
+            {/* Footer: toggle notifikasi HP */}
+            {pushStatus !== 'unsupported' && (
+              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2">
+                {pushStatus === 'denied' ? (
+                  <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                    <BellOff className="h-3.5 w-3.5 shrink-0" />
+                    Notifikasi HP diblokir — aktifkan di pengaturan browser
+                  </p>
+                ) : pushStatus === 'granted' ? (
+                  <button
+                    type="button"
+                    onClick={unsubscribe}
+                    className="flex w-full items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                  >
+                    <BellOff className="h-3.5 w-3.5 shrink-0" />
+                    Nonaktifkan notifikasi HP
+                  </button>
+                ) : pushStatus === 'loading' ? (
+                  <p className="text-xs text-slate-400">Memuat…</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={subscribe}
+                    className="flex w-full items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                  >
+                    <BellRing className="h-3.5 w-3.5 shrink-0" />
+                    Aktifkan notifikasi HP
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
