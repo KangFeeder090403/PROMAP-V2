@@ -49,11 +49,11 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const ROLE_BADGE: Record<string, string> = {
-  SUPER_ADMIN: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/80 dark:text-red-300 dark:border-red-800/60',
-  ADMIN_OPERATIONAL: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800/60',
-  MANAGER: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800/60',
-  PIC: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-  GUEST: 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+  SUPER_ADMIN: 'bg-muted text-fg-secondary border border-border rounded-sm',
+  ADMIN_OPERATIONAL: 'bg-muted text-fg-secondary border border-border rounded-sm',
+  MANAGER: 'bg-muted text-fg-secondary border border-border rounded-sm',
+  PIC: 'bg-muted text-fg-secondary border border-border rounded-sm',
+  GUEST: 'bg-muted text-fg-secondary border border-border rounded-sm',
 }
 
 export function Sidebar({
@@ -106,8 +106,8 @@ export function Sidebar({
     <>
       <aside
         id="app-sidebar"
-        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-blue-900 border-r border-blue-950 transition-[width,transform] duration-200 ease-in-out md:translate-x-0 ${
-          isCollapsed ? 'md:w-16 w-64' : 'w-64'
+        className={`fixed left-0 top-0 z-30 flex h-screen flex-col bg-sidebar border-r border-white/10 transition-[width,transform] duration-200 ease-in-out lg:translate-x-0 ${
+          isCollapsed ? 'lg:w-16 w-64' : 'w-64'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Header Tenant / Logo */}
@@ -122,7 +122,7 @@ export function Sidebar({
               href="/"
               onClick={onClose}
               aria-label="Beranda ProMaP"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-400 text-blue-900 font-bold text-xs shadow-sm hover:bg-gold-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar font-bold text-xs shadow-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent"
             >
               {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
             </Link>
@@ -134,17 +134,17 @@ export function Sidebar({
                   href="/"
                   onClick={onClose}
                   aria-label="Beranda ProMaP"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-400 text-blue-900 font-bold text-xs shadow-sm hover:bg-gold-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar font-bold text-xs shadow-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent"
                 >
                   {user.companyName ? user.companyName.charAt(0).toUpperCase() : 'P'}
                 </Link>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-white leading-tight">
+                  <p className="truncate text-xs font-semibold text-sidebar-foreground leading-tight">
                     {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
                   </p>
                   <div className="flex items-center gap-1.5 pt-0.5">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <p className="truncate text-[10px] font-medium text-slate-400 leading-none">
+                    <p className="truncate text-[10px] font-medium text-sidebar-foreground/70 leading-none">
                       {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
                     </p>
                   </div>
@@ -160,7 +160,7 @@ export function Sidebar({
             <div key={group.label ?? `group-${gi}`} className="space-y-1">
               {group.label ? (
                 !isCollapsed ? (
-                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
                     {group.label}
                   </p>
                 ) : (
@@ -186,28 +186,28 @@ export function Sidebar({
                             : item.label
                           : undefined
                       }
-                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
+                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent ${
                         isCollapsed
                           ? 'justify-center p-2.5 h-10 w-full'
                           : 'gap-3 px-3 py-2'
                       } ${
                         active
-                          ? 'bg-white/10 text-white font-medium border-l-2 border-gold-400'
-                          : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          ? 'bg-white/10 text-sidebar-foreground font-medium border-l-2 border-sidebar-accent'
+                          : 'text-sidebar-foreground/80 hover:bg-white/5 hover:text-sidebar-foreground'
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
                       {!isCollapsed && badge > 0 && (
                         <span
-                          className="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold tabular-nums text-white"
+                          className="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold tabular-nums text-destructive-foreground"
                           aria-label={`${badge} item butuh aksi`}
                         >
                           {badge > 99 ? '99+' : badge}
                         </span>
                       )}
                       {isCollapsed && badge > 0 && (
-                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-blue-900" />
+                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-sidebar" />
                       )}
                     </Link>
 
@@ -215,11 +215,11 @@ export function Sidebar({
                     {isCollapsed && (
                       <div
                         role="tooltip"
-                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex group-focus-within:flex items-center z-50 whitespace-nowrap rounded-md bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-2.5 py-1 text-xs font-medium shadow-lg dark:ring-1 dark:ring-slate-700/50"
+                        className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex group-focus-within:flex items-center z-50 whitespace-nowrap rounded-md bg-popover text-popover-foreground border border-border px-2.5 py-1 text-xs font-medium shadow-lg"
                       >
                         {item.label}
                         {badge > 0 && (
-                          <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                          <span className="ml-1.5 rounded-full bg-destructive px-1.5 py-0.2 text-[10px] font-bold text-destructive-foreground">
                             {badge}
                           </span>
                         )}
@@ -246,46 +246,46 @@ export function Sidebar({
               <div
                 role="menu"
                 aria-label="Menu Pengguna"
-                className={`fixed z-50 w-72 rounded-xl border border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/95 backdrop-blur-md p-1.5 shadow-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/40 text-slate-800 dark:text-slate-200 transition-all ${
+                className={`fixed z-50 w-72 rounded-xl border border-border bg-popover p-1.5 shadow-2xl text-popover-foreground transition-all ${
                   isCollapsed ? 'left-16 bottom-3 ml-2' : 'left-3 bottom-16'
                 }`}
               >
                 {/* Header Info Akun */}
-                <div className="px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200/80 dark:bg-slate-800/60 dark:border-slate-700/40 mb-1.5">
+                <div className="px-3 py-2.5 rounded-lg bg-muted border border-border mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold-400 text-xs font-bold text-blue-900 shadow-sm">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-bold text-sidebar shadow-sm">
                       {initials(user.name)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-semibold text-slate-900 dark:text-white leading-tight">{user.name}</p>
-                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{user.email}</p>
+                      <p className="truncate text-xs font-semibold text-foreground leading-tight">{user.name}</p>
+                      <p className="truncate text-[11px] text-muted-foreground mt-0.5">{user.email}</p>
                     </div>
                   </div>
 
-                  <div className="mt-2.5 space-y-1 pt-2 border-t border-slate-200 dark:border-slate-700/50 text-[11px]">
-                    <div className="flex items-center justify-between gap-2 text-slate-600 dark:text-slate-400">
-                      <span className="flex items-center gap-1 shrink-0 text-slate-500">
+                  <div className="mt-2.5 space-y-1 pt-2 border-t border-border text-[11px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1 shrink-0 text-muted-foreground">
                         <Building2 className="h-3 w-3" />
                         Perusahaan:
                       </span>
-                      <span className="font-medium text-slate-800 dark:text-slate-300 truncate text-right">
+                      <span className="font-medium text-foreground truncate text-right">
                         {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : '-')}
                       </span>
                     </div>
                     {user.divisionName && (
-                      <div className="flex items-center justify-between gap-2 text-slate-600 dark:text-slate-400">
-                        <span className="flex items-center gap-1 shrink-0 text-slate-500">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1 shrink-0 text-muted-foreground">
                           <Briefcase className="h-3 w-3" />
                           Divisi:
                         </span>
-                        <span className="font-medium text-slate-800 dark:text-slate-300 truncate text-right">
+                        <span className="font-medium text-foreground truncate text-right">
                           {user.divisionName}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2 pt-1">
-                      <span className="text-slate-500">Hak Akses:</span>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE[user.role] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                      <span className="text-muted-foreground">Hak Akses:</span>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_BADGE[user.role] || 'bg-muted text-fg-secondary border border-border rounded-sm'}`}>
                         {ROLE_LABEL[user.role] || user.role}
                       </span>
                     </div>
@@ -293,32 +293,32 @@ export function Sidebar({
                 </div>
 
                 {/* Edit Profil Sendiri */}
-                <div className="px-1 py-1 border-b border-slate-200 dark:border-slate-800/80 mb-1">
+                <div className="px-1 py-1 border-b border-border mb-1">
                   <button
                     type="button"
                     onClick={() => {
                       setProfileOpen(false)
                       setProfileModalOpen(true)
                     }}
-                    className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white text-left transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-foreground hover:bg-muted text-left transition-colors cursor-pointer"
                   >
-                    <User className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>Profil Saya</span>
                   </button>
                 </div>
 
                 {/* Audit Log (Settings cukup lewat nav utama) */}
                 {canAccessAuditLog && (
-                  <div className="px-1 py-1 space-y-0.5 border-b border-slate-200 dark:border-slate-800/80 mb-1">
+                  <div className="px-1 py-1 space-y-0.5 border-b border-border mb-1">
                       <button
                         type="button"
                         onClick={() => {
                           setProfileOpen(false)
                           setAuditLogOpen(true)
                         }}
-                        className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white text-left transition-colors cursor-pointer"
+                        className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-foreground hover:bg-muted text-left transition-colors cursor-pointer"
                       >
-                        <History className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                        <History className="h-3.5 w-3.5 text-muted-foreground" />
                         <span>Audit Log Aktivitas</span>
                       </button>
                   </div>
@@ -331,7 +331,7 @@ export function Sidebar({
                     setProfileOpen(false)
                     setLogoutConfirmOpen(true)
                   }}
-                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 transition-colors"
+                  className="w-full flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-destructive-text hover:bg-destructive/10 text-left transition-colors cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Keluar / Logout</span>
@@ -348,22 +348,22 @@ export function Sidebar({
               aria-expanded={profileOpen}
               aria-label={`Menu profil: ${user.name} (${ROLE_LABEL[user.role] || user.role})`}
               onClick={() => setProfileOpen((v) => !v)}
-              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 ${
+              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent ${
                 isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
               } ${profileOpen ? 'bg-white/10' : ''}`}
             >
               <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold-400 text-xs font-bold text-blue-900 shadow-sm"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-bold text-sidebar shadow-sm"
               >
                 {initials(user.name)}
               </div>
               {!isCollapsed && (
                 <>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-white">{user.name}</p>
-                    <p className="truncate text-[11px] text-slate-400">{ROLE_LABEL[user.role] || user.role}</p>
+                    <p className="truncate text-xs font-medium text-sidebar-foreground">{user.name}</p>
+                    <p className="truncate text-[11px] text-sidebar-foreground/70">{ROLE_LABEL[user.role] || user.role}</p>
                   </div>
-                  <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  <ChevronsUpDown className="h-3.5 w-3.5 text-sidebar-foreground/70 shrink-0" />
                 </>
               )}
             </button>

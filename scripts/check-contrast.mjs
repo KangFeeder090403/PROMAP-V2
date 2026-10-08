@@ -26,8 +26,11 @@ const SURFACES = ['background', 'card', 'popover', 'muted']
 const RULES = [
   ...['foreground', 'fg-secondary', 'muted-foreground', 'brand-text', 'destructive-text'].flatMap((fg) => SURFACES.map((bg) => [fg, bg, 4.5])),
   ...['input', 'brand', 'ring', 'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'].flatMap((fg) => SURFACES.map((bg) => [fg, bg, 3])),
+  // primary bukan warna teks di dark (#2B4C8C di surface gelap < 3:1) — hanya fill tombol.
   ['primary-foreground', 'primary', 4.5],
   ['destructive-foreground', 'destructive', 4.5],
+  ['sidebar-foreground', 'sidebar', 4.5],
+  ['sidebar-accent', 'sidebar', 3],
 ]
 
 let failed = 0

@@ -84,19 +84,19 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
         <button
           type="button"
           aria-label="Tutup sidebar"
-          className="fixed inset-0 z-20 bg-black/40 md:hidden border-0 cursor-default"
+          className="fixed inset-0 z-20 bg-black/40 lg:hidden border-0 cursor-default"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <div className={`transition-[margin] duration-200 ease-in-out ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
+      <div className={`transition-[margin] duration-200 ease-in-out ${isCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <Header
           onMenuClick={() => setSidebarOpen(true)}
           user={user}
           isCollapsed={isCollapsed}
           onToggleCollapse={handleToggleCollapse}
         />
-        <main className="min-h-screen bg-slate-50 p-4 sm:p-6 dark:bg-slate-950">
+        <main className="min-h-screen bg-background p-4 sm:p-6 text-foreground">
           <SectionTabs role={user.role} />
           <GlobalAnimationProvider>
             <PageTransition>{children}</PageTransition>

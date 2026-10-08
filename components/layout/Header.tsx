@@ -23,12 +23,12 @@ export function Header({
   const [faqOpen, setFaqOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 md:px-5 dark:border-slate-800 dark:bg-slate-900">
+    <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-card px-4 lg:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={onMenuClick}
-          className="shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-slate-100 md:hidden dark:text-slate-400 dark:hover:bg-slate-800"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden"
           aria-label="Buka menu"
         >
           <Menu className="h-5 w-5" />
@@ -40,7 +40,7 @@ export function Header({
             aria-label={isCollapsed ? 'Perluas sidebar (Ctrl+B)' : 'Kecilkan sidebar (Ctrl+B)'}
             aria-expanded={!isCollapsed}
             aria-controls="app-sidebar"
-            className="hidden md:flex shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="hidden lg:flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             {isCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
           </button>
@@ -50,13 +50,13 @@ export function Header({
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
         {user.companyName && (
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
-            <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            <span className="font-medium text-slate-800 dark:text-slate-200">{user.companyName}</span>
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-muted border border-border text-xs text-fg-secondary whitespace-nowrap">
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="font-medium text-foreground">{user.companyName}</span>
             {user.divisionName && (
               <>
-                <span className="text-slate-400 dark:text-slate-600 font-normal">/</span>
-                <span className="text-slate-600 dark:text-slate-400 font-medium">{user.divisionName}</span>
+                <span className="text-muted-foreground/50 font-normal">/</span>
+                <span className="text-fg-secondary font-medium">{user.divisionName}</span>
               </>
             )}
           </div>
@@ -65,7 +65,7 @@ export function Header({
         <button
           type="button"
           onClick={() => setFaqOpen(true)}
-          className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           aria-label="Pusat Bantuan & FAQ"
           title="Bantuan & FAQ"
         >

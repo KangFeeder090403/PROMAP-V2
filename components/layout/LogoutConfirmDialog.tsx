@@ -35,16 +35,16 @@ export function LogoutConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(val) => !loading && onOpenChange(val)}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto dark:bg-slate-900 dark:border-slate-800">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-start gap-3 pr-8 text-left">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
             <LogOut className="h-5 w-5" />
           </div>
           <div className="space-y-1">
-            <DialogTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            <DialogTitle className="text-base font-semibold text-foreground">
               Konfirmasi Keluar
             </DialogTitle>
-            <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+            <DialogDescription className="text-sm text-muted-foreground">
               Yakin ingin keluar? Perubahan yang belum disimpan akan hilang.
             </DialogDescription>
           </div>
@@ -60,7 +60,7 @@ export function LogoutConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
             autoFocus
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center h-9 px-4 rounded-md border border-border bg-card hover:bg-muted text-foreground text-sm font-medium transition-colors disabled:opacity-50"
           >
             Batal
           </button>
@@ -68,7 +68,7 @@ export function LogoutConfirmDialog({
             type="button"
             onClick={handleConfirm}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold transition-colors disabled:opacity-50 shadow-sm"
+            className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-destructive hover:bg-destructive/90 active:bg-destructive text-destructive-foreground text-sm font-semibold transition-colors disabled:opacity-50 shadow-sm"
           >
             {loading ? 'Memproses...' : 'Keluar'}
           </button>
