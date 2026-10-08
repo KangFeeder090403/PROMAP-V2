@@ -136,10 +136,10 @@ function CheckItem({
     <span
       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
         checked
-          ? 'border-blue-600 bg-blue-600 text-white'
+          ? 'border-primary bg-primary text-primary-foreground'
           : isOverdue
-          ? 'border-red-400 dark:border-red-600 bg-white dark:bg-slate-900'
-          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'
+          ? 'border-destructive bg-card'
+          : 'border-input bg-card'
       }`}
     >
       {checked && <Check className="h-3 w-3 stroke-[2.5]" />}
@@ -152,10 +152,10 @@ function CheckItem({
       onClick={onToggle}
       className={`w-full flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
         checked
-          ? 'bg-blue-50/80 dark:bg-blue-950/50 text-blue-900 dark:text-blue-200 font-medium'
+          ? 'bg-accent text-foreground font-medium'
           : isOverdue
-          ? 'text-red-600 dark:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20'
-          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+          ? 'text-destructive-text hover:bg-accent'
+          : 'text-fg-secondary hover:bg-accent hover:text-foreground'
       }`}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -175,12 +175,12 @@ function CheckItem({
 
         <span
           className={`truncate text-left ${
-            isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : ''
+            isOverdue ? 'text-destructive-text font-semibold' : ''
           }`}
         >
           {label}
           {subLabel && (
-            <span className="text-slate-400 dark:text-slate-500 font-normal ml-1">
+            <span className="text-muted-foreground font-normal ml-1">
               ({subLabel})
             </span>
           )}
@@ -416,14 +416,14 @@ export function FilterPopover({
   return (
     <div
       ref={panelRef}
-      className={`absolute ${anchorClass} top-11 z-50 w-[320px] sm:w-[480px] lg:w-[560px] max-w-[90vw] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150`}
+      className={`absolute ${anchorClass} top-11 z-50 w-[320px] sm:w-[480px] lg:w-[560px] max-w-[90vw] rounded-lg border border-border bg-popover text-popover-foreground shadow-md dark:shadow-none flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150`}
       style={{ maxHeight: 'min(560px, calc(100vh - 140px))' }}
     >
       {/* Header Panel */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/70 dark:bg-slate-900/70">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 bg-muted/60">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+          <SlidersHorizontal className="h-4 w-4 text-foreground" />
+          <span className="text-sm font-semibold text-foreground">
             Parameter Filter
           </span>
         </div>
@@ -431,7 +431,7 @@ export function FilterPopover({
           type="button"
           onClick={onClose}
           aria-label="Tutup filter"
-          className="h-7 w-7 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="h-7 w-7 rounded-md inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <X className="h-4 w-4" />
         </button>
@@ -442,8 +442,8 @@ export function FilterPopover({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {/* ── Custom Type Section (e.g. Jenis Item / Prospek) ── */}
           {showCustomTypes && Array.isArray(config.customTypes) && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col sm:col-span-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col sm:col-span-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary mb-2">
                 {config.customTypeLabel || 'Jenis Item'}
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -456,8 +456,8 @@ export function FilterPopover({
                       onClick={() => setDraftCustomType(active ? '' : t.value)}
                       className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                         active
-                          ? 'bg-blue-600 text-white font-semibold'
-                          : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'bg-primary text-primary-foreground font-semibold'
+                          : 'bg-card border border-border text-fg-secondary hover:bg-accent'
                       }`}
                     >
                       {t.label}
@@ -470,13 +470,13 @@ export function FilterPopover({
 
           {/* ── A. STATUS ── */}
           {showStatuses && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary">
                   Status
                 </span>
                 {draftStatuses.length > 0 && (
-                  <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                  <span className="text-xs font-semibold text-foreground">
                     {draftStatuses.length} dipilih
                   </span>
                 )}
@@ -484,7 +484,7 @@ export function FilterPopover({
 
               <div className="space-y-0.5 max-h-44 overflow-y-auto pr-1">
                 {statusList.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-2 text-center">Tidak ada opsi status</p>
+                  <p className="text-xs text-muted-foreground py-2 text-center">Tidak ada opsi status</p>
                 ) : (
                   statusList.map((s) => (
                     <CheckItem
@@ -503,25 +503,25 @@ export function FilterPopover({
 
           {/* ── B. PIC / PEMILIK AKSI ── */}
           {showPics && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col">
+              <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary mb-2">
                 PIC / Penanggung Jawab
               </span>
 
               <div className="relative mb-2">
-                <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   value={picSearch}
                   onChange={(e) => setPicSearch(e.target.value)}
                   placeholder="Cari PIC..."
-                  className="h-7 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-6 pr-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="h-8 w-full rounded-md border border-input bg-card pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               <div className="space-y-0.5 max-h-36 overflow-y-auto pr-1">
                 {filteredUsers.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-2 text-center">
+                  <p className="text-xs text-muted-foreground py-2 text-center">
                     {users.length === 0 ? 'Memuat PIC...' : 'Tidak ada PIC yang cocok'}
                   </p>
                 ) : (
@@ -546,17 +546,17 @@ export function FilterPopover({
 
           {/* ── C. DIVISI KERJA ── */}
           {showDivisions && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col">
               <div className="flex items-center gap-1.5 mb-2">
-                <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary">
                   Divisi Kerja
                 </span>
               </div>
 
               <div className="space-y-0.5 max-h-40 overflow-y-auto pr-1">
                 {divisions.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-2 text-center">Memuat Divisi...</p>
+                  <p className="text-xs text-muted-foreground py-2 text-center">Memuat Divisi...</p>
                 ) : (
                   divisions.map((d) => (
                     <CheckItem
@@ -573,11 +573,11 @@ export function FilterPopover({
 
           {/* ── D. PROJECT INDUK ── */}
           {showProjects && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <FolderKanban className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary">
                     Project Induk
                   </span>
                 </div>
@@ -585,7 +585,7 @@ export function FilterPopover({
                 <select
                   value={draftProjectId}
                   onChange={(e) => setDraftProjectId(e.target.value)}
-                  className="w-full h-8 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  className="w-full h-8 rounded-md border border-input bg-card px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer"
                 >
                   <option value="">Semua Proyek Induk</option>
                   {projects.map((p) => (
@@ -596,7 +596,7 @@ export function FilterPopover({
                 </select>
               </div>
 
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-tight">
+              <p className="text-xs text-muted-foreground mt-2 leading-tight">
                 Filter berlaku untuk item pada hierarki proyek terpilih.
               </p>
             </div>
@@ -604,8 +604,8 @@ export function FilterPopover({
 
           {/* ── E. TINGKAT PRIORITAS ── */}
           {showPriorities && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col">
+              <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary mb-2">
                 Tingkat Prioritas
               </span>
 
@@ -619,18 +619,18 @@ export function FilterPopover({
                       onClick={() => togglePriority(p.value)}
                       className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-xs font-semibold transition-all ${
                         checked
-                          ? 'border-blue-600 bg-blue-600 text-white shadow-2xs'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-card text-fg-secondary hover:bg-accent'
                       }`}
                     >
                       <span
                         className={`flex h-3 w-3 shrink-0 items-center justify-center rounded-full border ${
                           checked
-                            ? 'border-white bg-white'
-                            : 'border-slate-400 dark:border-slate-500 bg-transparent'
+                            ? 'border-primary-foreground bg-primary-foreground'
+                            : 'border-input bg-transparent'
                         }`}
                       >
-                        {checked && <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />}
+                        {checked && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                       </span>
                       <span className="truncate">{p.label}</span>
                     </button>
@@ -642,11 +642,11 @@ export function FilterPopover({
 
           {/* ── F. RENTANG TANGGAL (DEADLINE) ── */}
           {showDateRange && (
-            <div className="bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between">
+            <div className="bg-muted/60 p-3 rounded-lg border border-border flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-fg-secondary">
                     Rentang Tanggal
                   </span>
                 </div>
@@ -656,39 +656,39 @@ export function FilterPopover({
                     type="date"
                     value={draftDateFrom}
                     onChange={(e) => setDraftDateFrom(e.target.value)}
-                    className="flex-1 h-7 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 h-7 rounded-md border border-input bg-card px-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  <span className="text-[11px] text-slate-400 shrink-0 font-medium">s/d</span>
+                  <span className="text-xs text-muted-foreground shrink-0 font-medium">s/d</span>
                   <input
                     type="date"
                     value={draftDateTo}
                     min={draftDateFrom || undefined}
                     onChange={(e) => setDraftDateTo(e.target.value)}
-                    className="flex-1 h-7 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-1.5 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 h-7 rounded-md border border-input bg-card px-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
               </div>
 
               {/* Quick preset buttons */}
-              <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-border">
                 <button
                   type="button"
                   onClick={() => applyDatePreset('7days')}
-                  className="flex-1 h-6 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-500 text-[10px] font-medium text-slate-600 dark:text-slate-300 transition-colors"
+                  className="flex-1 h-6 rounded-sm bg-card border border-border hover:bg-accent text-xs font-medium text-fg-secondary transition-colors"
                 >
                   7 Hari
                 </button>
                 <button
                   type="button"
                   onClick={() => applyDatePreset('thisMonth')}
-                  className="flex-1 h-6 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-500 text-[10px] font-medium text-slate-600 dark:text-slate-300 transition-colors"
+                  className="flex-1 h-6 rounded-sm bg-card border border-border hover:bg-accent text-xs font-medium text-fg-secondary transition-colors"
                 >
                   Bulan Ini
                 </button>
                 <button
                   type="button"
                   onClick={() => applyDatePreset('quarter')}
-                  className="flex-1 h-6 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-500 text-[10px] font-medium text-slate-600 dark:text-slate-300 transition-colors"
+                  className="flex-1 h-6 rounded-sm bg-card border border-border hover:bg-accent text-xs font-medium text-fg-secondary transition-colors"
                 >
                   Kuartal Ini
                 </button>
@@ -699,17 +699,17 @@ export function FilterPopover({
       </div>
 
       {/* Footer Panel */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 shrink-0">
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/60 shrink-0">
+        <span className="text-xs text-muted-foreground">
           {totalResults !== undefined ? (
             <>
-              <strong className="text-slate-800 dark:text-slate-200 font-semibold">
+              <strong className="text-foreground font-semibold">
                 {totalResults}
               </strong>{' '}
               {displayTotal !== undefined && (
                 <>
                   dari{' '}
-                  <strong className="text-slate-800 dark:text-slate-200 font-semibold">
+                  <strong className="text-foreground font-semibold">
                     {displayTotal}
                   </strong>{' '}
                 </>
@@ -717,7 +717,7 @@ export function FilterPopover({
               {entityTitle}
             </>
           ) : (
-            <span className="text-[11px] text-slate-400">Filter kustom</span>
+            <span className="text-xs text-muted-foreground">Filter kustom</span>
           )}
         </span>
 
@@ -725,14 +725,14 @@ export function FilterPopover({
           <button
             type="button"
             onClick={handleReset}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+            className="h-8 px-2.5 rounded-md text-xs font-medium text-fg-secondary hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Reset Filter
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-sm transition-colors"
+            className="h-8 px-3.5 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-popover"
           >
             Terapkan Filter
           </button>

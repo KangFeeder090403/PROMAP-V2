@@ -1,11 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Geist, Geist_Mono } from 'next/font/google'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { THEME_STORAGE_KEY } from '@/lib/theme'
 import { PwaRegister } from '@/components/PwaRegister'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const geistSans = Geist({ subsets: ['latin'], variable: '--font-sans' })
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
   title: 'ProMaP — Project Management Platform',
@@ -28,11 +29,11 @@ try {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={inter.variable} suppressHydrationWarning>
+    <html lang="id" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-sans bg-slate-50 dark:bg-slate-900">
+      <body className="font-sans bg-background text-foreground">
         {children}
         <SpeedInsights />
         <PwaRegister />

@@ -26,23 +26,23 @@ export function FilterEmptyState({
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       {/* Keadaan 3: Ilustrasi Kaca Pembesar dengan Badge Tanda Seru Merah (!) */}
       <div className="relative mb-5">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/30 text-blue-500 dark:text-blue-400 shadow-sm">
+        <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-muted border border-border text-foreground">
           <Search className="h-9 w-9 stroke-[2.2]" />
         </div>
-        <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-black text-white ring-4 ring-white dark:ring-slate-900 shadow-sm">
+        <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground ring-4 ring-background">
           !
         </div>
       </div>
 
       {/* Teks Heading & Subtitle */}
-      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-50 mb-1.5">
+      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1.5">
         {title}
       </h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+      <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
         {searchKeyword ? (
           <>
             Tidak ada data untuk kata kunci{' '}
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <span className="font-semibold text-foreground">
               &ldquo;{searchKeyword}&rdquo;
             </span>
             .{' '}
@@ -56,7 +56,7 @@ export function FilterEmptyState({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <SlidersHorizontal className="h-4 w-4" />
           Reset Semua Filter
@@ -66,7 +66,7 @@ export function FilterEmptyState({
           <button
             type="button"
             onClick={onRestoreDefaults}
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <RotateCcw className="h-4 w-4" />
             Kembalikan Default

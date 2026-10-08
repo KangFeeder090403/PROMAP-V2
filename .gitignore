@@ -43,7 +43,8 @@ docs/DASHBOARD.md
 docs/LAPORAN-PROGRESS-2026-09-08.md
 
 # Skrip utilitas lokal — langsung ke DB produksi lewat .env, jangan di-commit
-scripts/
+scripts/*
+!scripts/check-contrast.mjs
 
 # AI Agent tools (Claude, Windsurf, Agents, Kilo)
 .agents/
