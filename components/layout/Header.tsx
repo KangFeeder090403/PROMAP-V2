@@ -72,7 +72,7 @@ export function Header({
           <HelpCircle className="h-5 w-5" />
         </button>
         <ThemeToggle />
-        <NotifBell />
+        <NotifBell isGuest={user.role === 'GUEST' || !!user.isGuest} />
       </div>
 
       <FaqHelpDrawer open={faqOpen} onOpenChange={setFaqOpen} userRole={user.role} />

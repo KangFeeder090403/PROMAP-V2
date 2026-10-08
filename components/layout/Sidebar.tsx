@@ -17,6 +17,7 @@ import { NAV_GROUPS, matchesPath } from '@/components/layout/nav-config'
 import type { SessionUser } from '@/components/layout/DashboardShell'
 import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
 import { LogoutConfirmDialog } from '@/components/layout/LogoutConfirmDialog'
+import { unsubscribePush } from '@/hooks/usePushNotifications'
 
 // Modal berat (ProfileModal 433 baris, AuditLogModal 538 baris) dipisah jadi
 // chunk sendiri dan baru di-mount saat dibuka. Sebelumnya keduanya selalu ada
@@ -405,6 +406,8 @@ export function Sidebar({
           try {
             await fetch('/api/guest/logout', { method: 'POST' })
           } catch {}
+          // Lepas push perangkat ini dari akun; dibatasi 1,5 dtk agar logout tidak tertahan
+          await Promise.race([unsubscribePush(), new Promise((r) => setTimeout(r, 1500))])
           await signOut({ callbackUrl: '/login?signout=1' })
         }}
       />

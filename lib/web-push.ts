@@ -15,7 +15,7 @@ function init() {
 
 /**
  * Kirim Web Push ke semua perangkat terdaftar milik user-user yang diberikan.
- * Subscription kadaluarsa (HTTP 410) dihapus otomatis dari DB.
+ * Subscription kadaluarsa (HTTP 404/410) dihapus otomatis dari DB.
  * Fire-and-forget — tidak melempar error agar tidak mengganggu alur utama.
  */
 export async function sendPushToUsers(
@@ -27,7 +27,7 @@ export async function sendPushToUsers(
   if (!_initialized) return // VAPID keys belum dikonfigurasi
 
   const subs = await prisma.pushSubscription.findMany({
-    where: { userId: { in: userIds } },
+    where: { userId: { in: userIds }, user: { deletedAt: null, status: 'ACTIVE' } },
   })
   if (subs.length === 0) return
 
@@ -42,8 +42,9 @@ export async function sendPushToUsers(
       webpush
         .sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, data)
         .catch(async (err: unknown) => {
-          if ((err as { statusCode?: number })?.statusCode === 410) {
-            // Subscription kadaluarsa — hapus dari DB
+          const code = (err as { statusCode?: number })?.statusCode
+          if (code === 404 || code === 410) {
+            // Subscription kadaluarsa / tidak ditemukan — hapus dari DB
             await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {})
           }
         }),

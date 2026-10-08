@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, BellOff, BellRing } from 'lucide-react'
+import { AlertCircle, Bell, BellOff, BellRing, RotateCw } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Notification {
@@ -25,7 +25,7 @@ function relativeTime(iso: string) {
   return `${day}h lalu`
 }
 
-export function NotifBell() {
+export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
@@ -171,10 +171,10 @@ export function NotifBell() {
             </div>
 
             {/* Footer: toggle notifikasi HP */}
-            {pushStatus !== 'unsupported' && (
+            {!isGuest && pushStatus !== 'unsupported' && (
               <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2">
                 {pushStatus === 'denied' ? (
-                  <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <BellOff className="h-3.5 w-3.5 shrink-0" />
                     Notifikasi HP diblokir — aktifkan di pengaturan browser
                   </p>
@@ -182,18 +182,33 @@ export function NotifBell() {
                   <button
                     type="button"
                     onClick={unsubscribe}
-                    className="flex w-full items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                    className="flex w-full items-center gap-1.5 rounded text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     <BellOff className="h-3.5 w-3.5 shrink-0" />
                     Nonaktifkan notifikasi HP
                   </button>
                 ) : pushStatus === 'loading' ? (
-                  <p className="text-xs text-slate-400">Memuat…</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">Memuat…</p>
+                ) : pushStatus === 'error' ? (
+                  <div className="flex items-center justify-between gap-2" role="alert">
+                    <p className="flex items-center gap-1.5 text-xs text-red-700 dark:text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      Gagal mengaktifkan notifikasi HP
+                    </p>
+                    <button
+                      type="button"
+                      onClick={subscribe}
+                      className="flex shrink-0 items-center gap-1 rounded text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                      Coba lagi
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
                     onClick={subscribe}
-                    className="flex w-full items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors"
+                    className="flex w-full items-center gap-1.5 rounded text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   >
                     <BellRing className="h-3.5 w-3.5 shrink-0" />
                     Aktifkan notifikasi HP

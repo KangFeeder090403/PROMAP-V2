@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
 /** Konversi VAPID public key dari URL-safe base64 ke Uint8Array */
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4)
@@ -12,90 +14,110 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return arr
 }
 
+function isPushSupported() {
+  return (
+    typeof window !== 'undefined' &&
+    !!VAPID_PUBLIC_KEY &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  )
+}
+
 export type PushStatus =
   | 'loading'      // sedang cek dukungan/permission
-  | 'unsupported'  // browser tidak mendukung Push API
+  | 'unsupported'  // browser tidak mendukung Push API / VAPID belum dikonfigurasi
   | 'default'      // belum pernah minta izin
   | 'granted'      // izin diberikan & sudah subscribe
   | 'denied'       // user menolak izin
+  | 'error'        // gagal mendaftarkan ke server
+
+/**
+ * Hapus subscription perangkat ini dari server lalu dari browser.
+ * Best effort — tidak melempar. Dipakai juga saat logout.
+ */
+export async function unsubscribePush(): Promise<void> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+  try {
+    const reg = await navigator.serviceWorker.getRegistration()
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    await fetch('/api/push/subscribe', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    }).catch(() => {})
+    await sub.unsubscribe()
+  } catch {
+    // best effort
+  }
+}
 
 export function usePushNotifications() {
   const [status, setStatus] = useState<PushStatus>('loading')
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (!isPushSupported()) {
       setStatus('unsupported')
       return
     }
-    const perm = Notification.permission
-    if (perm === 'denied') {
+    if (Notification.permission === 'denied') {
       setStatus('denied')
       return
     }
-    // Cek apakah sudah ada active subscription
-    navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
+    // getRegistration() resolve undefined bila SW belum terdaftar (ready bisa menggantung selamanya)
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => reg?.pushManager.getSubscription())
       .then((sub) => setStatus(sub ? 'granted' : 'default'))
       .catch(() => setStatus('default'))
   }, [])
 
   /** Minta izin notifikasi & daftarkan subscription ke server */
   async function subscribe(): Promise<boolean> {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
+    if (!isPushSupported() || !VAPID_PUBLIC_KEY) return false
 
     setStatus('loading')
+    let sub: PushSubscription | null = null
     try {
       const perm = await Notification.requestPermission()
       if (perm !== 'granted') {
-        setStatus('denied')
+        setStatus(perm === 'denied' ? 'denied' : 'default')
         return false
       }
 
-      const reg = await navigator.serviceWorker.ready
-      const existing = await reg.pushManager.getSubscription()
-      const sub =
-        existing ??
+      const reg =
+        (await navigator.serviceWorker.getRegistration()) ??
+        (await navigator.serviceWorker.register('/sw.js'))
+      sub =
+        (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '',
-          ),
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         }))
 
-      await fetch('/api/push/subscribe', {
+      const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub),
       })
+      if (!res.ok) throw new Error(`subscribe failed: ${res.status}`)
 
       setStatus('granted')
       return true
     } catch {
-      setStatus(Notification.permission === 'denied' ? 'denied' : 'default')
+      // Jangan biarkan subscription yatim di browser yang tidak tercatat di server
+      await sub?.unsubscribe().catch(() => {})
+      setStatus(Notification.permission === 'denied' ? 'denied' : 'error')
       return false
     }
   }
 
   /** Batalkan subscription dan hapus dari server */
   async function unsubscribe(): Promise<void> {
-    if (!('serviceWorker' in navigator)) return
     setStatus('loading')
-    try {
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      if (sub) {
-        await sub.unsubscribe()
-        await fetch('/api/push/subscribe', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: sub.endpoint }),
-        })
-      }
-      setStatus('default')
-    } catch {
-      setStatus('default')
-    }
+    await unsubscribePush()
+    setStatus('default')
   }
 
   return { status, subscribe, unsubscribe }

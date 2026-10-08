@@ -200,7 +200,8 @@ function validateAndPrepareRow(
     }
   }
 
-  if (item.evidenceLink?.trim() && !isHttpUrl(item.evidenceLink)) {
+  const evidenceLink = typeof item.evidenceLink === 'string' ? item.evidenceLink.trim() : ''
+  if (evidenceLink && !isHttpUrl(evidenceLink)) {
     return {
       error: NextResponse.json(
         { error: `Baris ke-${rowNum}: Link bukti harus diawali http:// atau https://` },
@@ -244,7 +245,7 @@ function validateAndPrepareRow(
       companyId,
       divisionId,
       isPersonal,
-      evidenceLink: item.evidenceLink?.trim() || undefined,
+      evidenceLink: evidenceLink || undefined,
     },
   }
 }
