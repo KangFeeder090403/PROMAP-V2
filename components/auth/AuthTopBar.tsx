@@ -4,7 +4,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 
 export function AuthTopBar() {
   return (
-    <header className="w-full border-b border-slate-200 bg-white px-4 py-3 sm:px-6 dark:border-slate-800 dark:bg-slate-900">
+    <header className="w-full border-b border-slate-200 bg-white px-4 py-2 sm:px-6 sm:py-2.5 dark:border-slate-800 dark:bg-slate-900">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <ProMapLogo className="h-8 w-8" />

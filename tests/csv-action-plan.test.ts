@@ -108,6 +108,20 @@ describe('lib/csv-action-plan.ts', () => {
       expect(result.rows.length).toBe(25)
       expect(result.exceedsLimit).toBe(true)
     })
+
+    it('rejects non-http evidenceLink (javascript: scheme)', () => {
+      const csv = 'title,startDate,endDate,evidenceLink\nXSS,2026-03-01,2026-03-02,javascript:alert(1)'
+      const result = parseActionPlanCsv(csv)
+      expect(result.rows[0].isValid).toBe(false)
+      expect(result.rows[0].error).toContain('http')
+    })
+
+    it('handles CSV containing only "sep=," without crashing', () => {
+      const result = parseActionPlanCsv('sep=,')
+      expect(result.rows).toEqual([])
+      expect(result.totalValid).toBe(0)
+      expect(result.generalError).toBeTruthy()
+    })
   })
 
   describe('generateActionPlanTemplateCsv()', () => {

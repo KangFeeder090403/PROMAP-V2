@@ -199,7 +199,7 @@ export function ProjectDrawer({
           {/* Top Bar Navigation */}
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-3.5 bg-slate-50/50 dark:bg-slate-950/30">
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <FolderKanban className="h-4 w-4 text-blue-500" />
+              <FolderKanban className="h-4 w-4 text-blue-500 dark:text-blue-300" />
               <span>Inspeksi Cepat Inisiatif Proyek</span>
             </div>
 
@@ -494,7 +494,7 @@ export function ProjectDrawer({
                       <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <span className="text-[11px] text-slate-400 block mb-1">Periode Pelaksanaan</span>
                         <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                          <Calendar className="h-3.5 w-3.5 text-blue-500 dark:text-blue-300 shrink-0" />
                           <span>
                             {project.startDate
                               ? new Date(project.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })

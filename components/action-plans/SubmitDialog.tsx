@@ -11,6 +11,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { submitActionPlanSchema } from '@/lib/validations/actionPlan'
+import { refreshNotifs } from '@/lib/notify-refresh'
 
 export function SubmitDialog({
   open,
@@ -73,6 +74,7 @@ export function SubmitDialog({
       return
     }
 
+    refreshNotifs()
     onSuccess()
   }
 

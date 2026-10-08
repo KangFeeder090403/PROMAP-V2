@@ -1,10 +1,7 @@
+import { after } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { sendPushToUsers } from '@/lib/web-push'
 
-/**
- * Notifikasi minimal — tulis ke DB saja (In-app).
- * Dipanggil oleh API route setelah operasi berhasil.
- * Modul notifikasi lengkap (bell, badge, navigasi) = roadmap #12.
- */
 export async function notify(params: {
   userIds: string[]
   title: string
@@ -23,4 +20,19 @@ export async function notify(params: {
       link: params.link ?? null,
     })),
   })
+
+  // Web Push — jalankan setelah response terkirim (after) agar tidak terputus
+  // di serverless; di luar request scope (cron/script) after() melempar,
+  // fallback fire-and-forget.
+  const push = () =>
+    sendPushToUsers(params.userIds, {
+      title: params.title,
+      body: params.message,
+      url: params.link,
+    }).catch(() => {})
+  try {
+    after(push)
+  } catch {
+    void push()
+  }
 }

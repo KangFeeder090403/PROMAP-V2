@@ -311,7 +311,7 @@ export function ProjectForm({
                     name="isActive"
                     checked={isActive}
                     onChange={() => setIsActive(true)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 text-blue-600 dark:text-blue-300 focus:ring-blue-500"
                   />
                   <span className="inline-flex items-center gap-1.5 font-medium">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -325,7 +325,7 @@ export function ProjectForm({
                     name="isActive"
                     checked={!isActive}
                     onChange={() => setIsActive(false)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 text-blue-600 dark:text-blue-300 focus:ring-blue-500"
                   />
                   <span className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                     <span className="h-2 w-2 rounded-full bg-slate-400" />
@@ -485,7 +485,7 @@ export function ProjectForm({
                             prev.includes(u.id) ? prev.filter((id) => id !== u.id) : [...prev, u.id]
                           )
                         }
-                        className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
+                        className="h-4 w-4 rounded border-slate-300 text-blue-500 dark:text-blue-300 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                       />
                       <span className="flex-1 truncate text-sm text-slate-800 dark:text-slate-200">
                         {u.name}

@@ -320,3 +320,23 @@ export function canManageUserLabel(user: User) {
   if (user.role === 'GUEST') return false
   return user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 }
+
+/**
+ * Scope untuk query model ActionTemplate (tidak punya companyId — lewat relasi division).
+ * null = user tidak punya cakupan template (mis. MANAGER/PIC tanpa divisi) → caller kembalikan [].
+ */
+export function templateScope(user: User): Record<string, unknown> | null {
+  if (user.role === 'SUPER_ADMIN') return { division: { deletedAt: null } }
+  if (user.role === 'ADMIN_OPERATIONAL') return { division: { companyId: user.companyId!, deletedAt: null } }
+  if (!user.divisionId) return null
+  return { divisionId: user.divisionId, division: { companyId: user.companyId!, deletedAt: null } }
+}
+
+/** Kelola ActionTemplate: SA semua; Admin Ops company sendiri; Manager divisi sendiri saja. */
+export function canManageActionTemplate(user: User, division: { id: string; companyId: string }) {
+  if (user.role === 'SUPER_ADMIN') return true
+  if (division.companyId !== user.companyId) return false
+  if (user.role === 'ADMIN_OPERATIONAL') return true
+  if (user.role === 'MANAGER') return !!user.divisionId && user.divisionId === division.id
+  return false
+}

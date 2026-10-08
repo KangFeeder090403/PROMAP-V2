@@ -45,10 +45,11 @@ docs/LAPORAN-PROGRESS-2026-09-08.md
 # Skrip utilitas lokal — langsung ke DB produksi lewat .env, jangan di-commit
 scripts/
 
-# AI Agent tools (Claude, Windsurf, Agents)
+# AI Agent tools (Claude, Windsurf, Agents, Kilo)
 .agents/
 .claude/
 .windsurf/
+.kilo/
 # Dokumentasi & mockup lokal — tidak di-commit
 docs/
 .gstack/
@@ -57,3 +58,6 @@ docs/
 *.pdf
 *.pptx
 sonar_bugs_out.json
+
+# Graphify output & cache
+graphify-out/

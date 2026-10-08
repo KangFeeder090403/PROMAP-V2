@@ -354,7 +354,7 @@ export function ActionPlanFormModal({
                   type="checkbox"
                   checked={createMore}
                   onChange={(e) => setCreateMore(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
+                  className="h-4 w-4 rounded border-slate-300 text-blue-500 dark:text-blue-300 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900"
                 />
                 <span>Buat lagi</span>
               </label>

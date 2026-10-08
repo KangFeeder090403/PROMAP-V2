@@ -15,7 +15,7 @@ type AgendaFilterMode = 'relevant' | 'deadline_only' | 'start_only' | 'ongoing'
 
 const STATUS_BADGE: Record<string, { label: string; style: string }> = {
   NOT_STARTED: { label: 'Not Started', style: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  IN_PROGRESS: { label: 'In Progress', style: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' },
+  IN_PROGRESS: { label: 'In Progress', style: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300' },
   PENDING_APPROVAL: { label: 'Review', style: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' },
   EVIDENCE_REQUIRED: { label: 'Evidence Needed', style: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' },
   APPROVED: { label: 'Approved', style: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' },
@@ -106,7 +106,7 @@ export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: Cale
             <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{metrics.deadlineTodayCount}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center min-w-[70px]">
-            <span className="text-[10px] text-blue-500 font-semibold block">Mulai Hari Ini</span>
+            <span className="text-[10px] text-blue-500 dark:text-blue-300 font-semibold block">Mulai Hari Ini</span>
             <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{metrics.startTodayCount}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center min-w-[70px]">

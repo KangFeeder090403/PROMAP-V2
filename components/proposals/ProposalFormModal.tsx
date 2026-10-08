@@ -220,7 +220,7 @@ export function ProposalFormModal({
                 type="checkbox"
                 checked={submitNow}
                 onChange={(e) => setSubmitNow(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 dark:text-blue-300 focus:ring-blue-500"
               />
               <Label htmlFor="submitNow" className="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                 Langsung submit ke meja review manajer (bukan simpan sebagai draft)

@@ -6,7 +6,7 @@ import { googleEnabled } from '@/lib/auth'
 // pernah dirender saat GOOGLE_CLIENT_ID/SECRET kosong.
 export default function LoginPage() {
   return (
-    <div className="grid w-full grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14">
+    <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-10">
       {/* Panel auth — tampil lebih dulu di mobile */}
       <div className="order-1 w-full lg:order-2 lg:justify-self-center">
         <LoginPanel googleEnabled={googleEnabled} />

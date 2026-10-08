@@ -6,6 +6,8 @@
  * Maksimal 24 action plan per batch import
  */
 
+import { isHttpUrl } from '@/lib/utils'
+
 export interface ActionPlanCsvRow {
   index: number
   title: string
@@ -14,6 +16,7 @@ export interface ActionPlanCsvRow {
   startDate: string // YYYY-MM-DD
   endDate: string // YYYY-MM-DD
   picEmail?: string
+  evidenceLink?: string // URL Google Drive / bukti kerja (opsional)
   isValid: boolean
   error?: string
 }
@@ -118,6 +121,7 @@ type CsvColumnMapping = {
   startDate: number
   endDate: number
   picEmail: number
+  evidenceLink: number
 }
 
 function resolveCsvHeaderAndDelimiter(lines: string[]): {
@@ -136,7 +140,7 @@ function resolveCsvHeaderAndDelimiter(lines: string[]): {
   if (lineIdx >= lines.length) {
     return {
       delimiter: ',',
-      colIndex: { title: -1, outcomeKpi: -1, priority: -1, startDate: -1, endDate: -1, picEmail: -1 },
+      colIndex: { title: -1, outcomeKpi: -1, priority: -1, startDate: -1, endDate: -1, picEmail: -1, evidenceLink: -1 },
       startLineIdx: lineIdx,
       generalError: 'Tidak ada baris data dalam file',
     }
@@ -156,6 +160,7 @@ function resolveCsvHeaderAndDelimiter(lines: string[]): {
     startDate: rawHeaders.findIndex((h) => ['startdate', 'tanggalmulai', 'tglmulai', 'mulai'].includes(h)),
     endDate: rawHeaders.findIndex((h) => ['enddate', 'deadline', 'tenggatwaktu', 'tgldeadline', 'selesai'].includes(h)),
     picEmail: rawHeaders.findIndex((h) => ['picemail', 'emailpic', 'email'].includes(h)),
+    evidenceLink: rawHeaders.findIndex((h) => ['evidencelink', 'evidence', 'buktidrive', 'linkbukti', 'buktikerja', 'googledrive', 'linkgoogledrive'].includes(h)),
   }
 
   if (colIndex.title === -1) {
@@ -188,6 +193,7 @@ function parseSingleCsvRow(
   const priorityVal = normalizePriority(colIndex.priority !== -1 ? cells[colIndex.priority] : undefined)
   const outcomeVal = (colIndex.outcomeKpi !== -1 ? cells[colIndex.outcomeKpi]?.trim() : '') || titleVal
   const emailVal = colIndex.picEmail !== -1 ? cells[colIndex.picEmail]?.trim() : undefined
+  const evidenceLinkVal = colIndex.evidenceLink !== -1 ? cells[colIndex.evidenceLink]?.trim() : undefined
 
   let errorMsg: string | undefined
 
@@ -199,6 +205,8 @@ function parseSingleCsvRow(
     errorMsg = endNorm.error
   } else if (new Date(endNorm.dateStr) < new Date(startNorm.dateStr)) {
     errorMsg = 'Tenggat waktu (endDate) tidak boleh lebih awal dari tanggal mulai (startDate)'
+  } else if (evidenceLinkVal && !isHttpUrl(evidenceLinkVal)) {
+    errorMsg = 'Link bukti harus diawali http:// atau https://'
   }
 
   return {
@@ -209,6 +217,7 @@ function parseSingleCsvRow(
     startDate: startNorm.dateStr,
     endDate: endNorm.dateStr,
     picEmail: emailVal || undefined,
+    evidenceLink: evidenceLinkVal || undefined,
     isValid: !errorMsg,
     error: errorMsg,
   }
@@ -277,7 +286,7 @@ export function generateActionPlanTemplateCsv(): string {
   const monday = new Date(now)
   monday.setDate(now.getDate() + daysUntilMonday)
 
-  const headers = ['title', 'outcomeKpi', 'priority', 'startDate', 'endDate', 'picEmail']
+  const headers = ['title', 'outcomeKpi', 'priority', 'startDate', 'endDate', 'picEmail', 'evidenceLink']
 
   const sampleData: {
     dayLabel: string
@@ -460,6 +469,7 @@ export function generateActionPlanTemplateCsv(): string {
         dateStr,
         dateStr,
         '', // picEmail (opsional, kosong menggunakan user default)
+        '', // evidenceLink (isi dengan URL Google Drive bukti kerja, kosong = belum ada)
       ])
     })
   })

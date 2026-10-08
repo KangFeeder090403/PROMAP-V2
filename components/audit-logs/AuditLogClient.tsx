@@ -365,7 +365,7 @@ export function AuditLogClient() {
                       onClick={() => setExportOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors"
                     >
-                      <Download size={14} className="text-blue-600" />
+                      <Download size={14} className="text-blue-600 dark:text-blue-300" />
                       <span>Ekspor Data JSON (.json)</span>
                     </a>
                   </div>
@@ -384,7 +384,7 @@ export function AuditLogClient() {
             <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
               AKTIVITAS 24 JAM
             </span>
-            <Clock size={16} className="text-blue-600" />
+            <Clock size={16} className="text-blue-600 dark:text-blue-300" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-mono tracking-tight">
@@ -405,7 +405,7 @@ export function AuditLogClient() {
             <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
               OTORISASI &amp; APPROVAL
             </span>
-            <ShieldCheck size={16} className="text-blue-600" />
+            <ShieldCheck size={16} className="text-blue-600 dark:text-blue-300" />
           </div>
           <div className="mt-3 flex items-baseline gap-1.5">
             <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-mono tracking-tight">
@@ -426,7 +426,7 @@ export function AuditLogClient() {
             <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
               BUKTI KERJA (EVIDENCE)
             </span>
-            <Link2 size={16} className="text-blue-600" />
+            <Link2 size={16} className="text-blue-600 dark:text-blue-300" />
           </div>
           <div className="mt-3 flex items-baseline gap-1.5">
             <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-mono tracking-tight">
@@ -447,7 +447,7 @@ export function AuditLogClient() {
             <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">
               TINGKAT ANOMALI AKSES
             </span>
-            <Shield size={16} className="text-blue-600" />
+            <Shield size={16} className="text-blue-600 dark:text-blue-300" />
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-mono tracking-tight">
@@ -539,14 +539,14 @@ export function AuditLogClient() {
           aria-label="Refresh log"
           className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg border border-slate-200/80 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin text-blue-600' : ''} />
+          <RefreshCw size={14} className={loading ? 'animate-spin text-blue-600 dark:text-blue-300' : ''} />
         </button>
       </div>
 
       {/* ── Timeline Grouped by Date ── */}
       {loading && logs.length === 0 ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-          <RefreshCw size={24} className="animate-spin text-blue-600" />
+          <RefreshCw size={24} className="animate-spin text-blue-600 dark:text-blue-300" />
           <p className="text-sm font-medium">Memuat rekaman jejak audit...</p>
         </div>
       ) : logs.length === 0 ? (
@@ -892,7 +892,7 @@ export function AuditLogClient() {
                 disabled={loadingMore}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw size={13} className={loadingMore ? 'animate-spin text-blue-600' : ''} />
+                <RefreshCw size={13} className={loadingMore ? 'animate-spin text-blue-600 dark:text-blue-300' : ''} />
                 <span>Muat Lebih Banyak Aktivitas...</span>
               </button>
             ) : null}

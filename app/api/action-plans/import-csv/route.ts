@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
+import { isHttpUrl } from '@/lib/utils'
 import type { Priority, Role } from '@/lib/generated/prisma/client'
 
 interface CsvImportPayloadItem {
@@ -12,6 +13,7 @@ interface CsvImportPayloadItem {
   startDate: string
   endDate: string
   picEmail?: string
+  evidenceLink?: string
 }
 
 interface CsvImportPayload {
@@ -40,6 +42,7 @@ type PreparedItem = {
   companyId: string
   divisionId: string | null
   isPersonal: boolean
+  evidenceLink?: string
 }
 
 type TaskWithDivision = {
@@ -197,6 +200,16 @@ function validateAndPrepareRow(
     }
   }
 
+  const evidenceLink = typeof item.evidenceLink === 'string' ? item.evidenceLink.trim() : ''
+  if (evidenceLink && !isHttpUrl(evidenceLink)) {
+    return {
+      error: NextResponse.json(
+        { error: `Baris ke-${rowNum}: Link bukti harus diawali http:// atau https://` },
+        { status: 400 }
+      ),
+    }
+  }
+
   const isPersonal = !task
   let companyId: string
   let divisionId: string | null
@@ -232,6 +245,7 @@ function validateAndPrepareRow(
       companyId,
       divisionId,
       isPersonal,
+      evidenceLink: evidenceLink || undefined,
     },
   }
 }
@@ -256,6 +270,7 @@ async function persistImportedActionPlans(preparedList: PreparedItem[]) {
         divisionId: p.divisionId,
         isPersonal: p.isPersonal,
         status: 'NOT_STARTED',
+        ...(p.evidenceLink ? { evidenceLink: p.evidenceLink } : {}),
       })),
       include,
     })
@@ -276,6 +291,7 @@ async function persistImportedActionPlans(preparedList: PreparedItem[]) {
             divisionId: p.divisionId,
             isPersonal: p.isPersonal,
             status: 'NOT_STARTED',
+            ...(p.evidenceLink ? { evidenceLink: p.evidenceLink } : {}),
           },
           include,
         })

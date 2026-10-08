@@ -42,6 +42,8 @@ import {
   canManageChecklist,
   canManageUserLabel,
   requireRole,
+  canManageActionTemplate,
+  templateScope,
 } from '@/lib/rbac'
 import type { User } from '@/lib/generated/prisma/client'
 
@@ -276,6 +278,21 @@ describe('lib/rbac.ts', () => {
       expect(canManageUserLabel(createMockUser({ role: 'MANAGER' }))).toBe(true)
       expect(canManageUserLabel(createMockUser({ role: 'ADMIN_OPERATIONAL' }))).toBe(true)
       expect(canManageUserLabel(createMockUser({ role: 'SUPER_ADMIN' }))).toBe(true)
+    })
+  })
+
+  describe('action templates', () => {
+    const division = { id: 'division-1', companyId: 'company-1' }
+
+    it('canManageActionTemplate enforces company/division boundaries', () => {
+      expect(canManageActionTemplate(createMockUser({ role: 'ADMIN_OPERATIONAL', companyId: 'company-2' }), division)).toBe(false)
+      expect(canManageActionTemplate(createMockUser({ role: 'MANAGER', divisionId: 'division-2' }), division)).toBe(false)
+      expect(canManageActionTemplate(createMockUser({ role: 'MANAGER', divisionId: null }), division)).toBe(false)
+      expect(canManageActionTemplate(createMockUser({ role: 'SUPER_ADMIN', companyId: null }), division)).toBe(true)
+    })
+
+    it('templateScope returns null for MANAGER without division', () => {
+      expect(templateScope(createMockUser({ role: 'MANAGER', divisionId: null }))).toBeNull()
     })
   })
 })

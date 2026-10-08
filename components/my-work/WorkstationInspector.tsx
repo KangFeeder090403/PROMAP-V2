@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_STATUS_STYLE, AP_STATUS_LABEL, AP_PRIORITY_STYLE, AP_PRIORITY_LABEL } from '@/lib/status-labels'
+import { isHttpUrl } from '@/lib/utils'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { ChecklistList } from '@/components/action-plans/ChecklistList'
 import { CommentThread } from '@/components/comments/CommentThread'
@@ -41,7 +42,7 @@ type PresetReview = 'COMPLETE' | 'REJECTED' | 'EVIDENCE_REQUIRED'
 function getServiceIcon(url: string) {
   const lower = url.toLowerCase()
   if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
-    return <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+    return <FileText className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-300" />
   }
   if (lower.includes('figma.com')) {
     return <Target className="h-4 w-4 shrink-0 text-purple-500" />
@@ -49,7 +50,7 @@ function getServiceIcon(url: string) {
   if (lower.includes('github.com') || lower.includes('gitlab.com')) {
     return <Github className="h-4 w-4 shrink-0 text-slate-800 dark:text-slate-200" />
   }
-  return <Globe className="h-4 w-4 shrink-0 text-blue-500" />
+  return <Globe className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-300" />
 }
 
 export function WorkstationInspector({
@@ -376,7 +377,7 @@ export function WorkstationInspector({
                 ) : actionPlan.evidenceLink ? (
                   <div className="space-y-2">
                     <a
-                      href={actionPlan.evidenceLink}
+                      href={isHttpUrl(actionPlan.evidenceLink) ? actionPlan.evidenceLink : undefined}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors shadow-2xs"

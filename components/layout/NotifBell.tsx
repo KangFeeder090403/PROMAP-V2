@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell } from 'lucide-react'
+import { AlertCircle, Bell, BellOff, BellRing, RotateCw } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Notification {
   id: string
@@ -24,16 +25,17 @@ function relativeTime(iso: string) {
   return `${day}h lalu`
 }
 
-export function NotifBell() {
+export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [onlyUnread, setOnlyUnread] = useState(false)
+  const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications()
 
   async function fetchNotifs(unread = onlyUnread) {
     try {
-      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`)
+      const res = await fetch(`/api/notifications${unread ? '?unread=true' : ''}`, { cache: 'no-store' })
       if (!res.ok) return
       const { data, unreadCount } = await res.json()
       setItems(data)
@@ -52,14 +54,17 @@ export function NotifBell() {
         fetchNotifs()
       }
     }
+    const onNotifEvent = () => fetchNotifs()
 
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('promap:refresh-notifs', onNotifEvent as EventListener)
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('promap:refresh-notifs', onNotifEvent as EventListener)
     }
   }, [onlyUnread])
 
@@ -95,7 +100,7 @@ export function NotifBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute 1 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -164,6 +169,53 @@ export function NotifBell() {
                 ))
               )}
             </div>
+
+            {/* Footer: toggle notifikasi HP */}
+            {!isGuest && pushStatus !== 'unsupported' && (
+              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2">
+                {pushStatus === 'denied' ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <BellOff className="h-3.5 w-3.5 shrink-0" />
+                    Notifikasi HP diblokir — aktifkan di pengaturan browser
+                  </p>
+                ) : pushStatus === 'granted' ? (
+                  <button
+                    type="button"
+                    onClick={unsubscribe}
+                    className="flex w-full items-center gap-1.5 rounded text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <BellOff className="h-3.5 w-3.5 shrink-0" />
+                    Nonaktifkan notifikasi HP
+                  </button>
+                ) : pushStatus === 'loading' ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">Memuat…</p>
+                ) : pushStatus === 'error' ? (
+                  <div className="flex items-center justify-between gap-2" role="alert">
+                    <p className="flex items-center gap-1.5 text-xs text-red-700 dark:text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      Gagal mengaktifkan notifikasi HP
+                    </p>
+                    <button
+                      type="button"
+                      onClick={subscribe}
+                      className="flex shrink-0 items-center gap-1 rounded text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                      Coba lagi
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={subscribe}
+                    className="flex w-full items-center gap-1.5 rounded text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    <BellRing className="h-3.5 w-3.5 shrink-0" />
+                    Aktifkan notifikasi HP
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}

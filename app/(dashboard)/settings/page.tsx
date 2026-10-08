@@ -16,6 +16,7 @@ export default async function SettingsPage(
     <SettingsClient
       role={user.role}
       companyId={user.companyId}
+      divisionId={user.divisionId}
       sessionUserId={user.id}
       initialTab={searchParams?.tab}
     />

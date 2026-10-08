@@ -1,0 +1,25 @@
+{
+  "name": "ProMaP",
+  "short_name": "ProMaP",
+  "description": "Platform Manajemen Proyek & Action Plan",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1730",
+  "theme_color": "#0B1730",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

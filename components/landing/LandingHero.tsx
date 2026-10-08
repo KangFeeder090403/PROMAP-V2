@@ -122,7 +122,7 @@ export function LandingHero() {
         aria-hidden="true"
         style={{
           backgroundImage:
-            'linear-gradient(#1E40AF 1px, transparent 1px), linear-gradient(to right, #1E40AF 1px, transparent 1px)',
+            'linear-gradient(#102143 1px, transparent 1px), linear-gradient(to right, #102143 1px, transparent 1px)',
           backgroundSize: '48px 48px',
         }}
       />
@@ -184,7 +184,7 @@ export function LandingHero() {
             {STATS.map((stat, idx) => (
               <div key={stat.label} className="hero-stat-card flex min-w-0 flex-col items-center gap-1.5 text-center">
                 <stat.icon
-                  className="h-5 w-5 text-blue-500"
+                  className="h-5 w-5 text-blue-500 dark:text-blue-300"
                   strokeWidth={1.75}
                   aria-hidden="true"
                 />

@@ -2,20 +2,27 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { THEME_STORAGE_KEY } from '@/lib/theme'
+import { PwaRegister } from '@/components/PwaRegister'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: 'ProMaP — Project Management Platform',
   description: 'SaaS multi-tenant untuk manajemen proyek, tugas, dan action plan.',
+  manifest: '/manifest.json',
 }
 
 // Jalan sebelum paint pertama supaya tidak ada kedip putih saat tema gelap aktif.
+// Default selalu mode terang resmi ProMaP. Mode gelap hanya aktif jika user memilihnya via ThemeToggle.
 const themeScript = `
 try {
-  var t = localStorage.getItem('promap-theme')
-  if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  if (t === 'dark') document.documentElement.classList.add('dark')
+  localStorage.removeItem('promap-theme')
+  var p = window.location.pathname
+  if (p !== '/' && p !== '/landing') {
+    var t = localStorage.getItem('${THEME_STORAGE_KEY}')
+    if (t === 'dark') document.documentElement.classList.add('dark')
+  }
 } catch (e) {}
 `
 
@@ -28,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans bg-slate-50 dark:bg-slate-900">
         {children}
         <SpeedInsights />
+        <PwaRegister />
       </body>
     </html>
   )

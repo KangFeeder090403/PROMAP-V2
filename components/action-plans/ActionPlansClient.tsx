@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Role } from '@/lib/generated/prisma/client'
 import {
@@ -11,13 +10,11 @@ import {
   ChevronRight,
   Plus,
   MoreHorizontal,
+  Trash2,
   X,
   FileSpreadsheet,
   Upload,
   CheckCircle2,
-  LayoutList,
-  Kanban,
-  Calendar as CalendarIcon,
 } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
@@ -35,6 +32,8 @@ import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 import { FilterPopover, type FilterDraftValues } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { canDeleteAP } from '@/lib/action-plan-status'
 
 export interface ActionPlan {
   id: string
@@ -188,20 +187,27 @@ function ActionPlansErrorState({ error, onRetry }: Readonly<{ error: string; onR
 interface ActionPlanTableRowProps {
   ap: ActionPlan
   userId: string
+  userRole: Role
+  userDivisionId: string | null
   isSelected: boolean
   isHighlighted: boolean
   onSelect: (ap: ActionPlan) => void
   onEdit: (ap: ActionPlan) => void
+  onDelete: (ap: ActionPlan) => void
 }
 
 function ActionPlanTableRow({
   ap,
   userId,
+  userRole,
+  userDivisionId,
   isSelected,
   isHighlighted,
   onSelect,
   onEdit,
+  onDelete,
 }: Readonly<ActionPlanTableRowProps>) {
+  const canDelete = canDeleteAP({ id: userId, role: userRole, divisionId: userDivisionId }, ap)
   const isOverdue =
     ap.status !== 'COMPLETE' &&
     new Date(ap.endDate).getTime() < Date.now() - 86400000
@@ -292,7 +298,7 @@ function ActionPlanTableRow({
         </div>
       </td>
       <td className="px-5 py-3">
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-1">
           <button
             type="button"
             title="Edit"
@@ -304,6 +310,19 @@ function ActionPlanTableRow({
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
+          {canDelete && (
+            <button
+              type="button"
+              title="Hapus"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(ap)
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -313,6 +332,7 @@ function ActionPlanTableRow({
 export function ActionPlansClient({
   role,
   userId,
+  userDivisionId,
   openCreate,
   initialOpenId,
   initialHighlightId,
@@ -321,6 +341,7 @@ export function ActionPlansClient({
 }: Readonly<{
   role: Role
   userId: string
+  userDivisionId: string | null
   openCreate?: boolean
   initialOpenId?: string
   initialHighlightId?: string
@@ -349,6 +370,8 @@ export function ActionPlansClient({
   const [importOpen, setImportOpen] = useState(false)
   const [editing, setEditing] = useState<ActionPlan | null>(null)
   const [selected, setSelected] = useState<ActionPlan | null>(null)
+  const [deletingAp, setDeletingAp] = useState<ActionPlan | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [successBanner, setSuccessBanner] = useState<string | null>(null)
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -356,6 +379,27 @@ export function ActionPlansClient({
     setSuccessBanner(msg)
     if (bannerTimer.current) clearTimeout(bannerTimer.current)
     bannerTimer.current = setTimeout(() => setSuccessBanner(null), 4000)
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingAp) return
+    setDeleteLoading(true)
+    try {
+      const res = await fetch(`/api/action-plans/${deletingAp.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        setError(json.error || 'Gagal menghapus Action Plan')
+        return
+      }
+      if (selected?.id === deletingAp.id) setSelected(null)
+      showSuccess(`Action Plan "${deletingAp.title}" berhasil dihapus.`)
+      setDeletingAp(null)
+      await fetchData()
+    } catch {
+      setError('Terjadi kesalahan jaringan saat menghapus Action Plan.')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   // Global Hotkey: 'c' or 'C' opens create modal when not typing in inputs
@@ -482,14 +526,7 @@ export function ActionPlansClient({
 
   return (
     <div className="space-y-4">
-      {/* ===== Breadcrumb & Header ===== */}
-      <nav className="text-xs text-slate-400 flex items-center gap-1.5">
-        <span>Workspace</span>
-        <span>/</span>
-        <span>Execution</span>
-        <span>/</span>
-        <span className="text-blue-500 font-medium">Action Plans (Table)</span>
-      </nav>
+      {/* ===== Header ===== */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -500,34 +537,6 @@ export function ActionPlansClient({
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* View Switcher: Table | Board | Calendar (PRD §B1, §B8) */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs border border-slate-200 dark:border-slate-700"
-              title="Tampilan Tabel (Aktif)"
-            >
-              <LayoutList size={13} />
-              Table
-            </button>
-            <Link
-              href="/board"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-              title="Pindah ke Tampilan Board (Kanban)"
-            >
-              <Kanban size={13} />
-              Board
-            </Link>
-            <Link
-              href="/calendar"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-              title="Pindah ke Tampilan Kalender"
-            >
-              <CalendarIcon size={13} />
-              Calendar
-            </Link>
-          </div>
-
           <button
             type="button"
             onClick={() => setBulkOpen(true)}
@@ -870,6 +879,8 @@ export function ActionPlansClient({
                   key={ap.id}
                   ap={ap}
                   userId={userId}
+                  userRole={role}
+                  userDivisionId={userDivisionId}
                   isSelected={selected?.id === ap.id}
                   isHighlighted={highlightedId === ap.id}
                   onSelect={(selectedAp) => {
@@ -880,6 +891,7 @@ export function ActionPlansClient({
                     setEditing(editingAp)
                     setFormOpen(true)
                   }}
+                  onDelete={(apToDelete) => setDeletingAp(apToDelete)}
                 />
               ))}
             </tbody>
@@ -979,6 +991,17 @@ export function ActionPlansClient({
           setEditing(selected)
           setFormOpen(true)
         }}
+      />
+
+      <ConfirmDialog
+        open={deletingAp !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteLoading) setDeletingAp(null)
+        }}
+        title="Hapus Action Plan?"
+        message={`"${deletingAp?.title ?? ''}" akan dihapus dari daftar. Riwayat aktivitasnya tetap tersimpan untuk audit.`}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
       />
     </div>
   )

@@ -32,6 +32,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { PortfolioSection } from '@/components/dashboard/PortfolioSection'
 import { PriorityRiskMatrix } from '@/components/dashboard/PriorityRiskMatrix'
 import { DivisionVelocityCard } from '@/components/dashboard/DivisionVelocityCard'
+import { ContributorAnalysisSection } from '@/components/dashboard/ContributorAnalysisSection'
 
 const ExecutionVelocityChart = dynamic(
   () => import('@/components/dashboard/ExecutionVelocityChart').then((m) => m.ExecutionVelocityChart),
@@ -83,7 +84,7 @@ const SORT_OPTIONS: { key: OverdueSort; label: string }[] = [
   { key: 'createdDesc', label: 'Terbaru dibuat' },
 ]
 
-/** Prioritas AP — label & warna dari promap-design (High=red, Medium=amber, Low=slate). */
+/** Prioritas AP — label & warna dari PRD.md §D (High=red, Medium=amber, Low=slate). */
 const PRIORITY_META = {
   HIGH: { label: 'High', dot: 'bg-red-500', bar: 'bg-red-500' },
   MEDIUM: { label: 'Medium', dot: 'bg-amber-500', bar: 'bg-amber-500' },
@@ -513,11 +514,11 @@ export function DashboardClient() {
             <svg className="w-14 h-6 shrink-0 opacity-80" viewBox="0 0 56 20" fill="none">
               <path
                 d="M 2 16 C 12 14, 18 8, 30 10 C 40 12, 46 5, 54 3"
-                stroke="#3B82F6"
+                stroke="#1E3A6E"
                 strokeWidth="2"
                 strokeLinecap="round"
               />
-              <circle cx="54" cy="3" r="2" fill="#2563EB" />
+              <circle cx="54" cy="3" r="2" fill="#1A3260" />
             </svg>
           }
           footer="Target rencana aksi pada rentang ini"
@@ -759,7 +760,7 @@ export function DashboardClient() {
                     </span>
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-semibold text-blue-700">
+                        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">
                           #{item.refCode}
                         </span>
                         <span className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate max-w-sm">
@@ -1074,6 +1075,13 @@ export function DashboardClient() {
           />
         </div>
       </div>
+
+      {/* Analisis Proyek Kontributor — Manager+ only (deviasi resmi 2026-10-07) */}
+      {(user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER') && (
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+          <ContributorAnalysisSection />
+        </div>
+      )}
 
       {/* TIER 3: CRITICAL OVERDUE DRILL-DOWN */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">

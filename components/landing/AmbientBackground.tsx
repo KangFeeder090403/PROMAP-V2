@@ -13,7 +13,7 @@ export function AmbientBackground() {
         className="absolute inset-0 opacity-[0.045] dark:opacity-[0.09]"
         style={{
           backgroundImage:
-            'linear-gradient(to right, #1E40AF 1px, transparent 1px), linear-gradient(to bottom, #1E40AF 1px, transparent 1px)',
+            'linear-gradient(to right, #102143 1px, transparent 1px), linear-gradient(to bottom, #102143 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />

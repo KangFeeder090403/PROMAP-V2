@@ -102,12 +102,10 @@ PROMAP
 WORKSPACE
   Home            ← Dashboard adaptif per role
   My Work         ← Tugas milik user (semua role)
-  Projects        ← List + detail project
+  Projects        ← List + detail project; tab: Projects · Proposals (bukan GUEST)
 
 EXECUTION
-  Board           ← Kanban 5 kolom (mapping 8 status, lihat §B7)
-  Calendar        ← Monthly + Gantt
-  Proposals       ← Bottom-up work entry
+  Action Plans    ← /board; tab: Board (Kanban 5 kolom, §B7) · Calendar · Table (/action-plans, bukan GUEST)
 
 INSIGHTS
   Reports         ← Laporan & export
@@ -122,6 +120,7 @@ Profile · Notifications · Help
 - Sidebar mencerminkan pekerjaan user, bukan struktur API
 - Menu tampil/sembunyi sesuai RBAC (Leads hanya Super Admin, Settings hanya Admin ke atas)
 - Jangan tambah menu untuk setiap fitur backend baru
+- Tab level-2 via SectionTabs (SECTION_TABS di components/layout/nav-config.ts). Deviasi resmi 2026-10-07, disetujui Product Owner.
 
 ### B3. App Shell
 
@@ -130,7 +129,7 @@ Profile · Notifications · Help
 │ Sidebar  │ Header (h-14, sticky)              │
 │ w-64     │ Breadcrumb · Notif · User menu     │
 │ dark     ├────────────────────────────────────┤
-│ #0F172A  │                                    │
+│ #0B1730  │                                    │
 │          │ Main Workspace                     │
 │          │ bg #F8FAFC · p-6                   │
 └──────────┴────────────────────────────────────┘
@@ -174,6 +173,8 @@ Satu route `/` — konten menyesuaikan role. Bukan halaman terpisah.
 - Bar chart: distribusi prioritas
 - **Action Required panel** (Manager & Admin Ops) — semua yang butuh keputusan user
 - **Team Workload** (Manager) — cegah overload sebelum assign task baru
+
+Deviasi resmi 2026-10-07 (disetujui Product Owner): section Analisis Kontributor di Home, Manager+ only.
 
 ### B6. My Work
 
@@ -234,7 +235,7 @@ Empty state **wajib memberikan next action** — bukan sekadar "No data".
 
 > Mockup di `docs/design-reference/` (gitignored). **Yang diambil: struktur section,
 > hierarki info, kelengkapan field, pola interaksi.** Token visual SELALU dari
-> `.claude/skills/promap-design/SKILL.md` — bukan dari Stitch.
+> §D dokumen ini — bukan dari Stitch.
 
 **Wajib dibuang dari semua mockup:**
 - Token Material 3, font Manrope/Hanken, Material Symbols, warna apapun dari Stitch
@@ -505,22 +506,35 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 
 ### C3. Ditunda ke V3
 
-Global Search (Cmd+K) · Command Menu · Saved Views · Timeline View · Objective sebagai entitas · ProjectMember · Recurring Task · Template AP · Workload View lanjutan · Task Dependency · PWA/Mobile
+Global Search (Cmd+K) · Command Menu · Saved Views · Timeline View · Objective sebagai entitas · ProjectMember · Recurring Task · Workload View lanjutan · Task Dependency · PWA/Mobile
+
+Deviasi resmi 2026-10-07 (disetujui Product Owner): Template Action Plan dimajukan ke V2.4 — CRUD di Settings, soft delete, Manager divisi sendiri / Admin Ops company sendiri / Super Admin, tercatat di Audit Log.
 
 ---
 
 ## BAGIAN D — DESIGN SYSTEM
 
-Detail lengkap: `.claude/skills/promap-design/SKILL.md` — **wajib dibaca sebelum generate UI apapun.**
+Bagian ini = satu-satunya sumber design token. **Wajib dibaca sebelum generate UI apapun.**
+
+> **Deviasi terpasang (2026-10-07, disetujui Product Owner):** rebrand navy-gold (commit 400062c).
+> Skala Tailwind `blue` = navy, skala `gold` = aksen 10%. In Progress pindah ke sky agar beda dari Pending Approval (indigo).
+> Theme light default, dark via toggle (`promap-theme-v2`).
 
 ### D1. Color Tokens
 
 ```
 Background     #F8FAFC   slate-50    halaman utama
 Surface        #FFFFFF   white       card, modal, drawer
-Sidebar        #0F172A   slate-900   sidebar dark
-Primary        #1E40AF   blue-800    brand element
-Accent/CTA     #3B82F6   blue-500    SATU warna untuk semua tombol aksi
+Sidebar        #0B1730  blue-900 (navy gelap)
+Primary/CTA    #1E3A6E  blue-500  ← navy, teks putih, SATU warna untuk semua tombol aksi
+Gold accent    #D4AF37  gold-400  ← HANYA: marker nav aktif, underline tab aktif
+                                    (gold-600 terang / gold-400 gelap), logo/avatar,
+                                    focus ring di permukaan gelap (sidebar)
+                                    DILARANG untuk teks di background terang (WCAG AA)
+Focus ring     --ring-focus (CSS var, app/globals.css) di permukaan terang
+Rasio          60 netral · 30 navy · 10 gold
+Catatan        skala Tailwind `blue` di-override ke navy + skala `gold` baru (tailwind.config.js).
+               Deviasi resmi 2026-10-07, disetujui Product Owner.
 Text primary   #0F172A   slate-900
 Text secondary #64748B   slate-500
 Border         #E2E8F0   slate-200
@@ -531,13 +545,15 @@ Border         #E2E8F0   slate-200
 | Status | Tailwind Class |
 |---|---|
 | Not Started | `bg-slate-100 text-slate-600` |
-| In Progress | `bg-blue-100 text-blue-700` |
+| In Progress | `bg-sky-100 text-sky-800` |
 | Pending Approval | `bg-indigo-100 text-indigo-700` |
 | Evidence Required | `bg-amber-100 text-amber-700` |
 | Approved | `bg-green-100 text-green-700` |
 | Rejected | `bg-red-100 text-red-700` |
 | Overdue | `bg-orange-100 text-orange-700` |
 | Complete | `bg-emerald-100 text-emerald-700` |
+
+Kelas lengkap termasuk dark: lihat lib/status-labels.ts
 
 ### D3. Priority → Color
 
@@ -669,9 +685,11 @@ lib/prisma.ts        prisma (singleton dengan adapter pg)
 | Penerima | Event |
 |---|---|
 | PIC | Task baru, reassign, AP approve/reject, evidence diminta, deadline H-1, overdue, di-mention |
-| Manager | AP pending review, evidence baru, AP belum review >3 hari, proposal baru, di-mention, overdue PIC |
-| Admin Ops | User baru pending, label jabatan diusulkan Manager |
-| Super Admin | Guest baru, guest aktivasi trial, kapasitas DB 70%/90% |
+| Manager | AP pending review, evidence baru, AP belum review >3 hari, proposal baru, di-mention, overdue PIC, AP personal selesai (divisi sendiri) |
+| Admin Ops | User baru pending, label jabatan diusulkan Manager, proposal baru (company sendiri), AP tanpa divisi: pending review / belum review >3 hari / selesai |
+| Super Admin | Guest baru, guest aktivasi trial, kapasitas DB 70%/90%, AP pending review, AP belum review >3 hari, AP personal selesai, proposal baru (semua company) |
+
+Deviasi resmi 2026-10-07 (disetujui Product Owner): notifikasi tambahan Super Admin & Admin Ops.
 
 ### G4. Larangan Keras — Backend
 
@@ -691,8 +709,8 @@ lib/prisma.ts        prisma (singleton dengan adapter pg)
 ### G5. Larangan Keras — UI (V2.4)
 
 ```
-❌ Buat halaman baru tanpa cek navigation — semua halaman harus punya slot di sidebar
-❌ Random card layout — pakai component pattern di promap-design skill
+❌ Buat halaman baru tanpa cek navigation — semua halaman harus punya slot di sidebar atau SectionTabs (SECTION_TABS)
+❌ Random card layout — pakai component pattern di §D
 ❌ Mock data menggantikan API production
 ❌ Ubah schema karena UI terasa sulit — lapor ke Product Owner
 ❌ Duplicate component tanpa alasan
@@ -710,7 +728,7 @@ lib/prisma.ts        prisma (singleton dengan adapter pg)
 ### H1. Per Screen
 
 **Architecture**
-- [ ] Berada di navigation yang benar (punya slot di sidebar)
+- [ ] Berada di navigation yang benar (punya slot di sidebar atau SectionTabs (SECTION_TABS))
 - [ ] Menggunakan App Shell
 - [ ] Pakai reusable component, tidak duplikasi business logic
 
@@ -727,7 +745,7 @@ lib/prisma.ts        prisma (singleton dengan adapter pg)
 - [ ] Tenant isolation benar
 
 **Visual**
-- [ ] Design token sesuai promap-design skill
+- [ ] Design token sesuai §D
 - [ ] Typography & spacing konsisten
 - [ ] Status color mapping benar
 - [ ] Tidak ada warna random
@@ -772,7 +790,7 @@ Visual polish adalah tahap akhir. Yang paling penting: user paham *di mana dia b
 ```
 1.  Baca PRD.md (dokumen ini)
 2.  Baca .claude/CLAUDE.md
-3.  Baca .claude/skills/promap-design/SKILL.md sebelum generate UI
+3.  Baca PRD.md §D sebelum generate UI
 4.  Inspect implementasi existing — jangan asumsi
 5.  Identifikasi backend/API/component yang bisa dipakai ulang
 6.  @planner buat rencana

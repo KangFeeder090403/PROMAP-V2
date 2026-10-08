@@ -27,9 +27,23 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       status?: LeadStatus
       trialStartAt?: Date | null
       trialEndAt?: Date | null
+      industri?: string | null
+      omzet?: string | null
+      teamSize?: number | null
     } = {}
 
     if (body.notes !== undefined) data.notes = body.notes
+    for (const key of ['industri', 'omzet'] as const) {
+      const value: unknown = body[key]
+      if (value === undefined) continue
+      if (value !== null && (typeof value !== 'string' || value.trim().length > 100)) {
+        return NextResponse.json({ error: `${key} harus teks maksimal 100 karakter` }, { status: 400 })
+      }
+      data[key] = typeof value === 'string' ? value.trim() || null : null
+    }
+    if (body.teamSize !== undefined) {
+      data.teamSize = body.teamSize !== null ? Number(body.teamSize) || null : null
+    }
     if (body.trialStartAt !== undefined) {
       data.trialStartAt = body.trialStartAt ? new Date(body.trialStartAt) : null
     }

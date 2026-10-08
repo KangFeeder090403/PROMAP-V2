@@ -5,7 +5,12 @@
 
 @layer base {
   :root {
-    --radius: 0.5rem}
+    --radius: 0.5rem;
+    --ring-focus: 30 58 110;
+  }
+  .dark {
+    --ring-focus: 140 160 200;
+  }
 }
 
 /* Transisi tema: layer lama diam, layer baru di-clip lewat animasi di theme-toggle.tsx */

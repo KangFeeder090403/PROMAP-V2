@@ -12,9 +12,6 @@ import {
   ChevronDown,
   ArrowUpDown,
   Plus,
-  LayoutGrid,
-  LayoutList,
-  CalendarDays,
   X,
 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
@@ -582,15 +579,8 @@ export function KanbanClient({
 
   return (
     <div className="space-y-4">
-      {/* ── 1. Page Header with Breadcrumb & View Switcher (PRD §B8) ── */}
+      {/* ── 1. Page Header (Board|Calendar|Table = SectionTabs di shell) ── */}
       <div className="flex flex-col gap-1">
-        <nav className="text-xs text-slate-400 flex items-center gap-1.5">
-          <span>Workspace</span>
-          <span>/</span>
-          <span>Execution</span>
-          <span>/</span>
-          <span className="text-blue-500 font-medium">Board</span>
-        </nav>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -601,35 +591,8 @@ export function KanbanClient({
             </p>
           </div>
 
-          {/* View Switcher & New AP Button */}
+          {/* New AP Button */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700">
-              <Link
-                href="/action-plans"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                title="Tampilan Tabel"
-              >
-                <LayoutList size={13} />
-                Table
-              </Link>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm transition-colors"
-                title="Tampilan Board Kanban"
-              >
-                <LayoutGrid size={13} />
-                Board
-              </button>
-              <Link
-                href="/calendar"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-                title="Tampilan Kalender"
-              >
-                <CalendarDays size={13} />
-                Calendar
-              </Link>
-            </div>
-
             <button
               type="button"
               onClick={() => setCreateModalOpen(true)}

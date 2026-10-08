@@ -6,6 +6,7 @@ import {
   resolveKanbanDrop,
   canDragKanbanCard,
   KANBAN_COLUMNS,
+  canDeleteAP,
 } from '@/lib/action-plan-status'
 
 describe('lib/action-plan-status.ts', () => {
@@ -133,6 +134,25 @@ describe('lib/action-plan-status.ts', () => {
       const unrelatedUser = { id: 'user-unrelated', role: 'PIC' as const, divisionId: 'div-9' }
       const ap = { status: 'NOT_STARTED', picId: 'user-owner', divisionId: 'div-1', isPersonal: false, taskId: 't1' }
       expect(canDragKanbanCard(ap, unrelatedUser)).toBe(false)
+    })
+  })
+
+  describe('canDeleteAP()', () => {
+    const pic = { id: 'pic-1', role: 'PIC' as const, divisionId: 'div-1' }
+    const ap = (status: string) => ({ picId: 'pic-1', divisionId: 'div-1', status })
+
+    it('allows PIC owner while NOT_STARTED, blocks after submit', () => {
+      expect(canDeleteAP(pic, ap('NOT_STARTED'))).toBe(true)
+      expect(canDeleteAP(pic, ap('PENDING_APPROVAL'))).toBe(false)
+    })
+
+    it('scopes MANAGER to own non-null division', () => {
+      expect(canDeleteAP({ id: 'm1', role: 'MANAGER', divisionId: 'div-1' }, ap('IN_PROGRESS'))).toBe(true)
+      expect(canDeleteAP({ id: 'm1', role: 'MANAGER', divisionId: null }, { ...ap('IN_PROGRESS'), divisionId: null })).toBe(false)
+    })
+
+    it('allows ADMIN_OPERATIONAL on any status', () => {
+      expect(canDeleteAP({ id: 'a1', role: 'ADMIN_OPERATIONAL', divisionId: null }, ap('COMPLETE'))).toBe(true)
     })
   })
 })

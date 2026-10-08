@@ -452,7 +452,7 @@ export function ProjectFlightpathRoadmap({
           {/* Footer Bar Petunjuk Interaksi */}
           <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-blue-500" />
+              <Calendar className="w-3.5 h-3.5 text-blue-500 dark:text-blue-300" />
               <span>Gunakan panah navigasi atau geser horizontal untuk menjelajah linimasa</span>
             </div>
             <span>Klik kartu proyek untuk membuka detail inspeksi</span>

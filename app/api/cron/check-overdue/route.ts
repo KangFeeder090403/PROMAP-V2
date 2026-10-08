@@ -40,6 +40,7 @@ export async function GET(req: Request) {
               role: 'MANAGER',
               divisionId: { in: byDivision.map((ap) => ap.divisionId as string) },
               deletedAt: null,
+              status: 'ACTIVE',
             },
             select: { id: true, divisionId: true },
           })
@@ -110,27 +111,35 @@ export async function GET(req: Request) {
       },
     })
 
+    const superAdminIds = staleReview.length
+      ? (
+          await prisma.user.findMany({
+            where: { role: 'SUPER_ADMIN', deletedAt: null, status: 'ACTIVE' },
+            select: { id: true },
+          })
+        ).map((s) => s.id)
+      : []
+
     for (const ap of staleReview) {
+      const reviewerIds = new Set<string>()
       if (ap.divisionId) {
         const managers = await prisma.user.findMany({
-          where: { role: 'MANAGER', divisionId: ap.divisionId, deletedAt: null },
+          where: { role: 'MANAGER', divisionId: ap.divisionId, deletedAt: null, status: 'ACTIVE' },
           select: { id: true },
         })
-        await notify({
-          userIds: managers.map((m) => m.id),
-          title: 'AP belum direview >3 hari',
-          message: `"${ap.title}" masih menunggu review Anda`,
-          link: `/action-plans?open=${ap.id}`,
-          companyId: ap.companyId,
-        })
+        managers.forEach((m) => reviewerIds.add(m.id))
       } else {
         const admins = await prisma.user.findMany({
-          where: { role: 'ADMIN_OPERATIONAL', companyId: ap.companyId, deletedAt: null },
+          where: { role: 'ADMIN_OPERATIONAL', companyId: ap.companyId, deletedAt: null, status: 'ACTIVE' },
           select: { id: true },
         })
+        admins.forEach((a) => reviewerIds.add(a.id))
+      }
+      superAdminIds.forEach((id) => reviewerIds.add(id))
+      if (reviewerIds.size > 0) {
         await notify({
-          userIds: admins.map((a) => a.id),
-          title: 'AP personal belum direview >3 hari',
+          userIds: [...reviewerIds],
+          title: ap.divisionId ? 'AP belum direview >3 hari' : 'AP personal belum direview >3 hari',
           message: `"${ap.title}" masih menunggu review Anda`,
           link: `/action-plans?open=${ap.id}`,
           companyId: ap.companyId,

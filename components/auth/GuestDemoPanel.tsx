@@ -164,13 +164,13 @@ export function GuestDemoPanel() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+    <div className="space-y-3 p-5 sm:p-6">
+      <p className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
         Lihat isi ProMaP dengan data contoh. Sesi berlaku 2 jam, tanpa perlu akun
         perusahaan.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
         <div className="space-y-1.5">
           <Label htmlFor="guestName" className={LABEL}>
             Nama Lengkap

@@ -126,7 +126,7 @@ function formatShortDate(date: string) {
 const AP_STATUS_ICON: Record<string, { icon: LucideIcon; className: string }> = {
   COMPLETE: { icon: CheckCircle2, className: 'text-emerald-500' },
   APPROVED: { icon: CheckCircle2, className: 'text-emerald-500' },
-  IN_PROGRESS: { icon: RefreshCw, className: 'text-blue-500' },
+  IN_PROGRESS: { icon: RefreshCw, className: 'text-sky-500' },
   PENDING_APPROVAL: { icon: Clock, className: 'text-indigo-500' },
   OVERDUE: { icon: AlertTriangle, className: 'text-red-500' },
   REJECTED: { icon: AlertTriangle, className: 'text-red-500' },
@@ -861,7 +861,7 @@ export function ProjectDetailClient({
                                                   ap.status === 'COMPLETE'
                                                     ? 'bg-emerald-500'
                                                     : ap.status === 'IN_PROGRESS'
-                                                    ? 'bg-blue-500'
+                                                    ? 'bg-sky-500'
                                                     : 'bg-slate-300 dark:bg-slate-600'
                                                 }`}
                                               />
@@ -945,7 +945,7 @@ export function ProjectDetailClient({
                     {/* Group header: parent task */}
                     <div className="bg-slate-50 dark:bg-slate-950/40 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <FolderPlus className="h-4 w-4 text-blue-500 shrink-0" />
+                        <FolderPlus className="h-4 w-4 text-blue-500 dark:text-blue-300 shrink-0" />
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                           Task: {task.title}
                         </span>

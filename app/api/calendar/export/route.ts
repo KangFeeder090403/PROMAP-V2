@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 // Warna status selaras dengan PRD §D2 (Design System ProMaP)
 const STATUS_FILL: Record<string, [number, number, number]> = {
   NOT_STARTED: [100, 116, 139],       // slate-500
-  IN_PROGRESS: [37, 99, 235],         // blue-600
+  IN_PROGRESS: [14, 165, 233],        // sky-500 (= AP_STATUS_DOT)
   PENDING_APPROVAL: [79, 70, 229],     // indigo-600
   EVIDENCE_REQUIRED: [217, 119, 6],    // amber-600
   APPROVED: [22, 163, 74],            // green-600
@@ -340,8 +340,8 @@ export async function GET(req: Request) {
       doc.setFillColor(15, 23, 42)
       doc.rect(0, 0, pageW, 20, 'F')
 
-      // Aksen Garis Brand (Biru #2563EB)
-      doc.setFillColor(37, 99, 235)
+      // Aksen Garis Brand (Gold #D4AF37)
+      doc.setFillColor(212, 175, 55)
       doc.rect(0, 20, pageW, 1.2, 'F')
 
       // Teks Judul

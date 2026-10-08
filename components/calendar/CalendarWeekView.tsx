@@ -17,7 +17,7 @@ const WEEKDAY_NAMES = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Mi
 
 const STATUS_BAR_COLOR: Record<string, string> = {
   NOT_STARTED: '#94a3b8',
-  IN_PROGRESS: '#3b82f6',
+  IN_PROGRESS: '#0EA5E9',
   PENDING_APPROVAL: '#8b5cf6',
   EVIDENCE_REQUIRED: '#06b6d4',
   APPROVED: '#10b981',
@@ -50,7 +50,7 @@ export function CalendarWeekView({ baseDate, events, onSelectEvent }: CalendarWe
       {/* Sub-toolbar mode tampilan mingguan */}
       <div className="px-4 py-2 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-          <CalendarIcon size={13} className="text-blue-500" />
+          <CalendarIcon size={13} className="text-blue-500 dark:text-blue-300" />
           <span className="font-medium">Jadwal Mingguan Terstruktur</span>
           <span className="text-[11px] text-slate-400">({multiDaySegments.length} Rentang Multi-Hari)</span>
         </div>

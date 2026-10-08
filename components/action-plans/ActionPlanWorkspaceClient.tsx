@@ -40,6 +40,7 @@ import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import { timeAgo } from '@/lib/date-utils'
+import { isHttpUrl } from '@/lib/utils'
 
 interface ActivityLogItem {
   id: string
@@ -129,7 +130,7 @@ function classifyEvidence(link: string | null): 'figma' | 'drive' | 'github' | '
 function EvidenceIcon({ type }: { type: 'figma' | 'drive' | 'github' | 'general' | 'none' }) {
   if (type === 'github') return <Github className="h-4 w-4 text-slate-700 dark:text-slate-300" />
   if (type === 'figma' || type === 'drive' || type === 'general') {
-    return <Globe className="h-4 w-4 text-blue-500" />
+    return <Globe className="h-4 w-4 text-blue-500 dark:text-blue-300" />
   }
   return <Paperclip className="h-4 w-4 text-slate-400" />
 }
@@ -653,7 +654,7 @@ export function ActionPlanWorkspaceClient({
                     <div className="flex items-center gap-2.5 min-w-0">
                       <EvidenceIcon type={evidenceType} />
                       <a
-                        href={ap.evidenceLink}
+                        href={isHttpUrl(ap.evidenceLink) ? ap.evidenceLink : undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
@@ -662,7 +663,7 @@ export function ActionPlanWorkspaceClient({
                       </a>
                     </div>
                     <a
-                      href={ap.evidenceLink}
+                      href={isHttpUrl(ap.evidenceLink) ? ap.evidenceLink : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
