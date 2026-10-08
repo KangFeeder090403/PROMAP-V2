@@ -174,6 +174,8 @@ Satu route `/` — konten menyesuaikan role. Bukan halaman terpisah.
 - **Action Required panel** (Manager & Admin Ops) — semua yang butuh keputusan user
 - **Team Workload** (Manager) — cegah overload sebelum assign task baru
 
+Deviasi resmi 2026-10-07 (disetujui Product Owner): section Analisis Kontributor di Home, Manager+ only.
+
 ### B6. My Work
 
 Halaman khusus untuk semua role — tugas yang **milik user sendiri**.
@@ -504,7 +506,9 @@ Kartu hitungan status **wajib pakai 8 status §A4**, bukan nama di mockup.
 
 ### C3. Ditunda ke V3
 
-Global Search (Cmd+K) · Command Menu · Saved Views · Timeline View · Objective sebagai entitas · ProjectMember · Recurring Task · Template AP · Workload View lanjutan · Task Dependency · PWA/Mobile
+Global Search (Cmd+K) · Command Menu · Saved Views · Timeline View · Objective sebagai entitas · ProjectMember · Recurring Task · Workload View lanjutan · Task Dependency · PWA/Mobile
+
+Deviasi resmi 2026-10-07 (disetujui Product Owner): Template Action Plan dimajukan ke V2.4 — CRUD di Settings, soft delete, Manager divisi sendiri / Admin Ops company sendiri / Super Admin, tercatat di Audit Log.
 
 ---
 
@@ -681,9 +685,11 @@ lib/prisma.ts        prisma (singleton dengan adapter pg)
 | Penerima | Event |
 |---|---|
 | PIC | Task baru, reassign, AP approve/reject, evidence diminta, deadline H-1, overdue, di-mention |
-| Manager | AP pending review, evidence baru, AP belum review >3 hari, proposal baru, di-mention, overdue PIC |
-| Admin Ops | User baru pending, label jabatan diusulkan Manager |
-| Super Admin | Guest baru, guest aktivasi trial, kapasitas DB 70%/90% |
+| Manager | AP pending review, evidence baru, AP belum review >3 hari, proposal baru, di-mention, overdue PIC, AP personal selesai (divisi sendiri) |
+| Admin Ops | User baru pending, label jabatan diusulkan Manager, proposal baru (company sendiri), AP tanpa divisi: pending review / belum review >3 hari / selesai |
+| Super Admin | Guest baru, guest aktivasi trial, kapasitas DB 70%/90%, AP pending review, AP belum review >3 hari, AP personal selesai, proposal baru (semua company) |
+
+Deviasi resmi 2026-10-07 (disetujui Product Owner): notifikasi tambahan Super Admin & Admin Ops.
 
 ### G4. Larangan Keras — Backend
 

@@ -6,6 +6,8 @@
  * Maksimal 24 action plan per batch import
  */
 
+import { isHttpUrl } from '@/lib/utils'
+
 export interface ActionPlanCsvRow {
   index: number
   title: string
@@ -138,7 +140,7 @@ function resolveCsvHeaderAndDelimiter(lines: string[]): {
   if (lineIdx >= lines.length) {
     return {
       delimiter: ',',
-      colIndex: { title: -1, outcomeKpi: -1, priority: -1, startDate: -1, endDate: -1, picEmail: -1 },
+      colIndex: { title: -1, outcomeKpi: -1, priority: -1, startDate: -1, endDate: -1, picEmail: -1, evidenceLink: -1 },
       startLineIdx: lineIdx,
       generalError: 'Tidak ada baris data dalam file',
     }
@@ -203,6 +205,8 @@ function parseSingleCsvRow(
     errorMsg = endNorm.error
   } else if (new Date(endNorm.dateStr) < new Date(startNorm.dateStr)) {
     errorMsg = 'Tenggat waktu (endDate) tidak boleh lebih awal dari tanggal mulai (startDate)'
+  } else if (evidenceLinkVal && !isHttpUrl(evidenceLinkVal)) {
+    errorMsg = 'Link bukti harus diawali http:// atau https://'
   }
 
   return {

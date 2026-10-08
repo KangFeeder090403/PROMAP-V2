@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 // Warna status selaras dengan PRD §D2 (Design System ProMaP)
 const STATUS_FILL: Record<string, [number, number, number]> = {
   NOT_STARTED: [100, 116, 139],       // slate-500
-  IN_PROGRESS: [37, 99, 235],         // blue-600
+  IN_PROGRESS: [14, 165, 233],        // sky-500 (= AP_STATUS_DOT)
   PENDING_APPROVAL: [79, 70, 229],     // indigo-600
   EVIDENCE_REQUIRED: [217, 119, 6],    // amber-600
   APPROVED: [22, 163, 74],            // green-600

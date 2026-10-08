@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser } from '@/lib/rbac'
+import { getSessionUser, requireRole, templateScope, canManageActionTemplate } from '@/lib/rbac'
+import { logActivity } from '@/lib/activity-log'
 
-function templateScope(user: { role: string; companyId: string | null; divisionId: string | null }) {
-  if (user.role === 'SUPER_ADMIN') return {}
-  if (user.role === 'ADMIN_OPERATIONAL') {
-    return { division: { companyId: user.companyId! } }
-  }
-  if (user.role === 'MANAGER') {
-    return { divisionId: user.divisionId! }
-  }
-  return { divisionId: user.divisionId! }
-}
+const MANAGE_ROLES = requireRole(['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'])
 
 export async function GET() {
   try {
@@ -19,9 +11,14 @@ export async function GET() {
     if (!user || user.role === 'GUEST') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const forbidden = MANAGE_ROLES(user)
+    if (forbidden) return forbidden
+
+    const scope = templateScope(user)
+    if (!scope) return NextResponse.json([])
 
     const templates = await prisma.actionTemplate.findMany({
-      where: templateScope(user),
+      where: { ...scope, deletedAt: null },
       include: { division: { select: { id: true, name: true, companyId: true } } },
       orderBy: [{ division: { name: 'asc' } }, { title: 'asc' }],
     })
@@ -39,30 +36,31 @@ export async function POST(req: Request) {
     if (!user || user.role === 'GUEST') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const forbidden = MANAGE_ROLES(user)
+    if (forbidden) return forbidden
 
     const body = await req.json()
     const { title, description, divisionId } = body
 
-    if (!title?.trim()) {
-      return NextResponse.json({ error: 'Judul template wajib diisi' }, { status: 400 })
+    if (typeof title !== 'string' || !title.trim() || title.trim().length > 200) {
+      return NextResponse.json({ error: 'Judul template wajib diisi (maks. 200 karakter)' }, { status: 400 })
     }
-    if (!divisionId) {
+    if (description != null && (typeof description !== 'string' || description.trim().length > 1000)) {
+      return NextResponse.json({ error: 'Deskripsi maksimal 1000 karakter' }, { status: 400 })
+    }
+    // Wajib sebelum findFirst: Prisma menganggap { id: undefined } sebagai tanpa filter.
+    if (typeof divisionId !== 'string' || !divisionId) {
       return NextResponse.json({ error: 'Divisi wajib dipilih' }, { status: 400 })
     }
 
-    // Guard: MANAGER hanya boleh buat template untuk divisinya sendiri
-    if (user.role === 'MANAGER' && divisionId !== user.divisionId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Verifikasi divisi ada dan milik company yang benar
-    const division = await prisma.division.findUnique({
-      where: { id: divisionId },
+    const division = await prisma.division.findFirst({
+      where: { id: divisionId, deletedAt: null },
+      select: { id: true, companyId: true },
     })
-    if (!division || division.deletedAt) {
+    if (!division) {
       return NextResponse.json({ error: 'Divisi tidak ditemukan' }, { status: 404 })
     }
-    if (user.role === 'ADMIN_OPERATIONAL' && division.companyId !== user.companyId) {
+    if (!canManageActionTemplate(user, division)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -73,6 +71,12 @@ export async function POST(req: Request) {
         divisionId,
       },
       include: { division: { select: { id: true, name: true, companyId: true } } },
+    })
+
+    await logActivity({
+      userId: user.id,
+      action: 'CREATED',
+      newValue: JSON.stringify({ entity: 'ActionTemplate', id: template.id, title: template.title, divisionId }),
     })
 
     return NextResponse.json(template, { status: 201 })

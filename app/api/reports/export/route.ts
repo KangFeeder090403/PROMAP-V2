@@ -4,6 +4,7 @@ import { getSessionUser, requireRole, apScope, proposalScope } from '@/lib/rbac'
 import { getQuarterRange, overlapsPeriod } from '@/lib/report-period'
 import { logActivity } from '@/lib/activity-log'
 import { shortRef } from '@/lib/dashboard-aggregate'
+import { isHttpUrl } from '@/lib/utils'
 import jsPDF from 'jspdf'
 import ExcelJS from 'exceljs'
 
@@ -95,7 +96,7 @@ function applyEvidenceCellHighlight(cell: any, c: number, ap: any, hasEv: boolea
     } else if (ap.status === 'PENDING_APPROVAL') {
       cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF4F46E5' } }
     }
-  } else if (c === 12 && hasEv && ap.evidenceLink?.startsWith('http')) {
+  } else if (c === 12 && hasEv && isHttpUrl(ap.evidenceLink)) {
     cell.value = {
       text: 'Buka Link Bukti ↗',
       hyperlink: ap.evidenceLink,

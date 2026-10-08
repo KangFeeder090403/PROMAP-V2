@@ -112,3 +112,21 @@ export function canDragKanbanCard(
 ): boolean {
   return KANBAN_COLUMNS.some((c) => resolveKanbanDrop(ap, c.key, user) !== null)
 }
+
+const EARLY_AP_STATUSES = ['NOT_STARTED', 'IN_PROGRESS']
+
+/**
+ * Siapa boleh hapus (soft delete) AP. Client-safe (lib/rbac.ts impor next-auth).
+ * SA/Admin Ops: status apa pun. Lainnya hanya selagi NOT_STARTED/IN_PROGRESS:
+ * Manager divisi sendiri, PIC AP milik sendiri. Gate company tetap di route.
+ */
+export function canDeleteAP(
+  user: { id: string; role: Role; divisionId?: string | null },
+  ap: { picId: string; divisionId: string | null; status: string }
+): boolean {
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL') return true
+  if (!EARLY_AP_STATUSES.includes(ap.status)) return false
+  if (user.role === 'MANAGER') return !!user.divisionId && user.divisionId === ap.divisionId
+  if (user.role === 'PIC') return ap.picId === user.id
+  return false
+}

@@ -378,8 +378,10 @@ model ActionTemplate {
   divisionId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   division    Division @relation(fields: [divisionId], references: [id])
 
   @@index([divisionId])
+  @@index([deletedAt])
 }

@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 
 interface Division {
   id: string
@@ -65,6 +66,12 @@ export function ActionTemplateSection({
   // Filter by division
   const [filterDivisionId, setFilterDivisionId] = useState<string>('')
 
+  // Hapus (arsip)
+  const [deleting, setDeleting] = useState<ActionTemplate | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const managerNoDivision = role === 'MANAGER' && !userDivisionId
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
@@ -73,6 +80,10 @@ export function ActionTemplateSection({
         fetch('/api/action-templates'),
         fetch('/api/divisions'),
       ])
+      if (tRes.status === 403) {
+        setError('Anda tidak punya akses')
+        return
+      }
       if (!tRes.ok) throw new Error('Gagal memuat template')
       const [tData, dData] = await Promise.all([tRes.json(), dRes.ok ? dRes.json() : []])
       setTemplates(tData)
@@ -161,15 +172,20 @@ export function ActionTemplateSection({
     }
   }
 
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Hapus template "${title}"?`)) return
+  async function handleDelete() {
+    if (!deleting) return
+    const id = deleting.id
+    setDeleteLoading(true)
     try {
       setActionError(null)
       const res = await fetch(`/api/action-templates/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       setTemplates((prev) => prev.filter((t) => t.id !== id))
+      setDeleting(null)
     } catch {
       setActionError('Gagal menghapus template.')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -190,7 +206,14 @@ export function ActionTemplateSection({
       {actionError && (
         <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
           <span>{actionError}</span>
-          <button onClick={() => setActionError(null)} className="font-bold ml-2 cursor-pointer">×</button>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label="Tutup pesan"
+            className="ml-2 p-0.5 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <X size={14} aria-hidden />
+          </button>
         </div>
       )}
 
@@ -215,16 +238,22 @@ export function ActionTemplateSection({
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             Refresh
           </button>
-          <button
-            type="button"
-            onClick={() => { setShowForm(true); setActionError(null) }}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer"
-          >
-            <Plus size={13} />
-            Tambah Template
-          </button>
+          {!managerNoDivision && (
+            <button
+              type="button"
+              onClick={() => { setShowForm(true); setActionError(null) }}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Plus size={13} />
+              Tambah Template
+            </button>
+          )}
         </div>
       </div>
+
+      {managerNoDivision && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">Akun Anda belum terhubung ke divisi</p>
+      )}
 
       {/* Form Tambah */}
       {showForm && (
@@ -322,9 +351,31 @@ export function ActionTemplateSection({
 
       {/* Daftar template grouped by divisi */}
       {loading && templates.length === 0 ? (
-        <div className="py-12 text-center text-slate-400 text-xs">
-          <RefreshCw size={16} className="animate-spin mx-auto mb-2 text-blue-500" />
-          Memuat template...
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden" aria-busy="true" aria-label="Memuat template">
+          <div className="h-10 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 flex items-center px-4">
+            <div className="h-3.5 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="px-4 py-3.5 flex items-center justify-between gap-4 animate-pulse">
+                <div className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800 rounded" />
+                <div className="h-3.5 w-16 bg-slate-100 dark:bg-slate-800/60 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error && templates.length === 0 ? null : filterDivisionId && filtered.length === 0 && templates.length > 0 ? (
+        <div className="py-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Tidak ada template untuk divisi ini</p>
+          {role !== 'MANAGER' && (
+            <button
+              type="button"
+              onClick={() => setFilterDivisionId('')}
+              className="mt-3 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Reset filter
+            </button>
+          )}
         </div>
       ) : Object.keys(grouped).length === 0 ? (
         <div className="py-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -396,22 +447,24 @@ export function ActionTemplateSection({
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
                             onClick={() => startEdit(t)}
-                            className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                            aria-label={`Edit template ${t.title}`}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             title="Edit"
                           >
-                            <Pencil size={13} />
+                            <Pencil size={13} aria-hidden />
                           </button>
                           <button
                             type="button"
-                            onClick={() => void handleDelete(t.id, t.title)}
-                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+                            onClick={() => setDeleting(t)}
+                            aria-label={`Arsipkan template ${t.title}`}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             title="Hapus"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={13} aria-hidden />
                           </button>
                         </div>
                       </div>
@@ -423,6 +476,15 @@ export function ActionTemplateSection({
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Hapus Template"
+        message="Template ini akan diarsipkan dan tidak tampil lagi di daftar."
+        onConfirm={() => void handleDelete()}
+        loading={deleteLoading}
+      />
     </div>
   )
 }

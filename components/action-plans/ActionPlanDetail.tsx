@@ -29,6 +29,7 @@ import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { ChecklistList } from '@/components/action-plans/ChecklistList'
 import { CommentThread } from '@/components/comments/CommentThread'
 import { timeAgo } from '@/lib/date-utils'
+import { isHttpUrl } from '@/lib/utils'
 import { SubmitDialog } from '@/components/action-plans/SubmitDialog'
 import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
@@ -125,7 +126,7 @@ function EvidenceContentDisplay({ evidenceLink, evaluationNote }: Readonly<Evide
     <>
       {evidenceLink ? (
         <a
-          href={evidenceLink}
+          href={isHttpUrl(evidenceLink) ? evidenceLink : undefined}
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -458,7 +459,7 @@ export function ActionPlanDetail({
                 </a>
                 {ap.evidenceLink && (
                   <a
-                    href={ap.evidenceLink}
+                    href={isHttpUrl(ap.evidenceLink) ? ap.evidenceLink : undefined}
                     target="_blank"
                     rel="noreferrer"
                     title="Buka bukti di tab baru"

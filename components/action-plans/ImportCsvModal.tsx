@@ -32,6 +32,7 @@ import {
   type ParseCsvResult,
 } from '@/lib/csv-action-plan'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL } from '@/lib/status-labels'
+import { isHttpUrl } from '@/lib/utils'
 
 interface ImportCsvModalProps {
   open: boolean
@@ -495,7 +496,7 @@ export function ImportCsvModal({
                         <td className="py-2 px-2.5 max-w-[140px]">
                           {row.evidenceLink ? (
                             <a
-                              href={row.evidenceLink}
+                              href={isHttpUrl(row.evidenceLink) ? row.evidenceLink : undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[10px] text-blue-600 dark:text-blue-400 underline truncate block max-w-[130px]"

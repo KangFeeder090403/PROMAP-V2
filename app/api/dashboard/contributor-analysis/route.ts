@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSessionUser, apScope } from '@/lib/rbac'
+import { getSessionUser, requireRole, apScope } from '@/lib/rbac'
 
 export type ContributorProjectRow = {
   projectId: string
@@ -27,6 +27,8 @@ export async function GET() {
   try {
     const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const forbidden = requireRole(['SUPER_ADMIN', 'ADMIN_OPERATIONAL', 'MANAGER'])(user)
+    if (forbidden) return forbidden
 
     const scope = apScope(user)
 
@@ -95,7 +97,8 @@ export async function GET() {
       const isComplete = ap.status === 'COMPLETE' || ap.status === 'APPROVED'
       const isActive = ap.status === 'IN_PROGRESS' || ap.status === 'NOT_STARTED'
       const isOverdue =
-        !isComplete && ap.endDate < now && (isActive || ap.status === 'EVIDENCE_REQUIRED')
+        !isComplete &&
+        (ap.status === 'OVERDUE' || (ap.endDate < now && (isActive || ap.status === 'EVIDENCE_REQUIRED')))
 
       if (isComplete) proj.complete++
       else if (isOverdue) proj.overdue++

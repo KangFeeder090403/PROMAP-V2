@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
+import { isHttpUrl } from '@/lib/utils'
 
 // PIC submit AP untuk direview. IN_PROGRESS/EVIDENCE_REQUIRED -> PENDING_APPROVAL.
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -16,6 +17,9 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const body = await req.json()
     if (!body.evaluationNote?.trim()) {
       return NextResponse.json({ error: 'evaluationNote wajib diisi' }, { status: 400 })
+    }
+    if (body.evidenceLink != null && body.evidenceLink !== '' && !isHttpUrl(body.evidenceLink)) {
+      return NextResponse.json({ error: 'Link bukti harus diawali http:// atau https://' }, { status: 400 })
     }
 
     const { id } = params
@@ -31,7 +35,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       status: 'PENDING_APPROVAL',
       evaluationNote: body.evaluationNote,
     }
-    if ('evidenceLink' in body) data.evidenceLink = body.evidenceLink
+    if ('evidenceLink' in body) data.evidenceLink = body.evidenceLink ? body.evidenceLink.trim() : null
 
     const result = await prisma.actionPlan.updateMany({
       where: { id, status: { in: ['IN_PROGRESS', 'EVIDENCE_REQUIRED'] } },

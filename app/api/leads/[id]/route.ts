@@ -33,8 +33,14 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     } = {}
 
     if (body.notes !== undefined) data.notes = body.notes
-    if (body.industri !== undefined) data.industri = body.industri
-    if (body.omzet !== undefined) data.omzet = body.omzet
+    for (const key of ['industri', 'omzet'] as const) {
+      const value: unknown = body[key]
+      if (value === undefined) continue
+      if (value !== null && (typeof value !== 'string' || value.trim().length > 100)) {
+        return NextResponse.json({ error: `${key} harus teks maksimal 100 karakter` }, { status: 400 })
+      }
+      data[key] = typeof value === 'string' ? value.trim() || null : null
+    }
     if (body.teamSize !== undefined) {
       data.teamSize = body.teamSize !== null ? Number(body.teamSize) || null : null
     }

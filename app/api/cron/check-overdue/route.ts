@@ -111,6 +111,15 @@ export async function GET(req: Request) {
       },
     })
 
+    const superAdminIds = staleReview.length
+      ? (
+          await prisma.user.findMany({
+            where: { role: 'SUPER_ADMIN', deletedAt: null, status: 'ACTIVE' },
+            select: { id: true },
+          })
+        ).map((s) => s.id)
+      : []
+
     for (const ap of staleReview) {
       const reviewerIds = new Set<string>()
       if (ap.divisionId) {
@@ -126,11 +135,7 @@ export async function GET(req: Request) {
         })
         admins.forEach((a) => reviewerIds.add(a.id))
       }
-      const superAdmins = await prisma.user.findMany({
-        where: { role: 'SUPER_ADMIN', deletedAt: null, status: 'ACTIVE' },
-        select: { id: true },
-      })
-      superAdmins.forEach((s) => reviewerIds.add(s.id))
+      superAdminIds.forEach((id) => reviewerIds.add(id))
       if (reviewerIds.size > 0) {
         await notify({
           userIds: [...reviewerIds],

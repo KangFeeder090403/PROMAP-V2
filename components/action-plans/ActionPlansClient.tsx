@@ -32,6 +32,8 @@ import { InlineQuickAdd } from '@/components/action-plans/InlineQuickAdd'
 import { FilterPopover, type FilterDraftValues } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { canDeleteAP } from '@/lib/action-plan-status'
 
 export interface ActionPlan {
   id: string
@@ -185,7 +187,8 @@ function ActionPlansErrorState({ error, onRetry }: Readonly<{ error: string; onR
 interface ActionPlanTableRowProps {
   ap: ActionPlan
   userId: string
-  userRole: string
+  userRole: Role
+  userDivisionId: string | null
   isSelected: boolean
   isHighlighted: boolean
   onSelect: (ap: ActionPlan) => void
@@ -197,16 +200,14 @@ function ActionPlanTableRow({
   ap,
   userId,
   userRole,
+  userDivisionId,
   isSelected,
   isHighlighted,
   onSelect,
   onEdit,
   onDelete,
 }: Readonly<ActionPlanTableRowProps>) {
-  const canDelete =
-    userRole === 'SUPER_ADMIN' ||
-    userRole === 'ADMIN_OPERATIONAL' ||
-    ap.picId === userId
+  const canDelete = canDeleteAP({ id: userId, role: userRole, divisionId: userDivisionId }, ap)
   const isOverdue =
     ap.status !== 'COMPLETE' &&
     new Date(ap.endDate).getTime() < Date.now() - 86400000
@@ -331,6 +332,7 @@ function ActionPlanTableRow({
 export function ActionPlansClient({
   role,
   userId,
+  userDivisionId,
   openCreate,
   initialOpenId,
   initialHighlightId,
@@ -339,6 +341,7 @@ export function ActionPlansClient({
 }: Readonly<{
   role: Role
   userId: string
+  userDivisionId: string | null
   openCreate?: boolean
   initialOpenId?: string
   initialHighlightId?: string
@@ -877,6 +880,7 @@ export function ActionPlansClient({
                   ap={ap}
                   userId={userId}
                   userRole={role}
+                  userDivisionId={userDivisionId}
                   isSelected={selected?.id === ap.id}
                   isHighlighted={highlightedId === ap.id}
                   onSelect={(selectedAp) => {
@@ -989,55 +993,16 @@ export function ActionPlansClient({
         }}
       />
 
-      {/* Dialog Konfirmasi Hapus */}
-      {deletingAp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[1px] p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-950/50 flex items-center justify-center shrink-0">
-                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-slate-900 dark:text-slate-50">Hapus Action Plan?</p>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  <span className="font-medium text-slate-700 dark:text-slate-200 break-words">
-                    &ldquo;{deletingAp.title}&rdquo;
-                  </span>{' '}
-                  akan dihapus secara permanen dan tidak bisa dikembalikan.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setDeletingAp(null)}
-                disabled={deleteLoading}
-                className="h-9 px-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleteLoading}
-                className="h-9 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold disabled:opacity-50 transition-colors inline-flex items-center gap-2"
-              >
-                {deleteLoading ? (
-                  <>
-                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Menghapus…
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4" />
-                    Ya, Hapus
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={deletingAp !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteLoading) setDeletingAp(null)
+        }}
+        title="Hapus Action Plan?"
+        message={`"${deletingAp?.title ?? ''}" akan dihapus dari daftar. Riwayat aktivitasnya tetap tersimpan untuk audit.`}
+        onConfirm={handleConfirmDelete}
+        loading={deleteLoading}
+      />
     </div>
   )
 }

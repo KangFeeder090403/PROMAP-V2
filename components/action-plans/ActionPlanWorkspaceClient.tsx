@@ -40,6 +40,7 @@ import { ReviewDialog } from '@/components/action-plans/ReviewDialog'
 import { ReassignDialog } from '@/components/action-plans/ReassignDialog'
 import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormModal'
 import { timeAgo } from '@/lib/date-utils'
+import { isHttpUrl } from '@/lib/utils'
 
 interface ActivityLogItem {
   id: string
@@ -653,7 +654,7 @@ export function ActionPlanWorkspaceClient({
                     <div className="flex items-center gap-2.5 min-w-0">
                       <EvidenceIcon type={evidenceType} />
                       <a
-                        href={ap.evidenceLink}
+                        href={isHttpUrl(ap.evidenceLink) ? ap.evidenceLink : undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
@@ -662,7 +663,7 @@ export function ActionPlanWorkspaceClient({
                       </a>
                     </div>
                     <a
-                      href={ap.evidenceLink}
+                      href={isHttpUrl(ap.evidenceLink) ? ap.evidenceLink : undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"

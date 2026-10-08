@@ -10,6 +10,7 @@ export type ActivityAction =
   | 'CREATED'
   | 'UPDATED'
   | 'USER_UPDATE'
+  | 'DELETED'
 
 export interface ActivityLogEntry {
   userId: string

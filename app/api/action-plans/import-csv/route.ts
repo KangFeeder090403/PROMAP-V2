@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSessionUser, canCreateAP } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity-log'
+import { isHttpUrl } from '@/lib/utils'
 import type { Priority, Role } from '@/lib/generated/prisma/client'
 
 interface CsvImportPayloadItem {
@@ -194,6 +195,15 @@ function validateAndPrepareRow(
     return {
       error: NextResponse.json(
         { error: `Baris ke-${rowNum}: Tenggat waktu tidak boleh lebih awal dari tanggal mulai` },
+        { status: 400 }
+      ),
+    }
+  }
+
+  if (item.evidenceLink?.trim() && !isHttpUrl(item.evidenceLink)) {
+    return {
+      error: NextResponse.json(
+        { error: `Baris ke-${rowNum}: Link bukti harus diawali http:// atau https://` },
         { status: 400 }
       ),
     }

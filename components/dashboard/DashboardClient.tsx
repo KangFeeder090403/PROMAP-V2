@@ -84,7 +84,7 @@ const SORT_OPTIONS: { key: OverdueSort; label: string }[] = [
   { key: 'createdDesc', label: 'Terbaru dibuat' },
 ]
 
-/** Prioritas AP — label & warna dari promap-design (High=red, Medium=amber, Low=slate). */
+/** Prioritas AP — label & warna dari PRD.md §D (High=red, Medium=amber, Low=slate). */
 const PRIORITY_META = {
   HIGH: { label: 'High', dot: 'bg-red-500', bar: 'bg-red-500' },
   MEDIUM: { label: 'Medium', dot: 'bg-amber-500', bar: 'bg-amber-500' },
@@ -1076,10 +1076,12 @@ export function DashboardClient() {
         </div>
       </div>
 
-      {/* Analisis Proyek Kontributor */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
-        <ContributorAnalysisSection />
-      </div>
+      {/* Analisis Proyek Kontributor — Manager+ only (deviasi resmi 2026-10-07) */}
+      {(user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER') && (
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+          <ContributorAnalysisSection />
+        </div>
+      )}
 
       {/* TIER 3: CRITICAL OVERDUE DRILL-DOWN */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">

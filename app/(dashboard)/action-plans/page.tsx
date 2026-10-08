@@ -24,6 +24,7 @@ export default async function ActionPlansPage(
     <ActionPlansClient
       role={user.role}
       userId={user.id}
+      userDivisionId={user.divisionId}
       openCreate={searchParams.new === '1'}
       initialOpenId={searchParams.open || searchParams.id}
       initialHighlightId={searchParams.highlight}
