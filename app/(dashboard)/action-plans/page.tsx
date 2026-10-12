@@ -11,6 +11,7 @@ export default async function ActionPlansPage(
       highlight?: string
       division?: string
       status?: string
+      pic?: string
     }>
   }
 ) {
@@ -30,6 +31,7 @@ export default async function ActionPlansPage(
       initialHighlightId={searchParams.highlight}
       initialDivisionId={searchParams.division}
       initialStatus={searchParams.status}
+      initialPicId={typeof searchParams.pic === 'string' ? searchParams.pic : undefined}
     />
   )
 }

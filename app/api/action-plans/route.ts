@@ -89,8 +89,12 @@ export async function GET(req: Request) {
     if (status) where.status = status as ActionPlanStatus
     if (priority) where.priority = priority as Priority
     if (taskId) where.taskId = taskId
-    if (picId) where.picId = picId
-    if (divisionId) where.divisionId = divisionId
+    // Filter picId/divisionId lewat AND — assign langsung akan MENIMPA key apScope
+    // (picId/divisionId) sehingga PIC/Manager bisa baca AP di luar scope.
+    const and: Prisma.ActionPlanWhereInput[] = []
+    if (picId) and.push({ picId })
+    if (divisionId) and.push({ divisionId })
+    if (and.length) where.AND = and
     if (projectId) {
       where.task = { projectId, deletedAt: null }
     }

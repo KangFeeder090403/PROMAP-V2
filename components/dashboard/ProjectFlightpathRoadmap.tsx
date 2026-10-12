@@ -87,15 +87,15 @@ export function ProjectFlightpathRoadmap({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 lg:p-7 w-full min-w-0">
+    <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 lg:p-7 w-full min-w-0">
       <DashboardSectionHeader
-        icon={<Activity className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />}
+        icon={<Activity className="w-4 h-4" aria-hidden="true" />}
         title="Jadwal &amp; Progres Proyek"
         subtitle="Linimasa portofolio interaktif dan status kelancaran proyek aktif"
         action={
           <Link
             href="/projects"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center gap-1 text-xs text-foreground font-medium hover:underline underline-offset-2"
           >
             <span>Buka Semua Proyek</span>
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -106,14 +106,14 @@ export function ProjectFlightpathRoadmap({
       {/* Toolbar Kontrol */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-5">
         {/* Kiri: Filter Status Kesehatan */}
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl overflow-x-auto">
+        <div className="flex items-center gap-1.5 bg-muted p-1 rounded-lg overflow-x-auto">
           <button
             type="button"
             onClick={() => setFilterTab('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 ${
               filterTab === 'ALL'
-                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-semibold shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-card text-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Semua ({projectHealth.length})
@@ -121,10 +121,10 @@ export function ProjectFlightpathRoadmap({
           <button
             type="button"
             onClick={() => setFilterTab('ON_TRACK')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
               filterTab === 'ON_TRACK'
-                ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 font-semibold shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-card text-emerald-700 dark:text-emerald-400 font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -133,10 +133,10 @@ export function ProjectFlightpathRoadmap({
           <button
             type="button"
             onClick={() => setFilterTab('AT_RISK')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
               filterTab === 'AT_RISK'
-                ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 font-semibold shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-card text-amber-700 dark:text-amber-400 font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-500" aria-hidden="true" />
@@ -145,10 +145,10 @@ export function ProjectFlightpathRoadmap({
           <button
             type="button"
             onClick={() => setFilterTab('DELAYED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
               filterTab === 'DELAYED'
-                ? 'bg-white dark:bg-slate-900 text-red-700 dark:text-red-400 font-semibold shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'bg-card text-red-700 dark:text-red-400 font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-red-500" aria-hidden="true" />
@@ -159,35 +159,35 @@ export function ProjectFlightpathRoadmap({
         {/* Kanan: Navigasi Periode & Skala Waktu */}
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {/* Navigasi Geser Tanggal */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+          <div className="flex items-center bg-muted p-0.5 rounded-lg border border-border">
             <button
               type="button"
               onClick={handlePrev}
               aria-label="Periode sebelumnya"
-              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 rounded-md text-fg-secondary hover:bg-accent transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleResetToday}
-              className="px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1"
+              className="px-2 py-1 text-xs font-medium text-fg-secondary hover:bg-accent rounded-md transition-colors flex items-center gap-1"
             >
-              <RotateCcw className="w-3 h-3 text-slate-400" />
+              <RotateCcw className="w-3 h-3 text-muted-foreground" />
               <span>Hari Ini</span>
             </button>
             <button
               type="button"
               onClick={handleNext}
               aria-label="Periode selanjutnya"
-              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+              className="p-1.5 rounded-md text-fg-secondary hover:bg-accent transition-colors"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* Pemilih Skala Waktu */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
+          <div className="flex items-center bg-muted p-1 rounded-lg">
             {(['Day', 'Week', 'Month'] as RoadmapViewMode[]).map((mode) => {
               const labelMap: Record<RoadmapViewMode, string> = {
                 Day: 'Hari',
@@ -199,10 +199,10 @@ export function ProjectFlightpathRoadmap({
                   key={mode}
                   type="button"
                   onClick={() => setViewMode(mode)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                     viewMode === mode
-                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {labelMap[mode]}
@@ -215,34 +215,34 @@ export function ProjectFlightpathRoadmap({
 
       {/* Kontainer Linimasa Native Dual-Column */}
       {filteredProjects.length === 0 ? (
-        <div className="py-12 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-          <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+        <div className="py-12 text-center rounded-lg border border-dashed border-border">
+          <p className="text-xs font-medium text-fg-secondary">
             Tidak ada proyek yang sesuai dengan kriteria filter saat ini
           </p>
           <button
             type="button"
             onClick={() => setFilterTab('ALL')}
-            className="mt-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            className="mt-2 text-xs text-foreground font-medium hover:underline underline-offset-2"
           >
             Reset Filter
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
+        <div className="rounded-lg border border-border overflow-hidden bg-card">
           {/* Scroll container terisolasi horizontal - Anti scroll-trap vertikal */}
           <div className="overflow-x-auto overflow-y-visible">
             <div className="inline-flex min-w-full">
               {/* KOLOM KIRI (Sticky): Info Proyek & Divisi */}
-              <div className="w-52 sm:w-64 md:w-72 shrink-0 sticky left-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs border-r border-slate-200 dark:border-slate-800 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.06)]">
+              <div className="w-52 sm:w-64 md:w-72 shrink-0 sticky left-0 z-30 bg-card border-r border-border">
                 {/* Header Kolom Kiri */}
-                <div className="h-12 px-4 flex items-center border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40">
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <div className="h-12 px-4 flex items-center border-b border-border bg-muted">
+                  <span className="text-xs font-semibold text-fg-secondary uppercase tracking-wider">
                     Proyek &amp; Divisi
                   </span>
                 </div>
 
                 {/* Daftar Baris Kiri */}
-                <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <div className="divide-y divide-border">
                   {filteredProjects.map((p) => {
                     const isHovered = hoveredProjectId === p.id
                     return (
@@ -256,20 +256,20 @@ export function ProjectFlightpathRoadmap({
                         onClick={() => onInspectProject?.(p.id)}
                         className={`w-full text-left h-14 px-4 flex flex-col justify-center cursor-pointer transition-colors ${
                           isHovered
-                            ? 'bg-blue-50/40 dark:bg-blue-950/20'
-                            : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/30'
+                            ? 'bg-accent'
+                            : 'hover:bg-accent'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          <span className="text-xs font-semibold text-foreground truncate">
                             {p.name}
                           </span>
-                          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
                             {p.progress}%
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2 mt-1">
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                          <span className="text-[10px] text-muted-foreground truncate">
                             {p.divisionName}
                           </span>
                           {/* Mini Health Dot */}
@@ -293,29 +293,29 @@ export function ProjectFlightpathRoadmap({
               {/* KOLOM KANAN: Grid Waktu & Bar Linimasa */}
               <div className="flex-1 min-w-[560px] sm:min-w-[720px] relative">
                 {/* Header Grid Waktu */}
-                <div className="h-12 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 flex items-stretch">
+                <div className="h-12 border-b border-border bg-muted flex items-stretch">
                   {ticks.map((tick) => (
                     <div
                       key={tick.id}
-                      className={`flex-1 min-w-10 px-1 border-r border-slate-200/60 dark:border-slate-800/50 flex flex-col items-center justify-center text-center ${
+                      className={`flex-1 min-w-10 px-1 border-r border-border flex flex-col items-center justify-center text-center ${
                         tick.isCurrent
-                          ? 'bg-blue-50/60 dark:bg-blue-950/30 font-semibold'
+                          ? 'bg-accent font-semibold'
                           : tick.isWeekend
-                          ? 'bg-slate-100/50 dark:bg-slate-800/20'
+                          ? 'bg-muted/50'
                           : ''
                       }`}
                     >
                       <span
                         className={`text-[11px] leading-tight ${
                           tick.isCurrent
-                            ? 'text-blue-600 dark:text-blue-400 font-bold'
-                            : 'text-slate-700 dark:text-slate-300'
+                            ? 'text-foreground font-bold'
+                            : 'text-fg-secondary'
                         }`}
                       >
                         {tick.label}
                       </span>
                       {tick.subLabel && (
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500">
+                        <span className="text-[9px] text-muted-foreground">
                           {tick.subLabel}
                         </span>
                       )}
@@ -324,14 +324,14 @@ export function ProjectFlightpathRoadmap({
                 </div>
 
                 {/* Area Baris Linimasa & Today Marker */}
-                <div className="relative divide-y divide-slate-100 dark:divide-slate-800/60">
+                <div className="relative divide-y divide-border">
                   {/* Today Marker Line (Garis Biru Hari Ini) */}
                   {todayPercent !== null && (
                     <div
                       style={{ left: `${todayPercent}%` }}
-                      className="absolute top-0 bottom-0 w-0.5 bg-blue-500 dark:bg-blue-400 z-20 pointer-events-none shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+                      className="absolute top-0 bottom-0 w-0.5 bg-chart-1 z-20 pointer-events-none"
                     >
-                      <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 -translate-x-[3px] -translate-y-1" />
+                      <div className="w-2 h-2 rounded-full bg-chart-1 -translate-x-[3px] -translate-y-1" />
                     </div>
                   )}
 
@@ -340,8 +340,8 @@ export function ProjectFlightpathRoadmap({
                     {ticks.map((tick) => (
                       <div
                         key={`grid-${tick.id}`}
-                        className={`flex-1 min-w-10 border-r border-slate-100 dark:border-slate-800/40 ${
-                          tick.isWeekend ? 'bg-slate-50/30 dark:bg-slate-900/40' : ''
+                        className={`flex-1 min-w-10 border-r border-border ${
+                          tick.isWeekend ? 'bg-muted/30' : ''
                         }`}
                       />
                     ))}
@@ -386,8 +386,8 @@ export function ProjectFlightpathRoadmap({
                         key={`row-${p.id}`}
                         className={`h-14 relative flex items-center transition-colors ${
                           isHovered
-                            ? 'bg-blue-50/25 dark:bg-blue-950/15'
-                            : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20'
+                            ? 'bg-accent/50'
+                            : 'hover:bg-accent/50'
                         }`}
                       >
                         {geo.isVisibleInViewport ? (
@@ -406,7 +406,7 @@ export function ProjectFlightpathRoadmap({
                               p.startDate || p.createdAt,
                               p.endDate
                             )}`}
-                            className={`text-left absolute h-7.5 rounded-lg border ${barColors.border} ${barColors.bg} cursor-pointer transition-all duration-200 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 z-10`}
+                            className={`text-left absolute h-7.5 rounded-md border ${barColors.border} ${barColors.bg} cursor-pointer transition-all duration-200 overflow-hidden hover:shadow-md hover:-translate-y-0.5 z-10`}
                           >
                             {/* Progres Fill Bar */}
                             <div
@@ -420,7 +420,7 @@ export function ProjectFlightpathRoadmap({
                                 {p.name}
                               </span>
                               <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${barColors.badge}`}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm shrink-0 ${barColors.badge}`}
                               >
                                 {p.progress}%
                               </span>
@@ -434,7 +434,7 @@ export function ProjectFlightpathRoadmap({
                             onMouseLeave={() => setHoveredProjectId(null)}
                             onFocus={() => setHoveredProjectId(p.id)}
                             onBlur={() => setHoveredProjectId(null)}
-                            className="text-left px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500 italic cursor-pointer hover:underline"
+                            className="text-left px-3 py-1 text-[11px] text-muted-foreground italic cursor-pointer hover:underline"
                           >
                             {geo.isBeforeViewport
                               ? 'Selesai sebelum periode ini'
@@ -450,9 +450,9 @@ export function ProjectFlightpathRoadmap({
           </div>
 
           {/* Footer Bar Petunjuk Interaksi */}
-          <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+          <div className="px-4 py-2.5 border-t border-border bg-muted/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-blue-500 dark:text-blue-300" />
+              <Calendar className="w-3.5 h-3.5 text-fg-secondary" />
               <span>Gunakan panah navigasi atau geser horizontal untuk menjelajah linimasa</span>
             </div>
             <span>Klik kartu proyek untuk membuka detail inspeksi</span>

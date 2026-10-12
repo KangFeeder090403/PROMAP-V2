@@ -126,6 +126,7 @@ function buildActionPlansQueryString(params: {
   statusFilter?: string
   priorityFilter?: string
   divisionFilter?: string
+  picFilter?: string
   search?: string
   page: number
   pageSize: number
@@ -134,6 +135,7 @@ function buildActionPlansQueryString(params: {
   if (params.statusFilter) qs.set('status', params.statusFilter)
   if (params.priorityFilter) qs.set('priority', params.priorityFilter)
   if (params.divisionFilter) qs.set('divisionId', params.divisionFilter)
+  if (params.picFilter) qs.set('picId', params.picFilter)
   if (params.search) qs.set('search', params.search)
   qs.set('page', String(params.page))
   qs.set('pageSize', String(params.pageSize))
@@ -142,14 +144,14 @@ function buildActionPlansQueryString(params: {
 
 function ActionPlansDeniedState({ onBack }: Readonly<{ onBack: () => void }>) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto">
-      <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    <div className="bg-card rounded-lg border border-destructive/30 shadow-sm p-8 text-center max-w-md mx-auto">
+      <h2 className="text-base font-semibold text-foreground">Anda tidak punya akses</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
         Anda tidak memiliki izin untuk melihat Action Plan ini.
       </p>
       <button
         onClick={onBack}
-        className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors"
       >
         Kembali ke Beranda
       </button>
@@ -160,10 +162,10 @@ function ActionPlansDeniedState({ onBack }: Readonly<{ onBack: () => void }>) {
 function ActionPlansLoadingState() {
   return (
     <div className="space-y-4">
-      <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+      <div className="h-8 w-48 bg-muted rounded animate-pulse" />
+      <div className="bg-card rounded-lg border border-border p-5 space-y-3">
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+          <div key={i} className="h-10 bg-muted rounded animate-pulse" />
         ))}
       </div>
     </div>
@@ -172,11 +174,11 @@ function ActionPlansLoadingState() {
 
 function ActionPlansErrorState({ error, onRetry }: Readonly<{ error: string; onRetry: () => void }>) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-      <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
+    <div className="bg-card rounded-lg border border-border shadow-sm p-5">
+      <p className="text-sm text-fg-secondary">{error}</p>
       <button
         onClick={onRetry}
-        className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+        className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors"
       >
         Coba lagi
       </button>
@@ -222,39 +224,39 @@ function ActionPlanTableRow({
     <tr
       key={ap.id}
       onClick={() => onSelect(ap)}
-      className={`border-b border-slate-100 dark:border-slate-800 last:border-0 cursor-pointer transition-colors ${
+      className={`border-b border-border last:border-0 cursor-pointer transition-colors ${
         isHighlighted
-          ? 'bg-blue-50/80 dark:bg-blue-950/60 ring-2 ring-blue-500 ring-inset'
+          ? 'bg-primary/10 ring-2 ring-primary ring-inset'
           : isSelected
-            ? 'bg-blue-50/60 dark:bg-blue-500/10'
-            : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+            ? 'bg-primary/5'
+            : 'hover:bg-muted'
       }`}
     >
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <span
-            className={`w-1 self-stretch rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'}`}
+            className={`w-1 self-stretch rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-muted-foreground'}`}
           />
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-900 dark:text-slate-50">{ap.title}</p>
-            <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{ap.code}</p>
+            <p className="truncate font-medium text-foreground">{ap.title}</p>
+            <p className="font-mono text-xs text-muted-foreground">{ap.code}</p>
           </div>
         </div>
       </td>
       <td className="px-5 py-3">
-        <p className="font-medium text-slate-700 dark:text-slate-300">
+        <p className="font-medium text-fg-secondary">
           {ap.task?.project?.name ?? (ap.isPersonal ? 'Personal' : '—')}
         </p>
-        <p className="max-w-[220px] truncate text-xs text-slate-500 dark:text-slate-400">
+        <p className="max-w-[220px] truncate text-xs text-muted-foreground">
           {ap.task?.title ?? ap.division?.name ?? '—'}
         </p>
       </td>
       <td className="px-5 py-3">
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-500/15 text-xs font-semibold text-blue-700 dark:text-blue-300">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-fg-secondary">
             {initials(ap.pic?.name)}
           </span>
-          <span className="text-slate-700 dark:text-slate-300">{ap.picId === userId ? 'Anda' : ap.pic?.name ?? '—'}</span>
+          <span className="text-fg-secondary">{ap.picId === userId ? 'Anda' : ap.pic?.name ?? '—'}</span>
         </div>
       </td>
       <td className="px-5 py-3">
@@ -263,7 +265,7 @@ function ActionPlanTableRow({
       <td className="px-5 py-3">
         <div className="flex items-center gap-1.5">
           <span
-            className={`h-1.5 w-1.5 rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-slate-300'} ${
+            className={`h-1.5 w-1.5 rounded-full ${AP_STATUS_DOT[ap.status] ?? 'bg-muted-foreground'} ${
               ap.status === 'PENDING_APPROVAL' ? 'animate-pulse' : ''
             }`}
           />
@@ -273,7 +275,7 @@ function ActionPlanTableRow({
       <td className="px-5 py-3">
         <p
           className={`font-mono text-sm ${
-            isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'
+            isOverdue ? 'text-destructive-text' : 'text-fg-secondary'
           }`}
         >
           {formatDate(ap.endDate)}
@@ -281,16 +283,16 @@ function ActionPlanTableRow({
       </td>
       <td className="px-5 py-3">
         <div className="w-32">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-mono">
               {ap.checklistDone}/{ap.checklistTotal}
             </span>
-            <span className="text-slate-700 dark:text-slate-300">{pct}%</span>
+            <span className="text-fg-secondary">{pct}%</span>
           </div>
-          <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
             <div
               className={`h-1.5 rounded-full ${
-                pct >= 100 ? 'bg-emerald-500' : 'bg-blue-500'
+                pct >= 100 ? 'bg-emerald-500' : 'bg-chart-1'
               }`}
               style={{ width: `${pct}%` }}
             />
@@ -306,7 +308,7 @@ function ActionPlanTableRow({
               e.stopPropagation()
               onEdit(ap)
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -318,7 +320,7 @@ function ActionPlanTableRow({
                 e.stopPropagation()
                 onDelete(ap)
               }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 dark:text-slate-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive-text"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -338,6 +340,7 @@ export function ActionPlansClient({
   initialHighlightId,
   initialDivisionId,
   initialStatus,
+  initialPicId,
 }: Readonly<{
   role: Role
   userId: string
@@ -347,6 +350,7 @@ export function ActionPlansClient({
   initialHighlightId?: string
   initialDivisionId?: string
   initialStatus?: string
+  initialPicId?: string
 }>) {
   const router = useRouter()
   const [data, setData] = useState<Ledger | null>(null)
@@ -356,6 +360,8 @@ export function ActionPlansClient({
   // Drill-down dari Laporan: /action-plans?division=…&status=…
   const [divisionFilter, setDivisionFilter] = useState(initialDivisionId ?? '')
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? '')
+  // Drill-down dari Analisis Kontributor (Home): /action-plans?pic=…
+  const [picFilter, setPicFilter] = useState(initialPicId ?? '')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
@@ -444,7 +450,7 @@ export function ActionPlansClient({
 
   useEffect(() => {
     fetchData()
-  }, [statusFilter, priorityFilter, divisionFilter, search, page])
+  }, [statusFilter, priorityFilter, divisionFilter, picFilter, search, page])
 
   // Header "+ New > Action Plan" mengarah ke /action-plans?new=1. Buka modal,
   // lalu bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
@@ -463,6 +469,7 @@ export function ActionPlansClient({
         statusFilter,
         priorityFilter,
         divisionFilter,
+        picFilter,
         search,
         page,
         pageSize: PAGE_SIZE,
@@ -486,7 +493,7 @@ export function ActionPlansClient({
   }
 
   const activeFilterCount =
-    (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0) + (divisionFilter ? 1 : 0)
+    (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0) + (divisionFilter ? 1 : 0) + (picFilter ? 1 : 0)
   const fieldsDefined = ['statusFilter', 'priorityFilter', 'search', 'page'] as const
 
   function applyFilter(kind: (typeof fieldsDefined)[number], value: string) {
@@ -500,6 +507,7 @@ export function ActionPlansClient({
     setStatusFilter('')
     setPriorityFilter('')
     setDivisionFilter('')
+    setPicFilter('')
     setSearch('')
     setSearchInput('')
     setPage(1)
@@ -529,10 +537,10 @@ export function ActionPlansClient({
       {/* ===== Header ===== */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             Program &amp; Action Plan
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Tampilan tabel ledger alur kerja operasional • {totalCount} Action Plans
           </p>
         </div>
@@ -540,18 +548,18 @@ export function ActionPlansClient({
           <button
             type="button"
             onClick={() => setBulkOpen(true)}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium transition-colors"
           >
-            <FileSpreadsheet className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
             Bulk Paste
           </button>
           <button
             type="button"
             onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium transition-colors"
             title="Import Action Plan dari file CSV (Maksimal 24 item / 6 hari kerja)"
           >
-            <Upload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <Upload className="h-4 w-4 text-muted-foreground" />
             Import CSV
           </button>
           <button
@@ -561,11 +569,11 @@ export function ActionPlansClient({
               setFormOpen(true)
             }}
             title="Tekan 'C' di keyboard untuk buat cepat"
-            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors shadow-sm"
           >
             <Plus className="h-4 w-4" />
             Action Plan Baru
-            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-sans font-medium text-blue-100 bg-blue-600/60 rounded">
+            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-sans font-medium text-primary-foreground bg-primary-foreground/20 rounded">
               C
             </kbd>
           </button>
@@ -574,7 +582,7 @@ export function ActionPlansClient({
 
       {/* ===== Chip drill-down dari Laporan ===== */}
       {divisionFilter && (
-        <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 rounded-lg bg-muted border border-border text-xs text-foreground">
           <span>
             Menampilkan divisi{' '}
             <strong>{data.items[0]?.division?.name ?? 'terpilih'}</strong>
@@ -616,14 +624,14 @@ export function ActionPlansClient({
           onClick={() => applyFilter('statusFilter', '')}
           className={`flex flex-col justify-between h-[66px] rounded-lg border px-3 py-2 text-left transition-colors ${
             statusFilter === ''
-              ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10'
-              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ? 'border-primary/30 bg-primary/10'
+              : 'border-border bg-card hover:bg-muted'
           }`}
         >
-          <span className={`text-xs font-medium truncate w-full ${statusFilter === '' ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>
+          <span className={`text-xs font-medium truncate w-full ${statusFilter === '' ? 'text-foreground' : 'text-muted-foreground'}`}>
             Semua
           </span>
-          <span className={`text-lg font-semibold leading-none ${statusFilter === '' ? 'text-blue-700 dark:text-blue-300' : 'text-slate-900 dark:text-slate-50'}`}>
+          <span className="text-lg font-semibold leading-none text-foreground">
             {totalCount}
           </span>
         </button>
@@ -635,30 +643,26 @@ export function ActionPlansClient({
             onClick={() => applyFilter('statusFilter', statusFilter === s ? '' : s)}
             className={`flex flex-col justify-between h-[66px] rounded-lg border px-3 py-2 text-left transition-colors ${
               statusFilter === s
-                ? 'border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10'
-                : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+                ? 'border-primary/30 bg-primary/10'
+                : 'border-border bg-card hover:bg-muted'
             }`}
           >
             <span className="flex items-center gap-1.5 min-w-0 w-full">
               <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${AP_STATUS_DOT[s] ?? 'bg-slate-300'} ${
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${AP_STATUS_DOT[s] ?? 'bg-muted-foreground'} ${
                   s === 'PENDING_APPROVAL' ? 'animate-pulse' : ''
                 }`}
               />
               <span
                 title={AP_STATUS_LABEL[s]}
                 className={`text-xs font-medium truncate ${
-                  statusFilter === s ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'
+                  statusFilter === s ? 'text-foreground' : 'text-muted-foreground'
                 }`}
               >
                 {AP_STATUS_LABEL[s]}
               </span>
             </span>
-            <span
-              className={`text-lg font-semibold leading-none ${
-                statusFilter === s ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-slate-50'
-              }`}
-            >
+            <span className="text-lg font-semibold leading-none text-foreground">
               {data.counts[s] ?? 0}
             </span>
           </button>
@@ -669,14 +673,14 @@ export function ActionPlansClient({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               aria-label="Cari judul, PIC, atau kode action plan"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Cari judul, PIC, kode..."
-              className="h-9 w-64 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-3 text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="h-9 w-64 rounded-md border border-input bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
@@ -686,14 +690,14 @@ export function ActionPlansClient({
               onClick={() => setFilterOpen((v) => !v)}
               className={`inline-flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-semibold transition-colors cursor-pointer ${
                 filterOpen || activeFilterCount > 0
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-card text-foreground hover:bg-accent'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4 shrink-0" />
               Filter
               {activeFilterCount > 0 && (
-                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-xs font-bold">
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-foreground text-primary px-1 text-xs font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -734,7 +738,7 @@ export function ActionPlansClient({
             />
           </div>
         </div>
-        <span className="text-xs text-slate-500 dark:text-slate-400">
+        <span className="text-xs text-muted-foreground">
           {loading ? 'Memperbarui...' : `${data.total} action plan`}
         </span>
       </div>
@@ -742,7 +746,7 @@ export function ActionPlansClient({
       {/* ===== Active Filter Chips Row ===== */}
       {(activeFilterCount > 0 || search) && (
         <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
             FILTER AKTIF:
           </span>
 
@@ -789,10 +793,21 @@ export function ActionPlansClient({
             />
           )}
 
+          {picFilter && (
+            // ponytail: nama diambil dari baris pertama; tambah lookup nama bila hasil kosong sering terjadi
+            <ActiveChip
+              label={`PIC: ${data.items[0]?.pic?.name ?? 'Terpilih'}`}
+              onRemove={() => {
+                setPicFilter('')
+                setPage(1)
+              }}
+            />
+          )}
+
           <button
             type="button"
             onClick={resetFilters}
-            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+            className="text-xs font-semibold text-destructive-text hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
           >
             Hapus semua filter
           </button>
@@ -800,8 +815,8 @@ export function ActionPlansClient({
       )}
 
       {/* ===== Ledger table ===== */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
-        {data.total === 0 && !search && !statusFilter && !priorityFilter && !divisionFilter ? (
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-x-auto">
+        {data.total === 0 && !search && !statusFilter && !priorityFilter && !divisionFilter && !picFilter ? (
           <EmptyState
             icon={CheckCircle2}
             title="Belum ada Action Plan"
@@ -817,11 +832,11 @@ export function ActionPlansClient({
           />
         ) : data.items.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Tidak ada Action Plan yang cocok dengan filter.</p>
+            <p className="text-sm text-muted-foreground">Tidak ada Action Plan yang cocok dengan filter.</p>
             <button
               type="button"
               onClick={resetFilters}
-              className="mt-3 inline-flex h-9 items-center rounded-md bg-blue-500 px-4 text-sm font-medium text-white hover:bg-blue-600 transition-colors cursor-pointer"
+              className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors cursor-pointer"
             >
               Reset Filter
             </button>
@@ -829,7 +844,7 @@ export function ActionPlansClient({
         ) : (
           <table className="w-full text-sm min-w-[900px]">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 <th className="px-5 py-3">Title &amp; ID</th>
                 <th className="px-5 py-3">Project &amp; Scope</th>
                 <th className="px-5 py-3">PIC Assignee</th>
@@ -842,7 +857,7 @@ export function ActionPlansClient({
             </thead>
             <tbody>
               {/* Quick Inline Add Row */}
-              <tr className="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/30">
+              <tr className="border-b border-border bg-muted/50">
                 <td colSpan={8} className="px-5 py-2">
                   <InlineQuickAdd
                     placeholder="Tambah cepat: ketik judul action plan lalu tekan Enter..."
@@ -899,8 +914,8 @@ export function ActionPlansClient({
         )}
 
         {data.items.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 dark:border-slate-800 px-5 py-3">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-3">
+            <span className="text-xs text-muted-foreground">
               Menampilkan {start} - {end} dari {data.total} action plan
             </span>
             <div className="flex items-center gap-1">
@@ -908,13 +923,13 @@ export function ActionPlansClient({
                 type="button"
                 disabled={data.page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-fg-secondary hover:bg-muted disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               {pageWindow(data.page, pages).map((p, i) =>
                 p === '…' ? (
-                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-slate-400 dark:text-slate-500">
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground">
                     …
                   </span>
                 ) : (
@@ -924,8 +939,8 @@ export function ActionPlansClient({
                     onClick={() => setPage(p as number)}
                     className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm ${
                       p === data.page
-                        ? 'bg-blue-500 text-white'
-                        : 'border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'border border-border text-fg-secondary hover:bg-muted'
                     }`}
                   >
                     {p}
@@ -936,7 +951,7 @@ export function ActionPlansClient({
                 type="button"
                 disabled={data.page >= pages}
                 onClick={() => setPage((p) => Math.min(pages, p + 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-fg-secondary hover:bg-muted disabled:opacity-40"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

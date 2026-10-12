@@ -1,6 +1,6 @@
-// ProMaP Service Worker — Web Push saja.
-// Sengaja TANPA fetch handler/cache: mencegah HTML/RSC berisi data sesi
-// tersimpan di cache dan bocor antar user di perangkat bersama.
+// ProMaP Service Worker — Push + fetch navigasi tanpa cache.
+// TANPA cache HTML/RSC: mencegah data sesi tersimpan di cache dan bocor antar user
+// di perangkat bersama. Fetch handler HANYA navigasi — syarat prompt install Chrome.
 
 self.addEventListener('install', () => {
   self.skipWaiting()
@@ -27,17 +27,35 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title ?? 'ProMaP'
+  // ponytail: heads-up (pop-up) & bunyi diatur channel notifikasi OS, bukan payload; JANGAN tambah silent:true (TypeError bila bareng vibrate).
   const options = {
     body: data.body ?? '',
-    icon: '/icons/icon.svg',
-    badge: '/icons/icon.svg',
+    icon: '/icons/icon-192.png',
     data: { url: data.url ?? '/dashboard' },
-    // Tag unik: notifikasi baru tidak menimpa yang belum dibaca
-    tag: `promap-notif-${Date.now()}`,
+    // Tag sama per AP: notif AP itu diganti yang terbaru (riwayat lengkap di lonceng); selain itu unik
+    tag: data.tag || `promap-notif-${Date.now()}`,
+    renotify: !!data.tag, // bunyi/getar ulang saat diganti; renotify wajib tag non-kosong
+    timestamp: typeof data.timestamp === 'number' ? data.timestamp : Date.now(),
+    lang: 'id',
     vibrate: [200, 100, 200],
   }
 
   event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// Fetch handler HANYA navigasi: syarat prompt install Chrome + halaman offline.
+// Tetap TANPA cache — tidak ada HTML/RSC sesi yang disimpan.
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode !== 'navigate') return
+  event.respondWith(
+    fetch(event.request).catch(
+      () =>
+        new Response(
+          '<!doctype html><html lang="id"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ProMaP — Offline</title><body style="font-family:system-ui;background:#0B1730;color:#FAFAFA;display:grid;place-items:center;min-height:100vh;margin:0"><p>Tidak ada koneksi. Periksa internet lalu muat ulang.</p></body></html>',
+          { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        )
+    )
+  )
 })
 
 function safeUrl(raw) {

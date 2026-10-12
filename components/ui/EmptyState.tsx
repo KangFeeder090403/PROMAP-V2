@@ -33,22 +33,22 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-10 sm:p-14 text-center flex flex-col items-center justify-center',
+        'bg-card text-card-foreground rounded-lg border border-border shadow-sm dark:shadow-none p-10 sm:p-14 text-center flex flex-col items-center justify-center',
         className
       )}
     >
       {/* Icon with soft badge container */}
       <div className="relative mb-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm">
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted border border-border text-foreground">
           <Icon className="h-8 w-8 stroke-[1.8]" />
         </div>
       </div>
 
       {/* Heading & description */}
-      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-1.5">
         {title}
       </h3>
-      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+      <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
         {description}
       </p>
 
@@ -59,7 +59,7 @@ export function EmptyState({
             (action.href ? (
               <Link
                 href={action.href}
-                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {action.icon && <action.icon className="h-4 w-4" />}
                 {action.label}
@@ -68,7 +68,7 @@ export function EmptyState({
               <button
                 type="button"
                 onClick={action.onClick}
-                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
               >
                 {action.icon && <action.icon className="h-4 w-4" />}
                 {action.label}
@@ -79,7 +79,7 @@ export function EmptyState({
             (secondaryAction.href ? (
               <Link
                 href={secondaryAction.href}
-                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {secondaryAction.label}
               </Link>
@@ -87,7 +87,7 @@ export function EmptyState({
               <button
                 type="button"
                 onClick={secondaryAction.onClick}
-                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
               >
                 {secondaryAction.label}
               </button>

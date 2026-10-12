@@ -6,6 +6,9 @@ import {
   Kanban,
   Settings,
   BarChart3,
+  FileText,
+  CalendarDays,
+  Table2,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -82,18 +85,18 @@ export function matchesPath(href: string, pathname: string) {
   return under(href)
 }
 
-export type SectionTab = Omit<NavItem, 'icon'>
+export type SectionTab = NavItem
 
 /** Sub-menu (tab) per section. Dirender SectionTabs bila pathname persis = salah satu href. */
 export const SECTION_TABS: Record<'projects' | 'execution', SectionTab[]> = {
   projects: [
-    { label: 'Projects', href: '/projects', roles: GUEST_ROLES },
-    { label: 'Proposals', href: '/proposals', roles: ALL_ROLES },
+    { label: 'Projects', href: '/projects', icon: FolderKanban, roles: GUEST_ROLES },
+    { label: 'Proposals', href: '/proposals', icon: FileText, roles: ALL_ROLES },
   ],
   execution: [
-    { label: 'Board', href: '/board', roles: GUEST_ROLES },
-    { label: 'Calendar', href: '/calendar', roles: GUEST_ROLES },
-    { label: 'Table', href: '/action-plans', roles: ALL_ROLES },
+    { label: 'Board', href: '/board', icon: Kanban, roles: GUEST_ROLES },
+    { label: 'Calendar', href: '/calendar', icon: CalendarDays, roles: GUEST_ROLES },
+    { label: 'Table', href: '/action-plans', icon: Table2, roles: ALL_ROLES },
   ],
 }
 

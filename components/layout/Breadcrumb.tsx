@@ -93,7 +93,7 @@ export function Breadcrumb() {
             >
               {i > 0 && (
                 <ChevronRight
-                  className={`h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600 ${
+                  className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/60 ${
                     !crumbs[i - 1].href && i - 1 !== last ? 'hidden sm:block' : ''
                   }`}
                 />
@@ -101,19 +101,19 @@ export function Breadcrumb() {
               {isLast ? (
                 <span
                   aria-current="page"
-                  className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
+                  className="truncate text-sm font-semibold text-foreground"
                 >
                   {crumb.label}
                 </span>
               ) : crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="truncate text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                  className="truncate text-sm text-fg-secondary hover:text-foreground transition-colors"
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="truncate text-sm text-slate-500 dark:text-slate-400">{crumb.label}</span>
+                <span className="truncate text-sm text-muted-foreground">{crumb.label}</span>
               )}
             </li>
           )

@@ -3,6 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 let _initialized = false
 
+// ponytail: grouping hanya AP; tambah /projects/<id> ke regex bila diminta.
+export const pushTag = (url?: string) => {
+  const m = url?.match(/^\/action-plans\?(?:[^#]*&)?(?:open|id)=([\w-]+)/)
+  return m ? `ap-${m[1]}` : undefined
+}
+
 function init() {
   if (_initialized) return
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
@@ -35,12 +41,19 @@ export async function sendPushToUsers(
     title: payload.title,
     body: payload.body,
     url: payload.url ?? '/',
+    tag: pushTag(payload.url),
+    // Waktu event asli, walau push tertunda (TTL 24 jam)
+    timestamp: Date.now(),
   })
 
   await Promise.allSettled(
     subs.map((sub) =>
       webpush
-        .sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, data)
+        .sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          data,
+          { urgency: 'high', TTL: 60 * 60 * 24 } // high: tembus Doze; TTL 24 jam — notif in-app tetap di DB
+        )
         .catch(async (err: unknown) => {
           const code = (err as { statusCode?: number })?.statusCode
           if (code === 404 || code === 410) {

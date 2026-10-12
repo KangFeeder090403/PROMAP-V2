@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, Bell, BellOff, BellRing, RotateCw } from 'lucide-react'
+import { AlertCircle, Bell, BellOff, BellRing, ChevronDown, HelpCircle, RotateCw, Smartphone } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 interface Notification {
@@ -32,6 +32,21 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [onlyUnread, setOnlyUnread] = useState(false)
   const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications()
+  const [platform, setPlatform] = useState<'ios' | 'android' | null>(null)
+  const [standalone, setStandalone] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+
+  // Deteksi platform di client saja (hindari hydration mismatch)
+  useEffect(() => {
+    const ua = navigator.userAgent
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+    setPlatform(ios ? 'ios' : /Android/.test(ua) ? 'android' : null)
+    setStandalone(
+      window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true,
+    )
+  }, [])
+  const isIOSNonStandalone = platform === 'ios' && !standalone
 
   async function fetchNotifs(unread = onlyUnread) {
     try {
@@ -95,12 +110,12 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
       <button
         type="button"
         onClick={toggleOpen}
-        className="relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+        className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Notifikasi"
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -114,9 +129,9 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
             className="fixed inset-0 z-10 cursor-default bg-transparent border-0"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-1 rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
+          <div className="absolute right-0 top-full z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-popover text-popover-foreground shadow-md">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+              <div className="flex items-center gap-1 rounded-md bg-muted p-0.5">
                 {([false, true] as const).map((u) => (
                   <button
                     key={String(u)}
@@ -128,8 +143,8 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
                     aria-pressed={onlyUnread === u}
                     className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                       onlyUnread === u
-                        ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     {u ? 'Belum dibaca' : 'Semua'}
@@ -140,7 +155,7 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
                 <button
                   type="button"
                   onClick={onReadAll}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium dark:text-blue-400 dark:hover:text-blue-300"
+                  className="text-xs text-foreground font-medium hover:underline underline-offset-2"
                 >
                   Tandai semua dibaca
                 </button>
@@ -149,7 +164,7 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
 
             <div className="max-h-80 overflow-y-auto">
               {items.length === 0 ? (
-                <p className="text-sm text-slate-500 p-4">
+                <p className="text-sm text-muted-foreground p-4">
                   {onlyUnread ? 'Semua notifikasi sudah dibaca' : 'Belum ada notifikasi'}
                 </p>
               ) : (
@@ -158,47 +173,105 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
                     key={n.id}
                     type="button"
                     onClick={() => onClickNotif(n)}
-                    className={`block w-full text-left px-3 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800 ${
-                      !n.isRead ? 'bg-blue-50/50 dark:bg-blue-950/30' : ''
+                    className={`block w-full text-left px-3 py-2.5 border-b border-border last:border-0 transition-colors ${
+                      !n.isRead ? 'bg-muted hover:bg-accent' : 'hover:bg-muted'
                     }`}
                   >
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{n.title}</p>
-                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.message}</p>
-                    <p className="text-[11px] text-slate-400 mt-1">{relativeTime(n.createdAt)}</p>
+                    <p className="flex items-start gap-1.5 text-sm font-medium text-foreground">
+                      {!n.isRead && (
+                        <>
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />
+                          <span className="sr-only">Belum dibaca: </span>
+                        </>
+                      )}
+                      <span className="min-w-0 line-clamp-2">{n.title}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{relativeTime(n.createdAt)}</p>
                   </button>
                 ))
               )}
             </div>
 
             {/* Footer: toggle notifikasi HP */}
-            {!isGuest && pushStatus !== 'unsupported' && (
-              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2">
-                {pushStatus === 'denied' ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    <BellOff className="h-3.5 w-3.5 shrink-0" />
-                    Notifikasi HP diblokir — aktifkan di pengaturan browser
+            {!isGuest && (pushStatus !== 'unsupported' || isIOSNonStandalone) && (
+              <div className="border-t border-border px-3 py-2">
+                {pushStatus === 'unsupported' ? (
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    Di iPhone/iPad (iOS 16.4+), pasang ProMaP ke Layar Utama dulu: Share &gt; Add to Home Screen. Buka dari ikon itu, lalu aktifkan di sini.
                   </p>
+                ) : pushStatus === 'denied' ? (
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <BellOff className="h-3.5 w-3.5 shrink-0" />
+                      Notifikasi HP diblokir — aktifkan di pengaturan browser
+                    </p>
+                    {/* ponytail: petunjuk denied minimal; tambah panduan penuh bila ada keluhan. */}
+                    <p className="pl-5 text-xs text-muted-foreground">
+                      Aplikasi terpasang di Android: Pengaturan &gt; Aplikasi &gt; ProMaP &gt; Notifikasi.
+                    </p>
+                  </div>
                 ) : pushStatus === 'granted' ? (
-                  <button
-                    type="button"
-                    onClick={unsubscribe}
-                    className="flex w-full items-center gap-1.5 rounded text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  >
-                    <BellOff className="h-3.5 w-3.5 shrink-0" />
-                    Nonaktifkan notifikasi HP
-                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={unsubscribe}
+                      className="flex w-full items-center gap-1.5 rounded text-xs text-muted-foreground hover:text-destructive-text transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <BellOff className="h-3.5 w-3.5 shrink-0" />
+                      Nonaktifkan notifikasi HP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHelpOpen((v) => !v)}
+                      aria-expanded={helpOpen}
+                      aria-controls="push-help"
+                      className="mt-1.5 flex w-full items-center gap-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span className="flex-1 text-left">Notifikasi tidak muncul sebagai pop-up?</span>
+                      <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${helpOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {helpOpen && (
+                      <div id="push-help" className="mt-2 max-h-60 overflow-y-auto space-y-2 text-xs text-fg-secondary">
+                        <p>Pop-up, suara, dan getar diatur oleh sistem HP, bukan oleh aplikasi.</p>
+                        {platform !== 'ios' && (
+                          <div>
+                            <p className="font-medium text-foreground">Android</p>
+                            <ol className="list-decimal pl-4 space-y-0.5">
+                              <li>Pengaturan &gt; Aplikasi &gt; ProMaP &gt; Notifikasi</li>
+                              <li>Aktifkan &quot;Tampilkan di layar&quot; (Pop on screen), Suara, dan Getar</li>
+                              <li>Samsung: pilih gaya notifikasi pop-up &quot;Detail&quot;</li>
+                            </ol>
+                          </div>
+                        )}
+                        {platform !== 'android' && (
+                          <div>
+                            <p className="font-medium text-foreground">iPhone/iPad</p>
+                            <ol className="list-decimal pl-4 space-y-0.5">
+                              <li>Pasang di Layar Utama (Share &gt; Add to Home Screen), aktifkan dari lonceng</li>
+                              <li>Settings &gt; Notifications &gt; ProMaP &gt; Allow Notifications</li>
+                              <li>Banner Style &quot;Persistent&quot;, Sounds aktif</li>
+                              <li>Pastikan Focus/Jangan Ganggu tidak memblokir</li>
+                            </ol>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ) : pushStatus === 'loading' ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400" aria-live="polite">Memuat…</p>
+                  <p className="text-xs text-muted-foreground" aria-live="polite">Memuat…</p>
                 ) : pushStatus === 'error' ? (
                   <div className="flex items-center justify-between gap-2" role="alert">
-                    <p className="flex items-center gap-1.5 text-xs text-red-700 dark:text-red-400">
+                    <p className="flex items-center gap-1.5 text-xs text-destructive-text">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       Gagal mengaktifkan notifikasi HP
                     </p>
                     <button
                       type="button"
                       onClick={subscribe}
-                      className="flex shrink-0 items-center gap-1 rounded text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="flex shrink-0 items-center gap-1 rounded text-xs text-foreground font-medium hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <RotateCw className="h-3.5 w-3.5" />
                       Coba lagi
@@ -208,7 +281,7 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
                   <button
                     type="button"
                     onClick={subscribe}
-                    className="flex w-full items-center gap-1.5 rounded text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="flex w-full items-center gap-1.5 rounded text-xs text-foreground font-medium hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <BellRing className="h-3.5 w-3.5 shrink-0" />
                     Aktifkan notifikasi HP

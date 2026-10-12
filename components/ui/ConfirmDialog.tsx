@@ -32,24 +32,24 @@ export function ConfirmDialog({
 }) {
   const confirmButtonClass =
     variant === 'primary'
-      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+      ? 'bg-primary hover:bg-primary-hover text-primary-foreground'
       : variant === 'warning'
       ? 'bg-amber-600 hover:bg-amber-700 text-white'
-      : 'bg-red-600 hover:bg-red-700 text-white'
+      : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm dark:bg-slate-900 dark:border-slate-800">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-slate-900 dark:text-slate-100">{title}</DialogTitle>
-          <DialogDescription className="text-slate-500 dark:text-slate-400">{message}</DialogDescription>
+          <DialogTitle className="text-foreground">{title}</DialogTitle>
+          <DialogDescription>{message}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             disabled={loading}
-            className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {cancelText}
           </button>
@@ -57,7 +57,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md ${confirmButtonClass} text-sm font-medium transition-colors disabled:opacity-50`}
+            className={`inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md ${confirmButtonClass} text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50`}
           >
             {loading ? 'Memproses...' : confirmText}
           </button>

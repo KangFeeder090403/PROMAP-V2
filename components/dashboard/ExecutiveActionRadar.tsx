@@ -101,19 +101,16 @@ export function ExecutiveActionRadar({
     gsap.timeline()
       .to(btn, {
         scale: 0.82,
-        boxShadow: '0 0 20px rgba(59, 130, 246, 0.9)',
         duration: 0.08,
         ease: 'power3.in',
       })
       .to(btn, {
         scale: 1.16,
-        boxShadow: '0 0 10px rgba(59, 130, 246, 0.4)',
         duration: 0.16,
         ease: 'back.out(4)',
       })
       .to(btn, {
         scale: 1,
-        boxShadow: 'none',
         duration: 0.12,
         ease: 'power2.out',
       })
@@ -163,38 +160,38 @@ export function ExecutiveActionRadar({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
+    <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
       <div>
         {/* Header & Integrated Segmented Tabs */}
-        <div className="pb-4 border-b border-slate-100 dark:border-slate-800 mb-4 space-y-3">
+        <div className="pb-4 border-b border-border mb-4 space-y-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="p-2 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <span className="p-2 rounded-md bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Zap className="w-4 h-4" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 truncate">
+              <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
                 Pusat Persetujuan &amp; Tenggat Waktu
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 Persetujuan yang butuh tindakan dan target jatuh tempo 14 hari
               </p>
             </div>
           </div>
 
           {/* Switcher Tab Antara Keputusan & Radar (Full-Width Segmented Control) */}
-          <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-full">
+          <div className="grid grid-cols-2 gap-1 bg-muted p-1 rounded-lg w-full">
             <button
               type="button"
               onClick={(e) => handleTabSwitch('DECISIONS', e)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                 mainTab === 'DECISIONS'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'bg-card text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <span>Perlu Persetujuan</span>
               {actionRequired.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-bold font-mono">
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px] font-bold font-mono">
                   {actionRequired.length}
                 </span>
               )}
@@ -203,15 +200,15 @@ export function ExecutiveActionRadar({
             <button
               type="button"
               onClick={(e) => handleTabSwitch('RADAR', e)}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-1.5 px-3 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
                 mainTab === 'RADAR'
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'bg-card text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <span>Tenggat 14 Hari</span>
               {criticalCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 text-[10px] font-bold font-mono">
+                <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 text-[10px] font-bold font-mono">
                   {criticalCount}
                 </span>
               )}
@@ -223,12 +220,12 @@ export function ExecutiveActionRadar({
         {mainTab === 'DECISIONS' && (
           <div className="space-y-3">
             {actionRequired.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <div className="py-12 text-center text-muted-foreground text-xs">
                 <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500 opacity-60" aria-hidden="true" />
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                <p className="font-semibold text-fg-secondary">
                   Seluruh persetujuan tuntas
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   Tidak ada proposal baru atau bukti kerja action plan yang menunggu tindakan Anda.
                 </p>
               </div>
@@ -239,13 +236,13 @@ export function ExecutiveActionRadar({
                   return (
                     <div
                       key={item.id}
-                      className="p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between gap-2.5 min-w-0 shadow-2xs"
+                      className="p-2.5 rounded-lg border border-border bg-card hover:bg-accent transition-colors flex items-center justify-between gap-2.5 min-w-0"
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
-                          className={`p-1.5 rounded-lg shrink-0 ${
+                          className={`p-1.5 rounded-md shrink-0 ${
                             isProposal
-                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                              ? 'bg-muted text-fg-secondary'
                               : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
                           }`}
                         >
@@ -258,16 +255,16 @@ export function ExecutiveActionRadar({
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="shrink-0 whitespace-nowrap text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                            <span className="shrink-0 whitespace-nowrap text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-muted border border-border text-fg-secondary">
                               {item.refCode}
                             </span>
-                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate" title={item.title}>
+                            <span className="text-xs font-semibold text-foreground truncate" title={item.title}>
                               {item.title}
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                             {isProposal ? 'Diusulkan: ' : 'PIC: '}
-                            <span className="font-medium text-slate-700 dark:text-slate-300">{item.picName}</span>
+                            <span className="font-medium text-fg-secondary">{item.picName}</span>
                             {item.deadline && (
                               <span>
                                 {' '}&bull; Target:{' '}
@@ -286,14 +283,14 @@ export function ExecutiveActionRadar({
                           <button
                             type="button"
                             onClick={(e) => handleActionClick(e, item)}
-                            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors shadow-xs active:scale-95"
+                            className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-medium transition-colors active:scale-95"
                           >
                             Tinjau
                           </button>
                         ) : (
                           <Link
                             href={isProposal ? `/proposals` : `/action-plans/${item.id}`}
-                            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors shadow-xs active:scale-95"
+                            className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-medium transition-colors active:scale-95"
                           >
                             Tinjau
                           </Link>
@@ -312,14 +309,14 @@ export function ExecutiveActionRadar({
           <div className="space-y-3">
             {/* Filter Urgensi */}
             {totalMilestones > 0 && (
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto mb-3">
+              <div className="flex items-center gap-1 bg-muted p-1 rounded-lg overflow-x-auto mb-3">
                 <button
                   type="button"
                   onClick={() => setUrgencyFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
                     urgencyFilter === 'ALL'
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-semibold shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Semua ({totalMilestones})
@@ -327,10 +324,10 @@ export function ExecutiveActionRadar({
                 <button
                   type="button"
                   onClick={() => setUrgencyFilter('CRITICAL')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
                     urgencyFilter === 'CRITICAL'
-                      ? 'bg-white dark:bg-slate-900 text-red-700 dark:text-red-400 font-semibold shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-red-700 dark:text-red-400 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-red-500" />
@@ -339,10 +336,10 @@ export function ExecutiveActionRadar({
                 <button
                   type="button"
                   onClick={() => setUrgencyFilter('UPCOMING')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
                     urgencyFilter === 'UPCOMING'
-                      ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 font-semibold shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-amber-700 dark:text-amber-400 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -351,25 +348,25 @@ export function ExecutiveActionRadar({
                 <button
                   type="button"
                   onClick={() => setUrgencyFilter('HORIZON')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
                     urgencyFilter === 'HORIZON'
-                      ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 font-semibold shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="w-2 h-2 rounded-full bg-chart-1" />
                   <span>Mendatang (8-14 Hari) ({horizonCount})</span>
                 </button>
               </div>
             )}
 
             {filteredMilestones.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <div className="py-12 text-center text-muted-foreground text-xs">
                 <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500 opacity-60" aria-hidden="true" />
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                <p className="font-semibold text-fg-secondary">
                   Semua target waktu aman
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   Tidak ada milestone yang terancam jatuh tempo dalam rentang ini.
                 </p>
               </div>
@@ -382,22 +379,22 @@ export function ExecutiveActionRadar({
                   return (
                     <div
                       key={`${m.projectId}-${idx}`}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-colors min-w-0 ${
+                      className={`p-3 rounded-lg border flex items-center justify-between gap-3 transition-colors min-w-0 ${
                         isCritical
                           ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200/80 dark:border-red-900/50'
                           : isUpcoming
                             ? 'bg-amber-50/40 dark:bg-amber-950/15 border-amber-200/70 dark:border-amber-900/40'
-                            : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800'
+                            : 'bg-muted/60 border-border'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`w-12 h-10 rounded-lg flex flex-col items-center justify-center font-mono shrink-0 leading-none ${
+                          className={`w-12 h-10 rounded-md flex flex-col items-center justify-center font-mono shrink-0 leading-none ${
                             isCritical
                               ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 font-bold'
                               : isUpcoming
                                 ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold'
-                                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700'
+                                : 'bg-card text-fg-secondary font-medium border border-border'
                           }`}
                         >
                           <span className="text-xs">{m.daysLeft}</span>
@@ -405,10 +402,10 @@ export function ExecutiveActionRadar({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate" title={m.title}>
+                          <p className="text-xs font-semibold text-foreground truncate" title={m.title}>
                             {m.title}
                           </p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          <p className="text-[11px] text-muted-foreground truncate">
                             {m.projectName} &bull; {m.divisionName}
                             {m.picName ? ` &bull; PIC: ${m.picName}` : ''}
                           </p>
@@ -417,7 +414,7 @@ export function ExecutiveActionRadar({
 
                       <Link
                         href={`/projects/${m.projectId}`}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-900 transition-colors shrink-0"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
                         title="Buka Proyek"
                       >
                         <ArrowUpRight className="h-4 w-4" />
@@ -431,13 +428,13 @@ export function ExecutiveActionRadar({
         )}
       </div>
 
-      <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-5 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
         <span>
           Horizon pemantauan: <strong>14 Hari ke Depan</strong>
         </span>
         <Link
           href="/calendar"
-          className="text-blue-600 dark:text-blue-400 hover:underline text-[11px] font-medium"
+          className="text-foreground font-medium hover:underline underline-offset-2 text-[11px]"
         >
           Lihat di Kalender &rarr;
         </Link>

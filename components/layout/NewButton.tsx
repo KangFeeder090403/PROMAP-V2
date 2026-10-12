@@ -64,7 +64,7 @@ export function NewButton({ role }: Readonly<{ role: Role }>) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 text-xs font-semibold text-white transition-colors shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary hover:bg-primary-hover px-3 text-xs font-semibold text-primary-foreground transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Plus className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">New</span>
@@ -80,7 +80,7 @@ export function NewButton({ role }: Readonly<{ role: Role }>) {
           />
           <div
             role="menu"
-            className="absolute right-0 top-full z-20 mt-2 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-md"
+            className="absolute right-0 top-full z-20 mt-2 w-52 rounded-lg border border-border bg-popover p-1 shadow-md text-popover-foreground"
           >
             {items.map((item) => (
               <button
@@ -91,7 +91,7 @@ export function NewButton({ role }: Readonly<{ role: Role }>) {
                   setOpen(false)
                   router.push(item.href)
                 }}
-                className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                className="w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-muted transition-colors"
               >
                 {item.label}
               </button>

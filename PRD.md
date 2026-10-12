@@ -519,25 +519,44 @@ Bagian ini = satu-satunya sumber design token. **Wajib dibaca sebelum generate U
 > **Deviasi terpasang (2026-10-07, disetujui Product Owner):** rebrand navy-gold (commit 400062c).
 > Skala Tailwind `blue` = navy, skala `gold` = aksen 10%. In Progress pindah ke sky agar beda dari Pending Approval (indigo).
 > Theme light default, dark via toggle (`promap-theme-v2`).
+>
+> **Deviasi resmi redesign 2026-10-08 (disetujui Product Owner):** redesign total. Palette navy/gold/hitam/putih,
+> font Geist + Geist Mono, light/dark setara. Token semantik (nama standar shadcn) di `app/globals.css`
+> (HSL triplet, `:root` & `.dark`), dipetakan di `tailwind.config.js`. Kontras dijaga `node scripts/check-contrast.mjs`.
+> Skala legacy `blue`/`gold`/`slate` + `--ring-focus` tetap ada untuk kode lama; dimigrasi per batch.
 
 ### D1. Color Tokens
 
+Pakai kelas semantik (`bg-card`, `text-foreground`, `border-border`, ...). Kelas `slate-*`/`blue-*` mentah
+DILARANG di kode BARU (berlaku untuk diff baru; legacy dimigrasi per batch).
+
+| Token (kelas) | Light | Dark | Pakai untuk |
+|---|---|---|---|
+| `background` | #FAFAFA | #0A0A0A | latar halaman |
+| `foreground` | #0A0A0A | #FAFAFA | teks utama |
+| `card` / `card-foreground` | #FFFFFF | #141414 | card, drawer, modal |
+| `popover` / `popover-foreground` | #FFFFFF | #1C1C1C | dropdown, popover |
+| `muted` / `accent` | #F5F5F5 | #262626 | latar sekunder, hover |
+| `muted-foreground` | #6B6B6B | #949494 | meta, placeholder |
+| `fg-secondary` | #525252 | #A3A3A3 | teks sekunder |
+| `border` | #E5E5E5 | #2A2A2A | garis dekoratif / divider |
+| `input` | #8A8A8A | #737373 | border kontrol (≥3:1) |
+| `primary` | #1E3A6E | #2B4C8C | SATU warna CTA, teks `primary-foreground` #FFFFFF |
+| `primary-hover` | #152A52 | #1E3A6E | hover CTA |
+| `brand` | #9A7514 | #D4AF37 | gold indikator (marker nav aktif, underline tab aktif) |
+| `brand-text` | #7A5C0F | #D4AF37 | teks gold (jarang, ≥4.5:1) |
+| `ring` | #1E3A6E | #D4AF37 | focus ring |
+| `destructive` | #DC2626 | #DC2626 | tombol hapus, teks `destructive-foreground` #FFFFFF |
+| `destructive-text` | #B91C1C | #F87171 | teks error |
+| `sidebar` / `sidebar-foreground` / `sidebar-accent` | #0B1730 / #FFFFFF / #D4AF37 | sama | sidebar navy |
+| `chart-1..5` | #1E3A6E #9A7514 #0284C7 #059669 #7C3AED | #7F9AD0 #D4AF37 #38BDF8 #34D399 #A78BFA | grafik |
+
 ```
-Background     #F8FAFC   slate-50    halaman utama
-Surface        #FFFFFF   white       card, modal, drawer
-Sidebar        #0B1730  blue-900 (navy gelap)
-Primary/CTA    #1E3A6E  blue-500  ← navy, teks putih, SATU warna untuk semua tombol aksi
-Gold accent    #D4AF37  gold-400  ← HANYA: marker nav aktif, underline tab aktif
-                                    (gold-600 terang / gold-400 gelap), logo/avatar,
-                                    focus ring di permukaan gelap (sidebar)
-                                    DILARANG untuk teks di background terang (WCAG AA)
-Focus ring     --ring-focus (CSS var, app/globals.css) di permukaan terang
+Gold           HANYA indikator (marker nav aktif, underline tab aktif, logo, focus ring dark).
+               DILARANG sebagai fill tombol atau teks body.
 Rasio          60 netral · 30 navy · 10 gold
-Catatan        skala Tailwind `blue` di-override ke navy + skala `gold` baru (tailwind.config.js).
-               Deviasi resmi 2026-10-07, disetujui Product Owner.
-Text primary   #0F172A   slate-900
-Text secondary #64748B   slate-500
-Border         #E2E8F0   slate-200
+Kontras        teks ≥4.5:1, border kontrol/ring/chart ≥3:1 — wajib lolos scripts/check-contrast.mjs
+Legacy         skala `blue` (navy), `gold`, `--ring-focus` tetap ada sampai migrasi selesai
 ```
 
 ### D2. Status → Color Mapping
@@ -566,17 +585,22 @@ Kelas lengkap termasuk dark: lihat lib/status-labels.ts
 ### D4. Typography & Spacing
 
 ```
-Font          Inter Variable (wajib, tidak boleh diganti)
-Page title    24px semibold slate-900 tracking-tight
-Section H2    18px semibold slate-800
-Card title    15px medium slate-800
-Body          14px normal slate-700
-Label/meta    12px medium slate-500 uppercase tracking-wide
+Font          Geist (font-sans) + Geist Mono (font-mono, angka/kode/ID) — wajib, via next/font
+Type scale    kelas bawaan Tailwind SAJA (JANGAN daftarkan fontSize kustom — twMerge salah merge)
+  Page title    text-2xl font-semibold tracking-tight text-foreground   (text-3xl hanya hero)
+  Section H2    text-lg font-semibold text-foreground
+  Card title    text-base font-medium text-foreground
+  Body          text-sm text-foreground / text-fg-secondary
+  Label/meta    text-xs font-medium uppercase tracking-wide text-muted-foreground
+  Input         text-base md:text-sm (cegah zoom iOS)
 
 Page padding  p-6      Card padding  p-5
 Section gap   gap-6    Card gap      gap-4
-Input/button  h-9      Radius        rounded-lg (card) / rounded-md (input)
-Shadow        shadow-sm (card) / shadow-md (dropdown, modal)
+Density       kontrol (input/button/select) h-10 · Button size sm h-9 · row Table/Board h-9
+Radius        card/dialog rounded-lg · input/button rounded-md · badge rounded-sm
+Card          bg-card border-border rounded-lg shadow-sm dark:shadow-none p-5
+Shadow        shadow-sm (card) / shadow-md (dropdown, modal) — dark: tanpa shadow (dark:shadow-none)
+Sidebar aktif border-l-2 border-brand
 ```
 
 ---

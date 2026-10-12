@@ -18,21 +18,23 @@ export function SectionTabs({ role }: { role: Role }) {
   return (
     <nav
       aria-label="Sub-menu"
-      className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800"
+      className="mb-6 flex gap-1 overflow-x-auto border-b border-border"
     >
       {tabs.map((t) => {
         const active = t.href === pathname
+        const Icon = t.icon
         return (
           <Link
             key={t.href}
             href={t.href}
             aria-current={active ? 'page' : undefined}
-            className={`-mb-px whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+            className={`-mb-px inline-flex items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-2.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               active
-                ? 'border-gold-600 font-semibold text-slate-900 dark:border-gold-400 dark:text-white'
-                : 'border-transparent font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                ? 'border-brand font-semibold text-foreground'
+                : 'border-transparent font-medium text-muted-foreground hover:text-foreground'
             }`}
           >
+            <Icon className="h-4 w-4 shrink-0" />
             {t.label}
           </Link>
         )
