@@ -48,17 +48,11 @@ export function Header({
         <Breadcrumb />
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 md:gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
         {user.companyName && (
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-muted border border-border text-xs text-fg-secondary whitespace-nowrap">
-            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md bg-muted text-xs text-fg-secondary whitespace-nowrap">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="font-medium text-foreground">{user.companyName}</span>
-            {user.divisionName && (
-              <>
-                <span className="text-muted-foreground/50 font-normal">/</span>
-                <span className="text-fg-secondary font-medium">{user.divisionName}</span>
-              </>
-            )}
           </div>
         )}
         <NewButton role={user.role} />

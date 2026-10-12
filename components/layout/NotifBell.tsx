@@ -113,9 +113,9 @@ export function NotifBell({ isGuest = false }: { isGuest?: boolean }) {
         className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Notifikasi"
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-semibold text-destructive-foreground">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

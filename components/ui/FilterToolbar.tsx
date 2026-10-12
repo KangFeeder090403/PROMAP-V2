@@ -24,6 +24,7 @@ import {
   type ProjectOption,
   type FilterDraftValues,
 } from '@/components/ui/FilterPopover'
+import { AP_STATUS_DOT } from '@/lib/status-labels'
 
 export type { StatusOption, PriorityOption, DivisionOption, PicOption, ProjectOption }
 
@@ -227,6 +228,23 @@ export function FilterToolbar({
   const statusLabelMap = Object.fromEntries(
     (Array.isArray(filterConfig.statuses) ? filterConfig.statuses : []).map((s) => [s.value, s.label])
   )
+  // Dot status: pakai dot dari config bila ada, lalu peta §D2 (AP_STATUS_DOT),
+  // fallback netral token — tidak ada warna palette mentah.
+  const statusDotMap = Object.fromEntries(
+    (Array.isArray(filterConfig.statuses) ? filterConfig.statuses : [])
+      .filter((s) => s.dot)
+      .map((s) => [s.value, s.dot as string])
+  )
+  const statusDot = (value: string): string => {
+    if (statusDotMap[value]) return statusDotMap[value]
+    if (AP_STATUS_DOT[value]) return AP_STATUS_DOT[value]
+    const k = value.toLowerCase()
+    if (k.includes('progress')) return 'bg-sky-500'
+    if (k.includes('overdue')) return 'bg-orange-500'
+    if (k.includes('aktif') || k.includes('active')) return 'bg-emerald-500'
+    if (k.includes('submit') || k.includes('pending')) return 'bg-amber-500'
+    return 'bg-muted-foreground'
+  }
   const [divisionNames, setDivisionNames] = useState<Record<string, string>>({})
   const [userNames, setUserNames] = useState<Record<string, string>>({})
   const [projectNames, setProjectNames] = useState<Record<string, string>>({})
@@ -283,14 +301,14 @@ export function FilterToolbar({
         {/* Kiri: Search (36px) + Filter Button (Active/Idle) + Sort Dropdown */}
         <div className="flex flex-wrap items-center gap-2">
           {/* 1. Search Box with clear button */}
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama, PIC, atau kata kunci..."
-              className="h-10 w-60 sm:w-72 rounded-md border border-input bg-card pl-9 pr-8 text-base md:text-sm text-foreground placeholder:text-muted-foreground ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
+              className="h-10 w-full sm:w-72 min-w-0 rounded-md border border-input bg-card pl-9 pr-8 text-base md:text-sm text-foreground placeholder:text-muted-foreground ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors"
             />
             {search && (
               <button
@@ -319,7 +337,7 @@ export function FilterToolbar({
               <span>Filter</span>
 
               {isFilterActive && (
-                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-sm bg-primary-foreground text-primary text-xs font-bold">
+                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-sm bg-primary-foreground text-primary text-xs font-semibold">
                   {activeFilterCount}
                 </span>
               )}
@@ -356,7 +374,7 @@ export function FilterToolbar({
         {/* Kanan: Modular View Switcher (Table / Board / Calendar) + Tombol + New */}
         <div className="flex items-center gap-2.5">
           {onViewChange && (
-            <div className="flex items-center bg-muted p-0.5 rounded-md border border-border">
+            <div className="flex items-center bg-muted p-0.5 rounded-md">
               <button
                 type="button"
                 onClick={() => onViewChange('table')}
@@ -435,17 +453,7 @@ export function FilterToolbar({
             <ActiveChip
               key={s}
               label={`Status: ${statusLabelMap[s] ?? s}`}
-              dot={
-                s === 'IN_PROGRESS' || s.toLowerCase().includes('progress')
-                  ? 'bg-blue-500'
-                  : s === 'OVERDUE' || s.toLowerCase().includes('overdue')
-                  ? 'bg-red-500'
-                  : s === 'APPROVED' || s === 'ACTIVE' || s.toLowerCase().includes('aktif')
-                  ? 'bg-emerald-500'
-                  : s === 'PENDING_APPROVAL' || s === 'SUBMITTED'
-                  ? 'bg-amber-500'
-                  : 'bg-blue-500'
-              }
+              dot={statusDot(s)}
               onRemove={() => setStatuses(statuses.filter((x) => x !== s))}
             />
           ))}
@@ -455,7 +463,7 @@ export function FilterToolbar({
             <ActiveChip
               key={id}
               label={`Divisi: ${divisionNames[id] ?? '...'}`}
-              dot="bg-teal-500"
+              dot="bg-muted-foreground"
               onRemove={() => setDivisionIds(divisionIds.filter((x) => x !== id))}
             />
           ))}
@@ -470,7 +478,7 @@ export function FilterToolbar({
                   ? 'bg-red-500'
                   : p === 'MEDIUM'
                   ? 'bg-amber-500'
-                  : 'bg-blue-500'
+                  : 'bg-slate-400'
               }
               onRemove={() => setPriorities(priorities.filter((x) => x !== p))}
             />
@@ -481,7 +489,7 @@ export function FilterToolbar({
             <ActiveChip
               key={id}
               label={`PIC: ${userNames[id] ?? '...'}`}
-              dot="bg-indigo-500"
+              dot="bg-muted-foreground"
               onRemove={() => setPicIds(picIds.filter((x) => x !== id))}
             />
           ))}
@@ -490,7 +498,7 @@ export function FilterToolbar({
           {projectId && (
             <ActiveChip
               label={`Proyek: ${projectNames[projectId] ?? '...'}`}
-              dot="bg-purple-500"
+              dot="bg-muted-foreground"
               onRemove={() => setProjectId && setProjectId('')}
             />
           )}
@@ -499,7 +507,7 @@ export function FilterToolbar({
           {(dateFrom || dateTo) && (
             <ActiveChip
               label={`Deadline: ${dateFrom || '...'} s/d ${dateTo || '...'}`}
-              dot="bg-amber-500"
+              dot="bg-muted-foreground"
               onRemove={() => {
                 setDateFrom('')
                 setDateTo('')
