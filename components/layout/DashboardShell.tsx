@@ -8,6 +8,7 @@ import { SectionTabs } from '@/components/layout/SectionTabs'
 import { PageTransition } from '@/components/animation/PageTransition'
 import { GlobalAnimationProvider } from '@/components/animation/GlobalAnimationProvider'
 import { TrialActivationModal } from '@/components/guest/TrialActivationModal'
+import { InstallPrompt } from '@/components/pwa/InstallPrompt'
 
 export interface SessionUser {
   id: string
@@ -105,6 +106,7 @@ export function DashboardShell({ user, children }: Readonly<{ user: SessionUser;
       </div>
 
       {user.role === 'GUEST' && <TrialActivationModal />}
+      {!user.isGuest && <InstallPrompt />}
     </div>
   )
 }

@@ -40,7 +40,11 @@ export async function sendPushToUsers(
   await Promise.allSettled(
     subs.map((sub) =>
       webpush
-        .sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, data)
+        .sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          data,
+          { urgency: 'high', TTL: 60 * 60 * 24 } // high: tembus Doze; TTL 24 jam — notif in-app tetap di DB
+        )
         .catch(async (err: unknown) => {
           const code = (err as { statusCode?: number })?.statusCode
           if (code === 404 || code === 410) {

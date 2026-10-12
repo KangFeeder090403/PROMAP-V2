@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   title: 'ProMaP — Project Management Platform',
   description: 'SaaS multi-tenant untuk manajemen proyek, tugas, dan action plan.',
   manifest: '/manifest.json',
+  appleWebApp: { capable: true, title: 'ProMaP', statusBarStyle: 'default' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
 }
 
 // Jalan sebelum paint pertama supaya tidak ada kedip putih saat tema gelap aktif.
