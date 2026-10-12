@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, canManageUserLabel } from '@/lib/rbac'
 import { notify } from '@/lib/notifications'
+import { createUserLabelSchema } from '@/lib/validations/userLabel'
 
 export async function GET() {
   try {
@@ -37,9 +38,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    if (!body.name) {
-      return NextResponse.json({ error: 'name wajib diisi' }, { status: 400 })
+    const parsed = createUserLabelSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Input tidak valid' }, { status: 400 })
     }
+    const { name } = parsed.data
 
     let targetCompanyId = user.companyId
     if (user.role === 'SUPER_ADMIN') {
@@ -56,12 +59,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Company ID tidak ditemukan' }, { status: 400 })
     }
 
+    // ponytail: cek-lalu-create masih bisa race; unique index parsial butuh ubah schema, tanya PO
+    const dup = await prisma.userLabel.findFirst({
+      where: {
+        companyId: targetCompanyId,
+        name: { equals: name, mode: 'insensitive' },
+        status: { not: 'REJECTED' },
+        deletedAt: null,
+      },
+      select: { id: true },
+    })
+    if (dup) {
+      return NextResponse.json({ error: `Label "${name}" sudah ada` }, { status: 409 })
+    }
+
     // Status TIDAK PERNAH dipercaya dari body — server yang memutuskan.
     const isDirectApprover = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL'
 
     const result = await prisma.userLabel.create({
       data: {
-        name: body.name,
+        name,
         companyId: targetCompanyId,
         status: isDirectApprover ? 'ACTIVE' : 'PENDING',
         approvedById: isDirectApprover ? user.id : null,

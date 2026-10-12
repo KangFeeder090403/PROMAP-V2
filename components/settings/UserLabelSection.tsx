@@ -478,6 +478,7 @@ export function UserLabelSection({ role, companyId }: { role: Role; companyId: s
         role={role}
         companies={companies}
         defaultCompanyId={companyId}
+        existingLabels={data ?? []}
         onSuccess={() => { setFormOpen(false); fetchData() }}
       />
 
