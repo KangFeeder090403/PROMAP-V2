@@ -35,6 +35,8 @@ export async function sendPushToUsers(
     title: payload.title,
     body: payload.body,
     url: payload.url ?? '/',
+    // Waktu event asli, walau push tertunda (TTL 24 jam)
+    timestamp: Date.now(),
   })
 
   await Promise.allSettled(

@@ -27,12 +27,15 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title ?? 'ProMaP'
+  // ponytail: heads-up (pop-up) & bunyi diatur channel notifikasi OS, bukan payload; JANGAN tambah silent:true (TypeError bila bareng vibrate).
   const options = {
     body: data.body ?? '',
     icon: '/icons/icon-192.png',
     data: { url: data.url ?? '/dashboard' },
     // Tag unik: notifikasi baru tidak menimpa yang belum dibaca
     tag: `promap-notif-${Date.now()}`,
+    timestamp: typeof data.timestamp === 'number' ? data.timestamp : Date.now(),
+    lang: 'id',
     vibrate: [200, 100, 200],
   }
 
