@@ -55,25 +55,25 @@ export function KanbanColumn({
         setIsDragOver(false)
         onDrop(columnKey)
       }}
-      className={`flex flex-col min-w-0 rounded-xl border transition-colors duration-150 p-2.5 sm:p-3 h-full ${
+      className={`flex flex-col min-w-0 rounded-lg border transition-colors duration-150 p-2.5 sm:p-3 h-full ${
         isDragOver
-          ? 'border-blue-400 dark:border-blue-500 bg-blue-50/60 dark:bg-blue-900/10'
-          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40'
+          ? 'border-primary bg-accent'
+          : 'border-border bg-muted'
       }`}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between px-1 pb-2.5 border-b border-slate-200/80 dark:border-slate-800/80 mb-2.5">
+      <div className="flex items-center justify-between px-1 pb-2.5 border-b border-border mb-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${COLUMN_DOT[columnKey]}`} />
-          <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide truncate">
+          <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide truncate">
             {title}
           </h3>
-          <span className="ml-1 min-w-[18px] h-4 px-1 rounded-full bg-slate-200 dark:bg-slate-700 text-[10px] font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center">
+          <span className="ml-1 min-w-[18px] h-4 px-1 rounded-full bg-card border border-border text-xs font-mono tabular-nums font-semibold text-muted-foreground flex items-center justify-center">
             {items.length}
           </span>
         </div>
         <button
-          className="h-6 w-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={(e) => e.stopPropagation()}
           title="Opsi kolom"
         >
@@ -106,8 +106,8 @@ export function KanbanColumn({
           />
         ))}
         {items.length === 0 && (
-          <div className="h-20 flex items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
-            <p className="text-xs text-slate-400 dark:text-slate-500">Kosong</p>
+          <div className="h-20 flex items-center justify-center border border-dashed border-border rounded-lg">
+            <p className="text-xs text-muted-foreground">Belum ada Action Plan</p>
           </div>
         )}
       </div>

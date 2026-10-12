@@ -2,39 +2,10 @@
 
 import { useRef } from 'react'
 import gsap from 'gsap'
-import { AlertTriangle, Calendar, GripVertical } from 'lucide-react'
+import { AlertTriangle, Calendar, GripVertical, Paperclip } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { AP_PRIORITY_STYLE, AP_PRIORITY_LABEL, AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
-
-// Palet warna untuk category badge (division/project) — cycling berdasarkan char pertama (bebas violet/pink)
-const CATEGORY_COLORS = [
-  'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
-  'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
-  'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
-  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-  'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
-  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300',
-]
-
-// Palet warna avatar PIC — cycling berdasarkan inisial (bebas violet/pink)
-const AVATAR_COLORS = [
-  'bg-blue-500',
-  'bg-indigo-500',
-  'bg-emerald-500',
-  'bg-teal-500',
-  'bg-amber-500',
-  'bg-sky-500',
-  'bg-slate-600',
-  'bg-blue-600',
-]
-
-function colorForString(s: string, palette: string[]): string {
-  let hash = 0
-  for (let i = 0; i < s.length; i++) hash = (s.codePointAt(i) ?? 0) + ((hash << 5) - hash)
-  return palette[Math.abs(hash) % palette.length]
-}
 
 function initials(name?: string | null): string {
   if (!name) return '?'
@@ -70,8 +41,6 @@ export function KanbanCard({
   const subStatusBadge = specialStatuses.includes(ap.status) ? ap.status : null
 
   const picInitials = initials(ap.pic?.name)
-  const avatarColor = colorForString(ap.pic?.name ?? ap.picId, AVATAR_COLORS)
-  const categoryColor = colorForString(categoryLabel, CATEGORY_COLORS)
 
   const checklistPct =
     ap.checklistTotal > 0 ? Math.round((ap.checklistDone / ap.checklistTotal) * 100) : null
@@ -111,44 +80,40 @@ export function KanbanCard({
         }
       }}
       title={!draggable ? 'Lihat detail (tidak bisa dipindah oleh Anda)' : undefined}
-      className={`group rounded-xl border shadow-sm p-3.5 transition-all duration-150 select-none ${
+      className={`group rounded-lg border shadow-sm p-3.5 transition-all duration-150 select-none ${
         isSelected
-          ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 dark:border-blue-500'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
+          ? 'ring-2 ring-ring/20 border-primary bg-accent'
+          : 'bg-card border-border hover:shadow-md hover:border-input hover:-translate-y-0.5 transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:hover:translate-y-0 motion-reduce:transition-none'
       } ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
     >
       {/* Row 1: Code + Category badge + drag handle */}
       <div className="flex items-start justify-between gap-1.5 mb-2">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400 shrink-0">
+          <span className="font-mono tabular-nums text-xs font-semibold text-fg-secondary shrink-0">
             {ap.code}
           </span>
           <span
-            className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide truncate ${categoryColor}`}
+            className={`inline-block px-2 py-0.5 rounded-sm text-xs font-semibold uppercase tracking-wide truncate bg-muted text-fg-secondary border border-border`}
             title={categoryLabel}
           >
             {categoryLabel}
           </span>
         </div>
         {draggable && (
-          <GripVertical className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+          <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
         )}
       </div>
 
       {/* Sub-status badge (PENDING_APPROVAL, REJECTED, OVERDUE, dst) */}
       {subStatusBadge && (
-        <div className="mb-2">
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${AP_STATUS_STYLE[subStatusBadge]}`}
-          >
-            {subStatusBadge === 'OVERDUE' && <AlertTriangle className="h-3 w-3" />}
-            {AP_STATUS_LABEL[subStatusBadge]}
-          </span>
+        <div className="mb-2 flex items-center gap-1">
+          {subStatusBadge === 'OVERDUE' && <AlertTriangle className="h-3 w-3 text-destructive-text" aria-hidden="true" />}
+          <StatusBadge status={subStatusBadge} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
         </div>
       )}
 
       {/* Title */}
-      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug mb-2.5">
+      <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug mb-2.5">
         {ap.title}
       </p>
 
@@ -156,13 +121,13 @@ export function KanbanCard({
       {ap.checklistTotal > 0 && (
         <div className="mb-2.5">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-mono tabular-nums text-muted-foreground">
               Checklist {ap.checklistDone}/{ap.checklistTotal} ({checklistPct}%)
             </span>
           </div>
-          <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${checklistPct === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+              className={`h-full rounded-full transition-all ${checklistPct === 100 ? 'bg-emerald-500' : 'bg-primary'}`}
               style={{ width: `${checklistPct}%` }}
             />
           </div>
@@ -171,19 +136,17 @@ export function KanbanCard({
 
       {/* Evidence attachment icon (jika ada evidenceLink) */}
       {ap.evidenceLink && (
-        <div className="mb-2 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-          </svg>
+        <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <Paperclip className="h-3 w-3" aria-hidden="true" />
           Evidence Att...
         </div>
       )}
 
       {/* Review note (untuk NEEDS_REVISION) */}
       {ap.reviewNote && ap.status === 'REJECTED' && (
-        <div className="mb-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg p-2 border border-slate-200 dark:border-slate-700">
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-0.5">Review Note:</p>
-          <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-2 italic">
+        <div className="mb-2.5 bg-muted rounded-md p-2 border border-border">
+          <p className="text-xs text-muted-foreground font-medium mb-0.5">Review Note:</p>
+          <p className="text-xs text-fg-secondary line-clamp-2 italic">
             &ldquo;{ap.reviewNote}&rdquo;
           </p>
         </div>
@@ -194,7 +157,7 @@ export function KanbanCard({
         <div className="flex items-center gap-2 min-w-0">
           {/* Priority */}
           <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${AP_PRIORITY_STYLE[ap.priority]}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${AP_PRIORITY_STYLE[ap.priority]}`}
           >
             {ap.priority === 'HIGH' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />}
             {ap.priority === 'MEDIUM' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />}
@@ -204,8 +167,8 @@ export function KanbanCard({
 
           {/* Deadline */}
           <span
-            className={`inline-flex items-center gap-1 text-[11px] ${
-              isOverdue ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-slate-400 dark:text-slate-500'
+            className={`inline-flex items-center gap-1 text-xs font-mono tabular-nums ${
+              isOverdue ? 'text-destructive-text font-semibold' : 'text-muted-foreground'
             }`}
           >
             <Calendar className="h-3 w-3 shrink-0" />
@@ -216,7 +179,7 @@ export function KanbanCard({
 
         {/* Avatar PIC */}
         <div
-          className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${avatarColor}`}
+          className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-fg-secondary text-xs font-bold bg-muted border border-border`}
           title={ap.pic?.name ?? 'Tidak ada PIC'}
         >
           {picInitials}
@@ -230,7 +193,7 @@ export function KanbanCard({
             e.stopPropagation()
             onClick(e)
           }}
-          className="mt-2.5 w-full h-7 rounded-md bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+          className="mt-2.5 w-full h-7 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-semibold transition-colors"
         >
           Review
         </button>

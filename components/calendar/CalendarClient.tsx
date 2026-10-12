@@ -30,7 +30,7 @@ import {
   type CalendarEvent,
   type CalendarViewMode,
 } from '@/lib/calendar-grid'
-import { AP_STATUS_LABEL } from '@/lib/status-labels'
+import { AP_STATUS_LABEL, AP_STATUS_DOT, AP_STATUS_BAR_COLOR } from '@/lib/status-labels'
 
 const CalendarEventModal = dynamic(
   () => import('@/components/calendar/CalendarEventModal').then((m) => m.CalendarEventModal),
@@ -56,28 +56,6 @@ const CalendarAgendaView = dynamic(
 /* ─── constants ─────────────────────────────────────────────── */
 const WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
 
-const STATUS_DOT_COLOR: Record<string, string> = {
-  NOT_STARTED: 'bg-slate-400',
-  IN_PROGRESS: 'bg-sky-500',
-  PENDING_APPROVAL: 'bg-indigo-500',
-  EVIDENCE_REQUIRED: 'bg-amber-500',
-  APPROVED: 'bg-emerald-500',
-  REJECTED: 'bg-red-500',
-  OVERDUE: 'bg-orange-500',
-  COMPLETE: 'bg-emerald-500',
-}
-
-const STATUS_BAR_COLOR: Record<string, string> = {
-  NOT_STARTED: '#94a3b8',
-  IN_PROGRESS: '#0EA5E9',
-  PENDING_APPROVAL: '#6366f1',
-  EVIDENCE_REQUIRED: '#f59e0b',
-  APPROVED: '#10b981',
-  REJECTED: '#ef4444',
-  OVERDUE: '#f97316',
-  COMPLETE: '#10b981',
-}
-
 export interface FilterOptions {
   statuses: { key: string; label: string }[]
   priorities: { key: string; label: string }[]
@@ -91,16 +69,16 @@ function diffDays(a: Date, b: Date) {
 }
 
 function deadlineLabel(daysLeft: number): { text: string; className: string } {
-  if (daysLeft < 0) return { text: `${Math.abs(daysLeft)} Hari Lalu`, className: 'text-red-500 font-semibold' }
-  if (daysLeft === 0) return { text: 'Besok, 23 Jam', className: 'text-red-500 font-semibold' }
-  if (daysLeft <= 3) return { text: `${daysLeft} Hari Lagi`, className: 'text-orange-500 font-semibold' }
+  if (daysLeft < 0) return { text: `${Math.abs(daysLeft)} Hari Lalu`, className: 'text-destructive-text font-semibold' }
+  if (daysLeft === 0) return { text: 'Besok, 23 Jam', className: 'text-destructive-text font-semibold' }
+  if (daysLeft <= 3) return { text: `${daysLeft} Hari Lagi`, className: 'text-orange-700 dark:text-orange-300 font-semibold' }
   return {
     text: new Date(Date.now() + daysLeft * 86_400_000).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     }),
-    className: 'text-slate-500',
+    className: 'text-muted-foreground',
   }
 }
 
@@ -305,14 +283,14 @@ export function CalendarClient({
 
   if (denied) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto my-12">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-8 text-center max-w-md mx-auto my-12">
+        <h2 className="text-base font-semibold text-foreground">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Anda tidak memiliki izin untuk melihat kalender jadwal ini.
         </p>
         <button
           onClick={() => router.push('/')}
-          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Kembali ke Beranda
         </button>
@@ -327,10 +305,10 @@ export function CalendarClient({
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Execution Calendar &amp; Schedule
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               Visualisasi jadwal komitmen kerja, deadline Action Plan, dan jadwal tim lintas divisi
             </p>
           </div>
@@ -338,35 +316,35 @@ export function CalendarClient({
             <button
               type="button"
               onClick={() => setShowSidebar((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors shadow-sm dark:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
               title={showSidebar ? 'Tutup Panel Samping' : 'Buka Panel Samping'}
             >
-              <PanelRight size={13} className={showSidebar ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'} />
+              <PanelRight size={13} aria-hidden="true" className={showSidebar ? 'text-foreground' : 'text-muted-foreground'} />
               <span>{showSidebar ? 'Tutup Panel' : 'Buka Panel'}</span>
             </button>
             <a
               href={exportHref}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors shadow-sm dark:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Download size={13} />
+              <Download size={13} aria-hidden="true" />
               Export PDF Schedule
             </a>
             <button
               type="button"
               onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-700 px-4 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary hover:bg-primary-hover px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Plus size={13} />
-              + New Action Plan
+              <Plus size={13} aria-hidden="true" />
+              Tambah Action Plan
             </button>
           </div>
         </div>
       </div>
 
       {/* View Mode & Quick Date Range */}
-      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-2 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2 bg-card rounded-lg border border-border p-2 shadow-sm dark:shadow-none">
         {/* View Mode Switcher (Bulan | Minggu | Hari) */}
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/60 p-0.5">
+        <div className="flex items-center gap-1 rounded-md border border-border bg-muted p-0.5">
           {(
             [
               { key: 'month', label: 'Bulan' },
@@ -378,10 +356,10 @@ export function CalendarClient({
               key={key}
               type="button"
               onClick={() => setViewMode(key)}
-              className={`rounded-md px-3 py-1 text-xs transition-all cursor-pointer ${
+              className={`rounded-md px-3 py-1 text-xs transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 viewMode === key
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-semibold shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-card text-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {label}
@@ -391,23 +369,23 @@ export function CalendarClient({
       </div>
 
       {/* Dynamic Filter Toolbar (§B8, §C1 #14) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl px-2.5 py-1.5 shadow-2xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-muted border border-border rounded-lg px-2.5 py-1.5">
         <div className="flex flex-wrap items-center gap-2">
           {/* Unified Filter Button */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setFilterOpen((v) => !v)}
-              className={`inline-flex items-center gap-2 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-2 h-8 px-3 rounded-md border text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 filterOpen || activeFilterCount > 0
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-card text-foreground hover:bg-accent'
               }`}
             >
               <SlidersHorizontal size={13} className="shrink-0" />
               <span>Filter</span>
               {activeFilterCount > 0 && (
-                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary-foreground text-primary px-1 text-xs font-mono tabular-nums font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -433,7 +411,7 @@ export function CalendarClient({
                   filterOptions?.statuses.map((s) => ({
                     value: s.key,
                     label: s.label,
-                    dot: STATUS_DOT_COLOR[s.key],
+                    dot: AP_STATUS_DOT[s.key],
                   })) ?? [],
                 pics:
                   filterOptions?.pics.map((p) => ({
@@ -457,8 +435,8 @@ export function CalendarClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Filter size={12} />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Filter size={12} aria-hidden="true" />
           Showing {totalPlans} Active Plans
         </div>
       </div>
@@ -466,14 +444,14 @@ export function CalendarClient({
       {/* Active Filter Chips */}
       {activeFilterCount > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
             FILTER AKTIF:
           </span>
 
           {selectedStatus && (
             <ActiveChip
               label={`Status: ${statusLabelMap[selectedStatus] ?? selectedStatus}`}
-              dot={STATUS_DOT_COLOR[selectedStatus]}
+              dot={AP_STATUS_DOT[selectedStatus]}
               onRemove={() => setSelectedStatus('')}
             />
           )}
@@ -481,7 +459,7 @@ export function CalendarClient({
           {selectedPic && (
             <ActiveChip
               label={`PIC: ${picNameMap[selectedPic] ?? selectedPic}`}
-              dot="bg-indigo-500"
+              dot="bg-muted-foreground"
               onRemove={() => setSelectedPic('')}
             />
           )}
@@ -489,7 +467,7 @@ export function CalendarClient({
           {selectedProject && (
             <ActiveChip
               label={`Proyek: ${projectNameMap[selectedProject] ?? selectedProject}`}
-              dot="bg-purple-500"
+              dot="bg-muted-foreground"
               onRemove={() => setSelectedProject('')}
             />
           )}
@@ -497,7 +475,7 @@ export function CalendarClient({
           {selectedPriority && (
             <ActiveChip
               label={`Prioritas: ${priorityLabelMap[selectedPriority] ?? selectedPriority}`}
-              dot="bg-blue-500"
+              dot="bg-muted-foreground"
               onRemove={() => setSelectedPriority('')}
             />
           )}
@@ -510,7 +488,7 @@ export function CalendarClient({
               setSelectedProject('')
               setSelectedPriority('')
             }}
-            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+            className="text-xs font-semibold text-destructive-text hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
           >
             Hapus semua filter
           </button>
@@ -521,24 +499,24 @@ export function CalendarClient({
       <div className="flex flex-col xl:flex-row gap-4 flex-1 min-h-0">
 
         {/* Calendar Grid */}
-        <div className="flex-1 min-w-0 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col">
+        <div className="flex-1 min-w-0 bg-card rounded-lg border border-border shadow-sm dark:shadow-none flex flex-col">
 
           {/* Period Nav */}
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-border">
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={goPrev}
-                className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-input bg-card text-fg-secondary hover:bg-accent transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Periode sebelumnya"
               >
                 <ChevronLeft size={14} />
               </button>
-              <h2 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 text-center">
+              <h2 className="text-sm sm:text-base font-semibold text-foreground text-center">
                 {periodLabel}
               </h2>
               <button
                 onClick={goNext}
-                className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-input bg-card text-fg-secondary hover:bg-accent transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Periode berikutnya"
               >
                 <ChevronRight size={14} />
@@ -546,34 +524,57 @@ export function CalendarClient({
               {!isAtToday && (
                 <button
                   onClick={goToday}
-                  className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
+                  className="rounded-md border border-input bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Hari Ini
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs flex-wrap">
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+            <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap font-mono tabular-nums">
+              <span className="flex items-center gap-1.5 text-fg-secondary">
+                <span className="h-2 w-2 rounded-full bg-primary inline-block" />
                 {totalPlans} Total Plans
               </span>
               {overduePlans > 0 && (
-                <span className="flex items-center gap-1.5 text-red-500 font-medium">
+                <span className="flex items-center gap-1.5 text-destructive-text font-medium">
                   <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
                   {overduePlans} Overdue
                 </span>
               )}
-              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" />
                 {donePlans} Selesai
               </span>
             </div>
           </div>
 
-          {error && <p className="mx-5 mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
-
-          {/* View Container */}
-          {(!loading || events) && (
+          {/* View Container: loading -> error -> empty -> content */}
+          {loading && !events ? (
+            <div className="p-4 space-y-3" aria-busy="true">
+              <div className="grid grid-cols-7 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <div key={i} className="h-6 bg-muted rounded animate-pulse" />
+                ))}
+              </div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ) : error ? (
+            <div role="alert" className="m-5 rounded-lg border border-border bg-card p-5">
+              <p className="text-sm text-destructive-text">{error}</p>
+              <button
+                type="button"
+                onClick={fetchEvents}
+                className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+                Coba lagi
+              </button>
+            </div>
+          ) : (
             <div className="flex-1 flex flex-col min-h-0 overflow-auto">
               {viewMode === 'week' ? (
                 <CalendarWeekView
@@ -591,16 +592,16 @@ export function CalendarClient({
                 /* Month Grid (Default) */
                 <div className="flex-1 overflow-auto">
                   {events && events.length === 0 && !loading && (
-                    <div className="mx-4 my-3 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+                    <div className="mx-4 my-3 p-4 rounded-lg bg-muted border border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-                          <CalendarDays size={18} />
+                        <div className="h-9 w-9 rounded-md bg-card border border-border flex items-center justify-center text-muted-foreground shrink-0">
+                          <CalendarDays size={18} aria-hidden="true" />
                         </div>
                         <div>
-                          <p className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            Belum ada Action Plan di periode {periodLabel}
+                          <p className="text-sm font-semibold text-foreground">
+                            Belum ada Action Plan di periode {periodLabel}.
                           </p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          <p className="text-xs text-muted-foreground">
                             Mulai jadwalkan rencana kerja atau ubah navigasi bulan untuk melihat periode lain.
                           </p>
                         </div>
@@ -608,19 +609,19 @@ export function CalendarClient({
                       <button
                         type="button"
                         onClick={() => setCreateModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors shrink-0 shadow-xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <Plus size={13} />
-                        + Buat Action Plan
+                        <Plus size={13} aria-hidden="true" />
+                        Tambah Action Plan
                       </button>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800">
+                  <div className="grid grid-cols-7 border-b border-border">
                     {WEEKDAY_LABELS.map((label) => (
                       <div
                         key={label}
-                        className="px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center"
+                        className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center"
                       >
                         {label}
                       </div>
@@ -653,7 +654,7 @@ export function CalendarClient({
                     return (
                       <div
                         key={wi}
-                        className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-800 last:border-b-0"
+                        className="grid grid-cols-7 border-b border-border last:border-b-0"
                         style={{ gridAutoRows: 'auto' }}
                       >
                         {week.map((date, di) => {
@@ -664,33 +665,33 @@ export function CalendarClient({
                             <div
                               key={di}
                               style={{ gridColumn: di + 1, gridRow: 1 }}
-                              className={`border-r border-slate-100 dark:border-slate-800 last:border-r-0 px-2 py-2 min-h-[64px] ${
+                              className={`border-r border-border last:border-r-0 px-2 py-2 min-h-[64px] ${
                                 isToday
-                                  ? 'bg-blue-50 dark:bg-blue-950/30'
+                                  ? 'bg-accent'
                                   : !inMonth
-                                  ? 'bg-slate-50/50 dark:bg-slate-800/30'
+                                  ? 'bg-muted/50'
                                   : ''
                               }`}
                             >
                               <div className="flex items-center gap-1 mb-1">
                                 <span
-                                  className={`text-xs font-medium leading-none ${
+                                  className={`text-xs font-medium font-mono tabular-nums leading-none ${
                                     isToday
-                                      ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-600 text-white font-semibold'
+                                      ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground font-semibold'
                                       : inMonth
-                                      ? 'text-slate-700 dark:text-slate-300'
-                                      : 'text-slate-300 dark:text-slate-600'
+                                      ? 'text-foreground'
+                                      : 'text-muted-foreground'
                                   }`}
                                 >
                                   {date.getDate()}
                                 </span>
                                 {isToday && (
-                                  <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                                  <span className="text-xs font-bold text-foreground uppercase tracking-wide">
                                     HARI INI
                                   </span>
                                 )}
                                 {isHoliday && inMonth && (
-                                  <span className="text-[9px] font-bold text-red-500 uppercase tracking-wide">
+                                  <span className="text-xs font-bold text-destructive-text uppercase tracking-wide">
                                     HUT RI
                                   </span>
                                 )}
@@ -700,8 +701,8 @@ export function CalendarClient({
                         })}
 
                         {visibleSegments.map((seg) => {
-                          const color = STATUS_BAR_COLOR[seg.event.status] ?? '#94a3b8'
-                          const dot = STATUS_DOT_COLOR[seg.event.status] ?? 'bg-slate-400'
+                          const color = AP_STATUS_BAR_COLOR[seg.event.status] ?? AP_STATUS_BAR_COLOR.NOT_STARTED
+                          const dot = AP_STATUS_DOT[seg.event.status] ?? AP_STATUS_DOT.NOT_STARTED
                           const isOverdue = seg.event.status === 'OVERDUE'
                           const displayCode = seg.event.code ?? seg.event.id.slice(0, 6).toUpperCase()
 
@@ -715,20 +716,17 @@ export function CalendarClient({
                                 type="button"
                                 onClick={() => setSelected(seg.event)}
                                 title={`${displayCode}: ${seg.event.title} — PIC: ${seg.event.picName}`}
-                                className="w-full flex items-center gap-1 px-2 py-0.5 rounded text-left hover:brightness-105 transition-all cursor-pointer"
+                                className="w-full flex items-center gap-1 px-2 py-0.5 rounded-sm bg-card text-left hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 style={{
-                                  backgroundColor: isOverdue ? '#fef2f2' : color + '18',
-                                  border: `1px solid ${isOverdue ? '#fecaca' : color + '40'}`,
+                                  backgroundColor: color + '18',
+                                  border: `1px solid ${color}40`,
                                   borderLeftWidth: 3,
                                   borderLeftColor: color,
                                 }}
                               >
-                                {isOverdue && <AlertTriangle size={9} className="shrink-0 text-red-500" />}
+                                {isOverdue && <AlertTriangle size={10} className="shrink-0 text-destructive-text" aria-hidden="true" />}
                                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
-                                <span
-                                  className="truncate text-[10px] font-medium leading-none"
-                                  style={{ color: isOverdue ? '#ef4444' : color }}
-                                >
+                                <span className="truncate text-xs font-medium leading-tight text-foreground">
                                   {seg.event.title}
                                 </span>
                               </button>
@@ -749,7 +747,7 @@ export function CalendarClient({
                                 <button
                                   type="button"
                                   onClick={() => setOverflowDate(d.date)}
-                                  className="w-full text-center py-0.5 rounded text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-dashed border-blue-200 dark:border-blue-900 transition-colors cursor-pointer"
+                                  className="w-full text-center py-0.5 rounded-sm text-xs font-semibold text-fg-secondary hover:bg-accent border border-dashed border-border transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                   +{d.overflow} lainnya
                                 </button>
@@ -768,20 +766,6 @@ export function CalendarClient({
             </div>
           )}
 
-          {loading && !events && (
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-7 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <div key={i} className="h-6 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-                ))}
-              </div>
-              <div className="space-y-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-20 bg-slate-50 dark:bg-slate-800/60 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Sidebar */}
@@ -789,43 +773,43 @@ export function CalendarClient({
           <div className="w-full xl:w-72 shrink-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
 
             {/* Upcoming Deadlines */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <AlarmClock size={14} className="text-slate-500 dark:text-slate-400" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+                  <AlarmClock size={14} className="text-muted-foreground" aria-hidden="true" />
+                  <span className="text-xs font-bold text-foreground uppercase tracking-wide">
                     Upcoming Deadlines
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium">7 Hari ke Depan</span>
+                <span className="text-xs text-muted-foreground font-medium">7 Hari ke Depan</span>
               </div>
               <div className="space-y-3">
                 {upcomingDeadlines.length === 0 && !loading && (
-                  <p className="text-xs text-slate-400 text-center py-2">Tidak ada deadline dalam 7 hari ke depan.</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">Belum ada deadline dalam 7 hari ke depan.</p>
                 )}
                 {upcomingDeadlines.map((ev) => {
                   const daysLeft = diffDays(today, new Date(ev.endDate))
                   const dl = deadlineLabel(daysLeft)
                   const initials = ev.picName.trim().split(/\s+/).slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('')
                   return (
-                    <button key={ev.id} onClick={() => setSelected(ev)} className="w-full text-left">
+                    <button key={ev.id} type="button" onClick={() => setSelected(ev)} className="w-full text-left rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                       <div className="flex items-start gap-2 group">
-                        <div className="h-7 w-7 shrink-0 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white mt-0.5">
+                        <div className="h-7 w-7 shrink-0 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-semibold text-fg-secondary mt-0.5">
                           {initials}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate group-hover:text-blue-600 transition-colors">
+                          <p className="text-xs font-semibold text-foreground truncate group-hover:underline underline-offset-2">
                             {ev.title}
                           </p>
-                          <p className="text-[10px] text-slate-400 truncate">PIC: {ev.picName}</p>
+                          <p className="text-xs text-muted-foreground truncate">PIC: {ev.picName}</p>
                           <div className="flex items-center gap-1.5 mt-1">
-                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${STATUS_DOT_COLOR[ev.status] ?? 'bg-slate-400'}`} />
-                            <span className="text-[9px] text-slate-400">{AP_STATUS_LABEL[ev.status] ?? ev.status}</span>
+                            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${AP_STATUS_DOT[ev.status] ?? AP_STATUS_DOT.NOT_STARTED}`} />
+                            <span className="text-xs text-muted-foreground">{AP_STATUS_LABEL[ev.status] ?? ev.status}</span>
                           </div>
                         </div>
                         <div className="shrink-0 text-right">
-                          <span className={`text-[10px] ${dl.className}`}>{dl.text}</span>
-                          <p className="text-[9px] text-slate-400 mt-0.5">
+                          <span className={`text-xs font-mono tabular-nums ${dl.className}`}>{dl.text}</span>
+                          <p className="text-xs font-mono tabular-nums text-muted-foreground mt-0.5">
                             {new Date(ev.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </p>
                         </div>
@@ -836,7 +820,7 @@ export function CalendarClient({
                 {loading && !events && (
                   <div className="space-y-2">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-10 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                      <div key={i} className="h-10 rounded-lg bg-muted animate-pulse" />
                     ))}
                   </div>
                 )}
@@ -844,49 +828,42 @@ export function CalendarClient({
             </div>
 
             {/* Milestone Progress */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Flag size={14} className="text-slate-500 dark:text-slate-400" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+                  <Flag size={14} className="text-muted-foreground" aria-hidden="true" />
+                  <span className="text-xs font-bold text-foreground uppercase tracking-wide">
                     Progres Periode
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium">
+                <span className="text-xs text-muted-foreground font-medium">
                   {periodLabel}
                 </span>
               </div>
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Total Selesai</span>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                  <span className="text-xs text-muted-foreground">Total Selesai</span>
+                  <span className="text-xs font-bold font-mono tabular-nums text-foreground">
                     {milestonePct}%{' '}
-                    <span className="font-normal text-slate-400">
+                    <span className="font-normal text-muted-foreground">
                       ({milestoneDone}/{milestoneTotal} plan)
                     </span>
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-2 rounded-full bg-blue-500 transition-all duration-700"
+                    className="h-2 rounded-full bg-primary transition-all duration-700"
                     style={{ width: `${milestonePct}%` }}
                   />
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Warna Status</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Warna Status</p>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                  {[
-                    { color: 'bg-blue-500', label: 'In Progress' },
-                    { color: 'bg-indigo-500', label: 'Pending Approval' },
-                    { color: 'bg-amber-500', label: 'Evidence Required' },
-                    { color: 'bg-red-500', label: 'Needs Revision' },
-                    { color: 'bg-emerald-500', label: 'Complete/Approved' },
-                    { color: 'bg-orange-500', label: 'Overdue' },
-                  ].map(({ color, label }) => (
-                    <div key={label} className="flex items-center gap-1.5">
+                  {Object.entries(AP_STATUS_DOT).map(([key, color]) => (
+                    <div key={key} className="flex items-center gap-1.5 min-w-0">
                       <span className={`h-2 w-2 rounded-full shrink-0 ${color}`} />
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">{label}</span>
+                      <span className="text-xs text-muted-foreground truncate">{AP_STATUS_LABEL[key] ?? key}</span>
                     </div>
                   ))}
                 </div>
@@ -894,12 +871,12 @@ export function CalendarClient({
             </div>
 
             {/* Status Pembaruan Data */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+            <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-4">
               <div className="flex items-center justify-between mb-2.5">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+                <span className="text-xs font-bold text-foreground uppercase tracking-wide">
                   Pembaruan Jadwal
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Terhubung</span>
                 </span>
@@ -908,27 +885,27 @@ export function CalendarClient({
               {/* Status Ringkas */}
               <div className="space-y-2 py-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Update Terakhir</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="text-muted-foreground">Update Terakhir</span>
+                  <span className="font-semibold font-mono tabular-nums text-foreground">
                     {lastRefreshed.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Jadwal Ditampilkan</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="text-muted-foreground">Jadwal Ditampilkan</span>
+                  <span className="font-semibold font-mono tabular-nums text-foreground">
                     {events?.length ?? 0} Action Plan
                   </span>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="mt-3 pt-3 border-t border-border">
                 <button
                   type="button"
                   onClick={fetchEvents}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 w-full rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors shadow-2xs cursor-pointer disabled:opacity-60"
+                  className="flex items-center justify-center gap-2 w-full rounded-md border border-input bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                  <RefreshCw size={12} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
                   <span>{loading ? 'Memperbarui...' : 'Perbarui Jadwal'}</span>
                 </button>
               </div>

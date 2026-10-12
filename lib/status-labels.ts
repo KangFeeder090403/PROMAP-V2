@@ -51,6 +51,17 @@ export const AP_STATUS_DOT: Record<string, string> = {
   COMPLETE: 'bg-emerald-500',
 }
 
+export const AP_STATUS_BAR_COLOR: Record<string, string> = {
+  NOT_STARTED: '#94a3b8',
+  IN_PROGRESS: '#0EA5E9',
+  PENDING_APPROVAL: '#6366f1',
+  EVIDENCE_REQUIRED: '#f59e0b',
+  APPROVED: '#10b981',
+  REJECTED: '#ef4444',
+  OVERDUE: '#f97316',
+  COMPLETE: '#10b981',
+}
+
 export const AP_PRIORITY_STYLE: Record<string, string> = {
   HIGH: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',

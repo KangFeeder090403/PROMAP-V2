@@ -1,5 +1,5 @@
 export function MyWorkSkeleton() {
-  const pulse = 'animate-pulse rounded-xl bg-slate-200/70 dark:bg-slate-800/70'
+  const pulse = 'animate-pulse rounded-lg bg-muted'
   return (
     <div className="space-y-5">
       {/* Header Skeleton */}

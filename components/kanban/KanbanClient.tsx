@@ -13,6 +13,7 @@ import {
   ArrowUpDown,
   Plus,
   X,
+  Kanban,
 } from 'lucide-react'
 import type { Role } from '@/lib/generated/prisma/client'
 import { KanbanColumn } from '@/components/kanban/KanbanColumn'
@@ -24,6 +25,8 @@ import { ActionPlanFormModal } from '@/components/action-plans/ActionPlanFormMod
 import type { ActionPlan } from '@/components/action-plans/ActionPlansClient'
 import { FilterPopover } from '@/components/ui/FilterPopover'
 import { ActiveChip } from '@/components/ui/FilterToolbar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { FilterEmptyState } from '@/components/ui/FilterEmptyState'
 import {
   KANBAN_COLUMNS,
   columnForStatus,
@@ -499,14 +502,14 @@ export function KanbanClient({
 
   if (denied) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900/50 shadow-sm p-8 text-center max-w-md mx-auto my-12">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Anda tidak punya akses</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-8 text-center max-w-md mx-auto my-12">
+        <h2 className="text-base font-semibold text-foreground">Anda tidak punya akses</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Anda tidak memiliki izin untuk melihat Kanban Board ini.
         </p>
         <button
           onClick={() => router.push('/')}
-          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+          className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Kembali ke Beranda
         </button>
@@ -518,32 +521,32 @@ export function KanbanClient({
     return (
       <div className="space-y-6">
         <div>
-          <div className="h-7 w-32 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-          <div className="h-4 w-72 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse mt-2" />
+          <div className="h-7 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-72 bg-muted rounded animate-pulse mt-2" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 w-full">
           {KANBAN_COLUMNS.map((col) => (
             <div
               key={col.key}
-              className="min-w-0 flex flex-col bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-800 p-2.5 sm:p-3"
+              className="min-w-0 flex flex-col bg-muted rounded-lg border border-border p-2.5 sm:p-3"
             >
               <div className="flex items-center justify-between px-1 pb-3">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">{col.title}</span>
-                <span className="h-4 w-4 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{col.title}</span>
+                <span className="h-4 w-4 rounded-full bg-card animate-pulse" />
               </div>
               <div className="space-y-2.5">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="h-28 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 space-y-2.5 animate-pulse"
+                    className="h-28 rounded-lg bg-card border border-border p-3.5 space-y-2.5 animate-pulse"
                   >
                     <div className="flex justify-between">
-                      <div className="h-3.5 w-16 bg-slate-200 dark:bg-slate-800 rounded" />
-                      <div className="h-3.5 w-12 bg-slate-100 dark:bg-slate-800/70 rounded" />
+                      <div className="h-3.5 w-16 bg-muted rounded" />
+                      <div className="h-3.5 w-12 bg-muted rounded" />
                     </div>
-                    <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-800 rounded" />
-                    <div className="h-3 w-1/3 bg-slate-100 dark:bg-slate-800/50 rounded" />
+                    <div className="h-4 w-4/5 bg-muted rounded" />
+                    <div className="h-3 w-1/3 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -558,17 +561,17 @@ export function KanbanClient({
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight">Board</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Board</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Visualisasi alur pengerjaan Action Plan dalam 5 tahap kanban.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-          <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
+        <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5">
+          <p className="text-sm text-destructive-text">{error}</p>
           <button
             onClick={() => void fetchData()}
-            className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+            className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Coba lagi
           </button>
@@ -583,10 +586,10 @@ export function KanbanClient({
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Execution Board
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               5 Kolom Kanban terintegrasi 8 status alur kerja • {scoped.length} Action Plans
             </p>
           </div>
@@ -596,32 +599,34 @@ export function KanbanClient({
             <button
               type="button"
               onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary hover:bg-primary-hover px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus size={14} />
-              + New Action Plan
+              Tambah Action Plan
             </button>
           </div>
         </div>
       </div>
 
       {/* ── 2. Unified Toolbar: Search, Date Quick Chips, Dropdown Filters, Sort (PRD §B8) ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-lg border border-border shadow-sm dark:shadow-none">
         {/* Left: Search input & Date Quick Chips */}
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari judul atau kode AP..."
-              className="w-full h-8 pl-8 pr-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-colors"
+              aria-label="Cari Action Plan"
+              className="w-full h-8 pl-8 pr-7 rounded-md border border-input bg-card text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                aria-label="Hapus pencarian"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X size={12} />
               </button>
@@ -629,7 +634,7 @@ export function KanbanClient({
           </div>
 
           {/* Date Range Quick Chips PRD §B8 */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg">
+          <div className="flex flex-wrap items-center gap-1 bg-muted p-0.5 rounded-md">
             {[
               { key: 'all', label: 'Semua' },
               { key: 'today', label: 'Hari Ini' },
@@ -640,10 +645,10 @@ export function KanbanClient({
                 key={chip.key}
                 type="button"
                 onClick={() => setDateRange(chip.key)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   dateRange === chip.key
-                    ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-semibold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'bg-card text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {chip.label}
@@ -659,16 +664,16 @@ export function KanbanClient({
             <button
               type="button"
               onClick={() => setFilterOpen((v) => !v)}
-              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 filterOpen || (priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo)
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-card text-foreground hover:bg-accent'
               }`}
             >
               <SlidersHorizontal size={13} className="shrink-0" />
               <span>Filter</span>
               {(priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo) && (
-                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary-foreground text-primary px-1 text-xs font-mono tabular-nums font-bold">
                   {(priorityFilter ? 1 : 0) + (picFilter ? 1 : 0) + (dateRange !== 'all' ? 1 : 0) + (dateFrom || dateTo ? 1 : 0)}
                 </span>
               )}
@@ -710,12 +715,13 @@ export function KanbanClient({
           </div>
 
           {/* Sort By PRD §B8 */}
-          <div className="flex items-center gap-1.5 pl-1 border-l border-slate-200 dark:border-slate-700">
-            <ArrowUpDown size={12} className="text-slate-400 shrink-0" />
+          <div className="flex items-center gap-1.5 pl-1 border-l border-border">
+            <ArrowUpDown size={12} className="text-muted-foreground shrink-0" aria-hidden="true" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              aria-label="Urutkan"
+              className="h-8 rounded-md border border-input bg-card px-2.5 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
               <option value="newest">Terbaru Dibuat</option>
               <option value="oldest">Terlama Dibuat</option>
@@ -730,7 +736,7 @@ export function KanbanClient({
       {/* ── Active Filter Chips Row ── */}
       {(search || priorityFilter || picFilter || (dateRange !== 'all') || dateFrom || dateTo) && (
         <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
             FILTER AKTIF:
           </span>
 
@@ -744,7 +750,7 @@ export function KanbanClient({
           {priorityFilter && (
             <ActiveChip
               label={`Prioritas: ${priorityFilter}`}
-              dot={priorityFilter === 'HIGH' ? 'bg-red-500' : priorityFilter === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'}
+              dot={priorityFilter === 'HIGH' ? 'bg-red-500' : priorityFilter === 'MEDIUM' ? 'bg-amber-500' : 'bg-slate-400'}
               onRemove={() => setPriorityFilter('')}
             />
           )}
@@ -752,7 +758,7 @@ export function KanbanClient({
           {picFilter && (
             <ActiveChip
               label={`PIC: ${availablePics.find((p) => p.id === picFilter)?.name ?? picFilter}`}
-              dot="bg-indigo-500"
+              dot="bg-muted-foreground"
               onRemove={() => setPicFilter('')}
             />
           )}
@@ -786,7 +792,7 @@ export function KanbanClient({
               setDateFrom('')
               setDateTo('')
             }}
-            className="text-xs font-semibold text-red-500 hover:text-red-600 dark:text-red-400 hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
+            className="text-xs font-semibold text-destructive-text hover:underline underline-offset-2 transition-colors ml-1 cursor-pointer"
           >
             Hapus semua filter
           </button>
@@ -794,48 +800,36 @@ export function KanbanClient({
       )}
 
       {projectId && (
-        <div className="text-xs text-slate-500 dark:text-slate-400 px-1">
+        <div className="text-xs text-muted-foreground px-1">
           Difilter untuk program/inisiatif:{' '}
-          <span className="font-semibold text-slate-700 dark:text-slate-300">
+          <span className="font-semibold text-foreground">
             {projectLabel}
           </span>
           {' · '}
           <Link
             href="/board"
-            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            className="text-foreground underline underline-offset-2 hover:no-underline font-medium"
           >
             Reset filter inisiatif
           </Link>
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive-text">{error}</p>}
 
       {items && items.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-8 text-center">
-          <p className="text-base font-medium text-slate-800 dark:text-slate-200">Belum ada Action Plan</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Buat Action Plan terlebih dahulu untuk mulai memantau pengerjaan di papan kanban.
-          </p>
-          <button
-            type="button"
-            onClick={() => setCreateModalOpen(true)}
-            className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
-          >
-            Buat Action Plan
-          </button>
-        </div>
+        <EmptyState
+          icon={Kanban}
+          title="Belum ada Action Plan."
+          description="Action Plan yang dibuat akan tampil di papan sesuai tahapnya."
+          action={{ label: 'Tambah Action Plan', icon: Plus, onClick: () => setCreateModalOpen(true) }}
+        />
       ) : scoped.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-6 text-center">
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {search ? `Tidak ada Action Plan yang cocok dengan "${search}"` : 'Tidak ada Action Plan yang cocok dengan filter.'}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Coba sesuaikan parameter filter atau reset untuk melihat semua data.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
+        <div className="bg-card rounded-lg border border-border">
+          <FilterEmptyState
+            title="Tidak ada Action Plan yang cocok."
+            searchKeyword={search || undefined}
+            onReset={() => {
               setSearch('')
               setPriorityFilter('')
               setPicFilter('')
@@ -843,10 +837,7 @@ export function KanbanClient({
               setDateFrom('')
               setDateTo('')
             }}
-            className="mt-3 inline-flex items-center gap-2 h-8 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-colors cursor-pointer"
-          >
-            Reset Filter &amp; Pencarian
-          </button>
+          />
         </div>
       ) : (
         /* Fluid 5-column CSS grid without horizontal scroll */
@@ -868,7 +859,7 @@ export function KanbanClient({
 
           {marqueeRect && (
             <div
-              className="fixed pointer-events-none z-50 border border-blue-500 bg-blue-500/15 rounded"
+              className="fixed pointer-events-none z-50 border border-primary bg-primary/15 rounded"
               style={{
                 left: marqueeRect.left,
                 top: marqueeRect.top,
@@ -881,7 +872,7 @@ export function KanbanClient({
       )}
 
       {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] max-w-md rounded-md bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-medium px-4 py-2.5 shadow-lg">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] max-w-md rounded-md bg-foreground text-background text-sm font-medium px-4 py-2.5 shadow-lg">
           {toast}
         </div>
       )}

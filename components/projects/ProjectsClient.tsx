@@ -71,7 +71,7 @@ const PROJECT_SORT_OPTIONS = [
 
 const PROJECT_STATUS_OPTIONS = [
   { value: 'ACTIVE', label: 'Aktif', dot: 'bg-emerald-500' },
-  { value: 'INACTIVE', label: 'Nonaktif', dot: 'bg-slate-400' },
+  { value: 'INACTIVE', label: 'Nonaktif', dot: 'bg-muted-foreground' },
 ]
 
 export function ProjectsClient({
@@ -188,13 +188,13 @@ export function ProjectsClient({
   if (loading && !data) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="h-9 w-64 bg-slate-200 dark:bg-slate-800 rounded"></div>
+        <div className="h-9 w-64 bg-muted rounded"></div>
         <div className="flex items-center justify-between gap-4">
-          <div className="h-9 w-full sm:w-80 bg-slate-200 dark:bg-slate-800 rounded"></div>
-          <div className="h-9 w-28 bg-slate-200 dark:bg-slate-800 rounded"></div>
+          <div className="h-9 w-full sm:w-80 bg-muted rounded"></div>
+          <div className="h-9 w-28 bg-muted rounded"></div>
         </div>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-16 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800"></div>
+          <div key={i} className="h-16 bg-card rounded-lg border border-border"></div>
         ))}
       </div>
     )
@@ -202,11 +202,11 @@ export function ProjectsClient({
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-        <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5">
+        <p className="text-sm text-destructive-text">{error}</p>
         <button
           onClick={fetchData}
-          className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+          className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Coba lagi
         </button>
@@ -221,29 +221,29 @@ export function ProjectsClient({
       {/* Content Header — judul + KPI micro strip */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">Inisiatif & Proyek</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Inisiatif & Proyek</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Wadah program kerja strategis dan kolaborasi deliverable lintas divisi.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-3 bg-card p-2.5 rounded-lg border border-border shadow-sm dark:shadow-none">
           <div className="px-2.5 text-left">
-            <span className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
               Total Inisiatif
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-50">{data.length}</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">Inisiatif</span>
+              <span className="text-lg font-bold font-mono tabular-nums text-foreground">{data.length}</span>
+              <span className="text-xs text-muted-foreground">Inisiatif</span>
             </div>
           </div>
-          <div className="w-px h-7 bg-slate-200 dark:bg-slate-700"></div>
+          <div className="w-px h-7 bg-border"></div>
           <div className="px-2.5 text-left">
-            <span className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
               Status Aktif
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-50">{activeCount}</span>
+              <span className="text-lg font-bold font-mono tabular-nums text-foreground">{activeCount}</span>
               <span className="text-xs text-emerald-600 dark:text-emerald-400">Berjalan</span>
             </div>
           </div>
@@ -278,16 +278,16 @@ export function ProjectsClient({
       {data.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
-          title="Belum ada inisiatif program kerja"
+          title={canManage ? 'Belum ada inisiatif.' : 'Belum ada inisiatif untuk divisi Anda.'}
           description={
             canManage
-              ? 'Mulai inisiatif pertama Anda untuk menyusun sasaran besar dan program kerja tim lintas divisi.'
-              : 'Saat ini belum ada inisiatif yang ditugaskan ke divisi Anda. Tugas dan komitmen kerja harian Anda dapat dipantau langsung di My Work.'
+              ? 'Inisiatif menampung program kerja dan deliverable lintas divisi.'
+              : 'Tugas dan Action Plan harian Anda tetap bisa dipantau di My Work.'
           }
           action={
             canManage
               ? {
-                  label: 'Buat Project Baru',
+                  label: 'Tambah inisiatif',
                   icon: Plus,
                   onClick: () => {
                     setEditing(null)
@@ -295,7 +295,7 @@ export function ProjectsClient({
                   },
                 }
               : {
-                  label: 'Buka Konsol My Work',
+                  label: 'Buka My Work',
                   href: '/my-work',
                 }
           }
@@ -303,34 +303,35 @@ export function ProjectsClient({
       ) : filtered.length === 0 ? (
         /* Keadaan 3: Keadaan Tanpa Hasil (Empty State) */
         <FilterEmptyState
+          title="Tidak ada inisiatif yang cocok."
           activeFilterCount={filterState.activeFilterCount}
           searchKeyword={filterState.debouncedSearch || undefined}
           onReset={filterState.resetFilters}
           onRestoreDefaults={filterState.restoreDefaults}
         />
       ) : (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none overflow-hidden flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950/40 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
+                <tr className="bg-muted text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none">
                   <th className="px-5 py-3 min-w-[320px]">Nama Inisiatif</th>
                   <th className="px-4 py-3 min-w-[190px]">Divisi</th>
                   <th className="px-4 py-3 min-w-[210px]">Periode</th>
-                  <th className="px-4 py-3 min-w-[140px]">Jumlah Task</th>
-                  <th className="px-4 py-3 min-w-[180px]">Progress</th>
+                  <th className="px-4 py-3 min-w-[140px] text-right">Jumlah Task</th>
+                  <th className="px-4 py-3 min-w-[180px] text-right">Progress</th>
                   <th className="px-4 py-3 min-w-[110px]">Status</th>
                   <th className="px-4 py-3 w-16 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-border">
                 {pageRows.map((p) => {
                     const pct = p.taskCount > 0 ? Math.round((p.completedTasks / p.taskCount) * 100) : 0
                     return (
                       <tr
                         key={p.id}
                         tabIndex={0}
-                        className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group focus:outline-none focus:bg-slate-50 dark:focus:bg-slate-800/60"
+                        className="cursor-pointer hover:bg-accent transition-colors group focus-visible:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                         onClick={() => setDrawerProjectId(p.id)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -341,17 +342,17 @@ export function ProjectsClient({
                       >
                         <td className="px-5 py-4">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-[15px] font-semibold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <span className="text-sm font-semibold text-foreground group-hover:underline underline-offset-2">
                               {p.name}
                             </span>
                             {p.company?.name && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                                <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
-                                <span className="font-medium text-slate-600 dark:text-slate-400">{p.company.name}</span>
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Building2 className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden="true" />
+                                <span className="font-medium text-fg-secondary">{p.company.name}</span>
                               </div>
                             )}
                             {p.description && (
-                              <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                              <span className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                                 {p.description}
                               </span>
                             )}
@@ -363,50 +364,50 @@ export function ProjectsClient({
                               {p.divisions.map((d) => (
                                 <span
                                   key={d.id}
-                                  className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium"
+                                  className="inline-flex items-center px-2.5 py-1 rounded-sm bg-muted text-fg-secondary border border-border text-xs font-medium"
                                 >
                                   {d.name}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-sm bg-muted text-fg-secondary border border-border text-xs font-medium">
                               {p.division?.name ?? 'Semua Divisi (Lintas Divisi)'}
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
-                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                            <span className="font-mono">
+                          <div className="flex items-center gap-2 text-xs font-medium text-fg-secondary">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                            <span className="font-mono tabular-nums">
                               {formatDate(p.startDate)} – {formatDate(p.endDate)}
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        <td className="px-4 py-4 whitespace-nowrap text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-semibold font-mono tabular-nums text-foreground">
                               {p.taskCount} Task
                             </span>
-                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                            <span className="text-xs font-mono tabular-nums text-muted-foreground">
                               {p.actionPlanCount} Action Plan
                             </span>
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1 w-full max-w-[150px]">
-                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex flex-col gap-1 w-full max-w-[150px] ml-auto">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>Selesai</span>
-                              <span className="font-semibold text-slate-700 dark:text-slate-200">{pct}%</span>
+                              <span className="font-semibold font-mono tabular-nums text-foreground">{pct}%</span>
                             </div>
-                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-500 ${
                                   pct === 100
                                     ? 'bg-emerald-500'
                                     : pct > 0
-                                    ? 'bg-blue-500'
-                                    : 'bg-slate-300 dark:bg-slate-600'
+                                    ? 'bg-primary'
+                                    : 'bg-muted'
                                 }`}
                                 style={{ width: `${pct}%` }}
                               />
@@ -420,8 +421,8 @@ export function ProjectsClient({
                               <span>Aktif</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></span>
                               <span>Nonaktif</span>
                             </span>
                           )}
@@ -435,7 +436,7 @@ export function ProjectsClient({
                               type="button"
                               aria-label="Aksi Project"
                               onClick={() => setMenuOpenFor(menuOpenFor === p.id ? null : p.id)}
-                              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </button>
@@ -449,7 +450,7 @@ export function ProjectsClient({
                                 />
                                 <div
                                   role="menu"
-                                  className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-md"
+                                  className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-popover text-popover-foreground p-1 shadow-md"
                                 >
                                   <button
                                     type="button"
@@ -458,7 +459,7 @@ export function ProjectsClient({
                                       setMenuOpenFor(null)
                                       setDrawerProjectId(p.id)
                                     }}
-                                    className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    className="w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
                                   >
                                     Inspeksi Cepat (Drawer)
                                   </button>
@@ -469,7 +470,7 @@ export function ProjectsClient({
                                       setMenuOpenFor(null)
                                       router.push(`/projects/${p.id}`)
                                     }}
-                                    className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    className="w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
                                   >
                                     Buka Halaman Penuh
                                   </button>
@@ -482,7 +483,7 @@ export function ProjectsClient({
                                         setEditing(p)
                                         setFormOpen(true)
                                       }}
-                                      className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                      className="w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-accent focus-visible:outline-none focus-visible:bg-accent"
                                     >
                                       Edit
                                     </button>
@@ -500,14 +501,14 @@ export function ProjectsClient({
           </div>
 
           {/* Pagination footer */}
-          <div className="px-5 py-3 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="px-5 py-3 bg-muted border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground">
               Menampilkan{' '}
-              <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+              <span className="font-semibold text-foreground font-mono tabular-nums">
                 {rangeStart}-{rangeEnd}
               </span>{' '}
               dari{' '}
-              <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+              <span className="font-semibold text-foreground font-mono tabular-nums">
                 {filtered.length}
               </span>{' '}
               project
@@ -518,17 +519,17 @@ export function ProjectsClient({
                 disabled={safePage <= 1}
                 onClick={() => filterState.setPage(Math.max(1, safePage - 1))}
                 aria-label="Halaman sebelumnya"
-                className="p-1.5 rounded-md text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground border border-input bg-card disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 disabled={pageCount <= 1}
-                className={`px-3 py-1 rounded-md text-xs font-semibold shadow-sm transition-colors ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold font-mono tabular-nums shadow-sm transition-colors ${
                   safePage >= 1
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border border-input text-fg-secondary'
                 }`}
               >
                 {safePage}
@@ -538,7 +539,7 @@ export function ProjectsClient({
                 disabled={safePage >= pageCount}
                 onClick={() => filterState.setPage(Math.min(pageCount, safePage + 1))}
                 aria-label="Halaman berikutnya"
-                className="p-1.5 rounded-md text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground border border-input bg-card disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

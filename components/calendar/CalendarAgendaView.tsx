@@ -3,7 +3,9 @@
 import { useState, useMemo } from 'react'
 import type { CalendarEvent } from '@/lib/calendar-grid'
 import { fmtISO } from '@/lib/calendar-grid'
-import { AlertTriangle, User, Calendar as CalendarIcon, Briefcase, Clock, CalendarCheck2, PlayCircle } from 'lucide-react'
+import { AlertTriangle, User, Calendar as CalendarIcon, Briefcase, Clock, CalendarCheck2, PlayCircle, ChevronRight } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AP_STATUS_STYLE, AP_STATUS_LABEL } from '@/lib/status-labels'
 
 interface CalendarAgendaViewProps {
   selectedDate: Date
@@ -12,17 +14,6 @@ interface CalendarAgendaViewProps {
 }
 
 type AgendaFilterMode = 'relevant' | 'deadline_only' | 'start_only' | 'ongoing'
-
-const STATUS_BADGE: Record<string, { label: string; style: string }> = {
-  NOT_STARTED: { label: 'Not Started', style: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  IN_PROGRESS: { label: 'In Progress', style: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300' },
-  PENDING_APPROVAL: { label: 'Review', style: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' },
-  EVIDENCE_REQUIRED: { label: 'Evidence Needed', style: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' },
-  APPROVED: { label: 'Approved', style: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' },
-  REJECTED: { label: 'Revision', style: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' },
-  OVERDUE: { label: 'Overdue', style: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 font-bold' },
-  COMPLETE: { label: 'Complete', style: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' },
-}
 
 export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: CalendarAgendaViewProps) {
   const [filterMode, setFilterMode] = useState<AgendaFilterMode>('relevant')
@@ -83,108 +74,93 @@ export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: Cale
     year: 'numeric',
   })
 
+  const tabCls = (active: boolean) =>
+    `px-3 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      active ? 'bg-card text-foreground font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'
+    }`
+
+  const tabs: { key: AgendaFilterMode; label: string }[] = [
+    { key: 'relevant', label: 'Mulai / Deadline Hari Ini' },
+    { key: 'deadline_only', label: `Deadline Saja (${metrics.deadlineTodayCount})` },
+    { key: 'start_only', label: `Mulai Saja (${metrics.startTodayCount})` },
+    { key: 'ongoing', label: `Semua Berjalan (${metrics.totalActive})` },
+  ]
+
   return (
     <div className="flex-1 p-5 space-y-5">
       {/* Header Agenda & Summary */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800">
-        <div>
-          <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-muted border border-border">
+        <div className="min-w-0">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
             Agenda Harian
           </span>
-          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+          <h3 className="text-base font-bold text-foreground mt-0.5">
             {dateLabel}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Fokus pada Action Plan yang <strong className="text-slate-800 dark:text-slate-200 font-semibold">jatuh tempo</strong> atau <strong className="text-slate-800 dark:text-slate-200 font-semibold">dimulai</strong> pada tanggal ini.
+          <p className="text-xs text-muted-foreground mt-1">
+            Fokus pada Action Plan yang <strong className="text-foreground font-semibold">jatuh tempo</strong> atau <strong className="text-foreground font-semibold">dimulai</strong> pada tanggal ini.
           </p>
         </div>
 
         {/* Metrik cards */}
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center min-w-[70px]">
-            <span className="text-[10px] text-amber-500 dark:text-amber-400 font-semibold block">Deadline Hari Ini</span>
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{metrics.deadlineTodayCount}</span>
+          <div className="px-3 py-1.5 rounded-md bg-card border border-border text-center min-w-[70px]">
+            <span className="text-xs text-amber-700 dark:text-amber-300 font-semibold block">Deadline Hari Ini</span>
+            <span className="text-xs font-bold font-mono tabular-nums text-amber-700 dark:text-amber-300">{metrics.deadlineTodayCount}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center min-w-[70px]">
-            <span className="text-[10px] text-blue-500 dark:text-blue-300 font-semibold block">Mulai Hari Ini</span>
-            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{metrics.startTodayCount}</span>
+          <div className="px-3 py-1.5 rounded-md bg-card border border-border text-center min-w-[70px]">
+            <span className="text-xs text-fg-secondary font-semibold block">Mulai Hari Ini</span>
+            <span className="text-xs font-bold font-mono tabular-nums text-foreground">{metrics.startTodayCount}</span>
           </div>
-          <div className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-center min-w-[70px]">
-            <span className="text-[10px] text-slate-400 font-medium block">Total Aktif</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{metrics.totalActive}</span>
+          <div className="px-3 py-1.5 rounded-md bg-card border border-border text-center min-w-[70px]">
+            <span className="text-xs text-muted-foreground font-medium block">Total Aktif</span>
+            <span className="text-xs font-bold font-mono tabular-nums text-foreground">{metrics.totalActive}</span>
           </div>
           {metrics.overdueCount > 0 && (
-            <div className="px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-center min-w-[70px]">
-              <span className="text-[10px] text-red-500 font-semibold block">Overdue</span>
-              <span className="text-xs font-bold text-red-600 dark:text-red-400">{metrics.overdueCount}</span>
+            <div className="px-3 py-1.5 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-center min-w-[70px]">
+              <span className="text-xs text-destructive-text font-semibold block">Overdue</span>
+              <span className="text-xs font-bold font-mono tabular-nums text-destructive-text">{metrics.overdueCount}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Filter Mode Tabs */}
-      <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-lg border border-slate-200/70 dark:border-slate-800 w-fit">
-        <button
-          type="button"
-          onClick={() => setFilterMode('relevant')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
-            filterMode === 'relevant'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-semibold shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Mulai / Deadline Hari Ini
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterMode('deadline_only')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
-            filterMode === 'deadline_only'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-semibold shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Deadline Saja ({metrics.deadlineTodayCount})
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterMode('start_only')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
-            filterMode === 'start_only'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-semibold shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Mulai Saja ({metrics.startTodayCount})
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterMode('ongoing')}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
-            filterMode === 'ongoing'
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 font-semibold shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          Semua Berjalan ({metrics.totalActive})
-        </button>
+      <div role="tablist" aria-label="Filter agenda" className="flex flex-wrap items-center gap-1 bg-muted p-1 rounded-md border border-border w-fit max-w-full">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={filterMode === t.key}
+            onClick={() => setFilterMode(t.key)}
+            className={tabCls(filterMode === t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* List Action Plan Kronologis */}
       <div className="space-y-3">
         {displayedItems.length === 0 ? (
-          <div className="py-16 text-center border-2 border-dashed border-slate-200/80 dark:border-slate-800 rounded-xl">
-            <Clock className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Tidak ada Action Plan pada filter ini
+          <div className="py-16 px-4 text-center border-2 border-dashed border-border rounded-lg">
+            <Clock className="mx-auto h-8 w-8 text-muted-foreground mb-2" aria-hidden="true" />
+            <p className="text-sm font-semibold text-foreground">
+              Belum ada Action Plan pada filter ini.
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Pilih tab "Semua Berjalan" atau navigasikan tanggal untuk melihat jadwal lainnya.
-            </p>
+            {filterMode !== 'ongoing' && (
+              <button
+                type="button"
+                onClick={() => setFilterMode('ongoing')}
+                className="mt-3 inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Tampilkan semua berjalan
+              </button>
+            )}
           </div>
         ) : (
           displayedItems.map(({ event: ev, isStartToday, isDeadlineToday }) => {
-            const badge = STATUS_BADGE[ev.status] ?? STATUS_BADGE.NOT_STARTED
             const isOverdue = ev.status === 'OVERDUE'
             const displayCode = ev.code ?? ev.id.slice(0, 6).toUpperCase()
 
@@ -200,57 +176,52 @@ export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: Cale
                     onSelectEvent(ev)
                   }
                 }}
-                className="p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="group p-4 rounded-lg border border-border bg-card shadow-2xs dark:shadow-none hover:border-input transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
+                    <span className="font-mono tabular-nums text-xs font-semibold px-2 py-0.5 rounded-sm bg-muted text-fg-secondary border border-border">
                       {displayCode}
                     </span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badge.style}`}>
-                      {badge.label}
+                    <span className="inline-flex items-center gap-1">
+                      {isOverdue && <AlertTriangle className="h-3 w-3 text-destructive-text" aria-hidden="true" />}
+                      <StatusBadge status={ev.status} styleMap={AP_STATUS_STYLE} labelMap={AP_STATUS_LABEL} />
                     </span>
                     {isDeadlineToday && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                        <CalendarCheck2 size={11} />
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-sm border border-amber-200 dark:border-amber-800">
+                        <CalendarCheck2 size={12} aria-hidden="true" />
                         Deadline Hari Ini
                       </span>
                     )}
                     {isStartToday && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                        <PlayCircle size={11} />
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-fg-secondary bg-muted px-2 py-0.5 rounded-sm border border-border">
+                        <PlayCircle size={12} aria-hidden="true" />
                         Mulai Hari Ini
-                      </span>
-                    )}
-                    {isOverdue && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 dark:bg-red-950/50 px-2 py-0.5 rounded border border-red-200 dark:border-red-900">
-                        <AlertTriangle size={11} />
-                        Overdue
                       </span>
                     )}
                   </div>
 
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                  <h4 className="text-sm font-semibold text-foreground truncate">
                     {ev.title}
                   </h4>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <User size={13} className="text-slate-400" />
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <User size={13} aria-hidden="true" />
                       <span>{ev.picName}</span>
                       {ev.labelName && ev.labelName !== '-' && (
-                        <span className="text-[10px] text-slate-400">({ev.labelName})</span>
+                        <span className="text-xs">({ev.labelName})</span>
                       )}
                     </div>
                     {ev.projectName && (
-                      <div className="flex items-center gap-1.5">
-                        <Briefcase size={13} className="text-slate-400" />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Briefcase size={13} aria-hidden="true" />
                         <span>{ev.projectName}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <CalendarIcon size={13} className="text-slate-400" />
-                      <span>
+                      <CalendarIcon size={13} aria-hidden="true" />
+                      <span className="font-mono tabular-nums">
                         {new Date(ev.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} s/d{' '}
                         {new Date(ev.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
@@ -259,8 +230,9 @@ export function CalendarAgendaView({ selectedDate, events, onSelectEvent }: Cale
                 </div>
 
                 <div className="shrink-0 flex items-center justify-end">
-                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                    Lihat Detail →
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-foreground group-hover:underline underline-offset-2">
+                    Lihat Detail
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                 </div>
               </div>
