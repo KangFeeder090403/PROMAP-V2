@@ -27,6 +27,7 @@ try {
     if (t === 'dark') document.documentElement.classList.add('dark')
   }
 } catch (e) {}
+addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.__promapBip = e })
 `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -6,10 +6,9 @@ export function canShowInstallPrompt(o: {
   now: number
   lastShown: number | null
   installed: boolean
-  mobile: boolean
   mode: InstallMode | null
 }): boolean {
-  if (o.installed || !o.mobile || !o.mode) return false
+  if (o.installed || !o.mode) return false
   if (o.lastShown === null || !Number.isFinite(o.lastShown)) return true
   if (o.lastShown > o.now) return true // jam perangkat mundur — jangan kunci selamanya
   return o.now - o.lastShown >= WEEK_MS

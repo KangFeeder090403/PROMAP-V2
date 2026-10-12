@@ -251,7 +251,7 @@ export function Sidebar({
                 align={isCollapsed ? 'end' : 'start'}
                 sideOffset={8}
                 aria-label="Menu Pengguna"
-                className="w-72 rounded-xl p-1.5 shadow-2xl text-popover-foreground"
+                className="w-72 p-1.5 text-popover-foreground"
               >
                 {/* Header Info Akun */}
                 <div className="px-3 py-2.5 rounded-lg bg-muted border border-border mb-1.5">

@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button'
 import { canShowInstallPrompt, type InstallMode } from '@/lib/install-prompt'
 
 const SHOWN_KEY = 'promap-install-prompt-v1' // epoch ms terakhir popup tampil
-const INSTALLED_KEY = 'promap-pwa-installed'
 const SHOW_DELAY_MS = 4000
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
+// event bisa terjadi sebelum hydrate — ditangkap themeScript di app/layout.tsx
+type BipWindow = Window & { __promapBip?: BeforeInstallPromptEvent }
 
 // undefined = storage diblokir → jangan tampil (lebih aman daripada tampil tiap sesi)
 function readNum(key: string): number | null | undefined {
@@ -34,8 +35,7 @@ function isPhone() {
 function isInstalled() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true ||
-    readNum(INSTALLED_KEY) === 1
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
   )
 }
 // ponytail: in-app browser iOS (Instagram/FB) tidak bisa Add to Home Screen; tambah filter UA bila ada keluhan.
@@ -51,6 +51,11 @@ export function InstallPrompt() {
     if (!isPhone() || isInstalled()) return
     let candidate: InstallMode | null = isIOS() ? 'ios' : null
     let timer: number | undefined
+    const early = (window as BipWindow).__promapBip
+    if (early) {
+      bip.current = early
+      candidate = 'android'
+    }
 
     const onBip = (e: Event) => {
       e.preventDefault()
@@ -58,8 +63,9 @@ export function InstallPrompt() {
       candidate = 'android'
     }
     const onInstalled = () => {
-      write(INSTALLED_KEY, '1')
+      candidate = null // sesi ini jangan tampil lagi
       bip.current = null
+      delete (window as BipWindow).__promapBip
       setMode(null)
     }
     const onPointer = () => {
@@ -73,15 +79,16 @@ export function InstallPrompt() {
             now: Date.now(),
             lastShown: last,
             installed: isInstalled(),
-            mobile: true,
             mode: candidate,
           })
         )
           return
+        // jangan ganggu: dialog lain terbuka atau user sedang mengetik — coba lagi interaksi berikutnya
         if (
-          document.querySelector('[role="dialog"]:not([data-pwa-install]), [role="alertdialog"]')
+          document.querySelector('[role="dialog"], [role="alertdialog"]') ||
+          document.activeElement?.matches('input, textarea, select, [contenteditable="true"]')
         )
-          return // coba lagi interaksi berikutnya
+          return
         write(SHOWN_KEY, String(Date.now()))
         prevFocus.current = document.activeElement as HTMLElement | null
         setMode(candidate)
@@ -118,9 +125,10 @@ export function InstallPrompt() {
   async function install() {
     const e = bip.current
     bip.current = null // prompt() hanya sekali per event
+    delete (window as BipWindow).__promapBip
     if (e) {
       try {
-        if ((await e.prompt()).outcome === 'accepted') write(INSTALLED_KEY, '1')
+        await e.prompt()
       } catch {}
     }
     close()
@@ -131,7 +139,6 @@ export function InstallPrompt() {
   return (
     <div
       ref={boxRef}
-      data-pwa-install
       role="dialog"
       aria-modal="false"
       aria-labelledby="pwa-install-title"
@@ -170,7 +177,7 @@ export function InstallPrompt() {
             <li className="flex gap-2">
               <span className="font-mono text-xs text-muted-foreground">1</span>
               <span>
-                Ketuk <Share className="inline h-4 w-4 align-text-bottom text-foreground" aria-label="ikon Bagikan" /> Bagikan di Safari (iOS 26: lewat menu titik tiga).
+                Ketuk <Share className="inline h-4 w-4 align-text-bottom text-foreground" aria-hidden="true" /> Bagikan di Safari (iOS 26: lewat menu titik tiga).
               </span>
             </li>
             <li className="flex gap-2">
@@ -200,7 +207,7 @@ export function InstallPrompt() {
               </Button>
               <Button size="sm" onClick={install}>
                 <Download aria-hidden="true" />
-                Install
+                Pasang
               </Button>
             </>
           )}
