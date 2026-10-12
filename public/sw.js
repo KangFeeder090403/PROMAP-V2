@@ -32,8 +32,9 @@ self.addEventListener('push', (event) => {
     body: data.body ?? '',
     icon: '/icons/icon-192.png',
     data: { url: data.url ?? '/dashboard' },
-    // Tag unik: notifikasi baru tidak menimpa yang belum dibaca
-    tag: `promap-notif-${Date.now()}`,
+    // Tag sama per AP: notif AP itu diganti yang terbaru (riwayat lengkap di lonceng); selain itu unik
+    tag: data.tag || `promap-notif-${Date.now()}`,
+    renotify: !!data.tag, // bunyi/getar ulang saat diganti; renotify wajib tag non-kosong
     timestamp: typeof data.timestamp === 'number' ? data.timestamp : Date.now(),
     lang: 'id',
     vibrate: [200, 100, 200],
