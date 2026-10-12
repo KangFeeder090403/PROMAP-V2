@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Users, TrendingUp, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { Users, TrendingUp, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus, ArrowRight } from 'lucide-react'
 import type { ContributorAnalysisResponse, ContributorProjectRow } from '@/app/api/dashboard/contributor-analysis/route'
 
 function initials(name: string) {
@@ -13,6 +13,9 @@ function initials(name: string) {
     .join('')
     .toUpperCase()
 }
+
+const LINK_CLASS =
+  'inline-flex items-center gap-1 rounded-sm text-xs font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 function rateText(rate: number) {
   return rate >= 80
@@ -132,6 +135,12 @@ function ContributorRow({ contributor }: { contributor: ContributorAnalysisRespo
       {open && (
         <div className="border-t border-border">
           <ProjectTable projects={contributor.projects} />
+          <div className="flex justify-end border-t border-border px-4 py-2">
+            <Link href={`/action-plans?pic=${encodeURIComponent(contributor.picId)}`} className={LINK_CLASS}>
+              Lihat {contributor.totalAP} AP {contributor.picName}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -196,6 +205,9 @@ export function ContributorAnalysisSection() {
               <TrendingUp className="h-3.5 w-3.5 text-fg-secondary" aria-hidden />
               {overallRate}% selesai
             </span>
+            <Link href="/action-plans" className={LINK_CLASS}>
+              Lihat semua AP
+            </Link>
           </div>
         )}
       </div>

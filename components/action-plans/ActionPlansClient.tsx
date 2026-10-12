@@ -126,6 +126,7 @@ function buildActionPlansQueryString(params: {
   statusFilter?: string
   priorityFilter?: string
   divisionFilter?: string
+  picFilter?: string
   search?: string
   page: number
   pageSize: number
@@ -134,6 +135,7 @@ function buildActionPlansQueryString(params: {
   if (params.statusFilter) qs.set('status', params.statusFilter)
   if (params.priorityFilter) qs.set('priority', params.priorityFilter)
   if (params.divisionFilter) qs.set('divisionId', params.divisionFilter)
+  if (params.picFilter) qs.set('picId', params.picFilter)
   if (params.search) qs.set('search', params.search)
   qs.set('page', String(params.page))
   qs.set('pageSize', String(params.pageSize))
@@ -338,6 +340,7 @@ export function ActionPlansClient({
   initialHighlightId,
   initialDivisionId,
   initialStatus,
+  initialPicId,
 }: Readonly<{
   role: Role
   userId: string
@@ -347,6 +350,7 @@ export function ActionPlansClient({
   initialHighlightId?: string
   initialDivisionId?: string
   initialStatus?: string
+  initialPicId?: string
 }>) {
   const router = useRouter()
   const [data, setData] = useState<Ledger | null>(null)
@@ -356,6 +360,8 @@ export function ActionPlansClient({
   // Drill-down dari Laporan: /action-plans?division=…&status=…
   const [divisionFilter, setDivisionFilter] = useState(initialDivisionId ?? '')
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? '')
+  // Drill-down dari Analisis Kontributor (Home): /action-plans?pic=…
+  const [picFilter, setPicFilter] = useState(initialPicId ?? '')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState('')
@@ -444,7 +450,7 @@ export function ActionPlansClient({
 
   useEffect(() => {
     fetchData()
-  }, [statusFilter, priorityFilter, divisionFilter, search, page])
+  }, [statusFilter, priorityFilter, divisionFilter, picFilter, search, page])
 
   // Header "+ New > Action Plan" mengarah ke /action-plans?new=1. Buka modal,
   // lalu bersihkan param pakai replace supaya back/refresh tidak membukanya lagi.
@@ -463,6 +469,7 @@ export function ActionPlansClient({
         statusFilter,
         priorityFilter,
         divisionFilter,
+        picFilter,
         search,
         page,
         pageSize: PAGE_SIZE,
@@ -486,7 +493,7 @@ export function ActionPlansClient({
   }
 
   const activeFilterCount =
-    (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0) + (divisionFilter ? 1 : 0)
+    (statusFilter ? 1 : 0) + (priorityFilter ? 1 : 0) + (divisionFilter ? 1 : 0) + (picFilter ? 1 : 0)
   const fieldsDefined = ['statusFilter', 'priorityFilter', 'search', 'page'] as const
 
   function applyFilter(kind: (typeof fieldsDefined)[number], value: string) {
@@ -500,6 +507,7 @@ export function ActionPlansClient({
     setStatusFilter('')
     setPriorityFilter('')
     setDivisionFilter('')
+    setPicFilter('')
     setSearch('')
     setSearchInput('')
     setPage(1)
@@ -789,6 +797,17 @@ export function ActionPlansClient({
             />
           )}
 
+          {picFilter && (
+            // ponytail: nama diambil dari baris pertama; tambah lookup nama bila hasil kosong sering terjadi
+            <ActiveChip
+              label={`PIC: ${data.items[0]?.pic?.name ?? 'Terpilih'}`}
+              onRemove={() => {
+                setPicFilter('')
+                setPage(1)
+              }}
+            />
+          )}
+
           <button
             type="button"
             onClick={resetFilters}
@@ -801,7 +820,7 @@ export function ActionPlansClient({
 
       {/* ===== Ledger table ===== */}
       <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto">
-        {data.total === 0 && !search && !statusFilter && !priorityFilter && !divisionFilter ? (
+        {data.total === 0 && !search && !statusFilter && !priorityFilter && !divisionFilter && !picFilter ? (
           <EmptyState
             icon={CheckCircle2}
             title="Belum ada Action Plan"
