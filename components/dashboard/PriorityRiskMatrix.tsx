@@ -2,6 +2,7 @@
 
 import { AlertTriangle, ShieldCheck, ShieldAlert, Layers } from 'lucide-react'
 import type { Priority } from '@/lib/generated/prisma/client'
+import { AP_PRIORITY_STYLE } from '@/lib/status-labels'
 
 interface PriorityRiskMatrixProps {
   priorityBreakdown: { priority: Priority; count: number }[]
@@ -42,11 +43,11 @@ const PRIORITY_META: Record<
   LOW: {
     label: 'Prioritas Rendah',
     sublabel: 'Dukungan & pemeliharaan berkala',
-    dot: 'bg-blue-500',
-    bar: 'bg-blue-500',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    bg: 'bg-blue-50/50 dark:bg-blue-950/20',
-    border: 'border-blue-100 dark:border-blue-900/40',
+    dot: 'bg-slate-400',
+    bar: 'bg-slate-400',
+    badge: AP_PRIORITY_STYLE.LOW,
+    bg: 'bg-muted/50',
+    border: 'border-border',
   },
 }
 
@@ -62,31 +63,31 @@ export function PriorityRiskMatrix({
   const highRatio = Math.round((highCount / safeTotal) * 100)
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
+    <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
       <div>
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+              <span className="p-1.5 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
                 <Layers className="w-4 h-4" aria-hidden="true" />
               </span>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-sm sm:text-base font-bold text-foreground">
                 Matriks Prioritas &amp; Risiko
               </h3>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Sebaran tingkat kepentingan rencana aksi terhadap risiko keterlambatan
             </p>
           </div>
 
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-muted text-fg-secondary shrink-0">
             Total {total} AP
           </span>
         </div>
 
         {total === 0 ? (
-          <p className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+          <p className="py-10 text-center text-xs text-muted-foreground">
             Belum ada rencana aksi dalam rentang pemantauan ini.
           </p>
         ) : (
@@ -98,32 +99,32 @@ export function PriorityRiskMatrix({
               return (
                 <div
                   key={item.priority}
-                  className={`p-3.5 rounded-xl border ${meta.bg} ${meta.border} transition-colors space-y-2`}
+                  className={`p-3.5 rounded-lg border ${meta.bg} ${meta.border} transition-colors space-y-2`}
                 >
                   <div className="flex items-center justify-between text-xs gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dot}`} aria-hidden="true" />
                       <div className="min-w-0">
-                        <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        <span className="font-semibold text-foreground">
                           {meta.label}
                         </span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-1.5 hidden sm:inline">
+                        <span className="text-[11px] text-muted-foreground ml-1.5 hidden sm:inline">
                           &bull; {meta.sublabel}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 font-mono text-xs shrink-0">
-                      <span className="font-bold text-slate-900 dark:text-slate-100">
+                      <span className="font-bold text-foreground">
                         {item.count} AP
                       </span>
-                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${meta.badge}`}>
+                      <span className={`px-1.5 py-0.5 rounded-sm text-[10px] font-bold ${meta.badge}`}>
                         {pct}%
                       </span>
                     </div>
                   </div>
 
-                  <div className="h-2 w-full bg-white/80 dark:bg-slate-800 rounded-full overflow-hidden border border-black/5 dark:border-white/5">
+                  <div className="h-2 w-full bg-card rounded-full overflow-hidden border border-border">
                     <div
                       className={`h-full rounded-full transition-all ${meta.bar}`}
                       style={{ width: `${Math.max(pct, 2)}%` }}
@@ -137,26 +138,26 @@ export function PriorityRiskMatrix({
       </div>
 
       {/* Footer Status Kesiapan */}
-      <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+      <div className="mt-5 pt-3.5 border-t border-border flex items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2 truncate">
           {overdueCount > 0 ? (
             <>
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" aria-hidden="true" />
-              <span className="text-slate-600 dark:text-slate-400 truncate">
+              <span className="text-fg-secondary truncate">
                 Terdapat <strong>{overdueCount} tugas terlambat</strong> pada beban saat ini.
               </span>
             </>
           ) : (
             <>
               <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" />
-              <span className="text-slate-600 dark:text-slate-400 truncate">
+              <span className="text-fg-secondary truncate">
                 Kondisi aman — tidak ada rencana aksi prioritas tinggi yang terhambat.
               </span>
             </>
           )}
         </div>
 
-        <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
+        <span className="text-[11px] font-mono text-muted-foreground shrink-0">
           Rasio Kritis: {highRatio}%
         </span>
       </div>

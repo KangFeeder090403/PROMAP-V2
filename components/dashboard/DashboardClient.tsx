@@ -42,6 +42,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import {
   AP_STATUS_STYLE,
   AP_STATUS_LABEL,
+  AP_STATUS_DOT,
+  AP_PRIORITY_STYLE,
   PROPOSAL_STATUS_STYLE,
   PROPOSAL_STATUS_LABEL,
 } from '@/lib/status-labels'
@@ -126,7 +128,7 @@ const RISK_LABEL = { CRITICAL: 'Tinggi', HIGH: 'Sedang', MEDIUM: 'Rendah' } as c
 const RISK_STYLE = {
   CRITICAL: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/20',
   HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/20',
-  MEDIUM: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:border dark:border-slate-700',
+  MEDIUM: AP_PRIORITY_STYLE.LOW,
 } as const
 const RISK_DOT = {
   CRITICAL: 'bg-red-500',
@@ -164,7 +166,7 @@ function RemindButton({
 }) {
   if (state === 'sending') {
     return (
-      <button disabled className={`${btnBase} bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 cursor-wait shrink-0`}>
+      <button disabled className={`${btnBase} bg-muted text-muted-foreground cursor-wait shrink-0`}>
         <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
         <span className="hidden sm:inline">Mengirim…</span>
       </button>
@@ -196,7 +198,7 @@ function RemindButton({
       className={`${btnBase} shrink-0 ${
         state === 'error'
           ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300'
-          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          : 'bg-muted text-fg-secondary hover:bg-accent hover:text-foreground'
       }`}
     >
       <BellRing className="w-3.5 h-3.5" aria-hidden="true" />
@@ -324,11 +326,11 @@ export function DashboardClient() {
 
   if (!data && error) {
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-        <p className="text-sm text-slate-700 dark:text-slate-300">{error}</p>
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5">
+        <p className="text-sm text-fg-secondary">{error}</p>
         <button
           onClick={() => void fetchData(range, picFilter, true)}
-          className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+          className="mt-3 inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors"
         >
           Coba lagi
         </button>
@@ -392,23 +394,23 @@ export function DashboardClient() {
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           <button
             onClick={() => void fetchData(range, picFilter, false)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-medium transition-colors"
           >
             Ulangi
           </button>
         </div>
       )}
       {/* Contextual Banner, Time Filter & Sub-view Tabs */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 pb-0 sm:pb-0">
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 pb-0 sm:pb-0">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5">
           <div className="space-y-1 min-w-0">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+            <span className="text-xs font-medium text-muted-foreground truncate">
               {subtitleBits.join(' · ') || user.roleLabel}
             </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
               {data.greeting}, {user.name}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">{headline}</p>
+            <p className="text-xs sm:text-sm text-fg-secondary max-w-3xl leading-relaxed">{headline}</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
             {!isPic && (
@@ -417,7 +419,7 @@ export function DashboardClient() {
                 onChange={(e) => handlePicChange(e.target.value)}
                 disabled={switching}
                 aria-label="Filter berdasarkan PIC"
-                className="h-8 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed"
+                className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium text-fg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
               >
                 <option value="">Semua PIC</option>
                 {picOptions.map((p) => (
@@ -428,7 +430,7 @@ export function DashboardClient() {
               </select>
             )}
             <div
-              className="flex-1 min-w-0 lg:flex-none flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto whitespace-nowrap"
+              className="flex-1 min-w-0 lg:flex-none flex items-center gap-1 bg-muted p-1 rounded-lg overflow-x-auto whitespace-nowrap"
               aria-busy={switching}
             >
               {RANGE_TABS.map((tab) => (
@@ -437,10 +439,10 @@ export function DashboardClient() {
                   onClick={() => handleRangeChange(tab.key)}
                   disabled={switching}
                   aria-current={range === tab.key ? 'page' : undefined}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:cursor-not-allowed ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all disabled:cursor-not-allowed ${
                     range === tab.key
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-semibold shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      ? 'bg-card text-foreground font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {tab.label}
@@ -448,7 +450,7 @@ export function DashboardClient() {
               ))}
             </div>
             {switching && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Memuat…
               </span>
@@ -458,14 +460,14 @@ export function DashboardClient() {
 
         {/* Tab Switcher Mode Tampilan (Gaya Navigasi Terintegrasi Linear / Stripe) */}
         {!isPic && data.portfolio && (
-          <div className="flex items-center gap-6 border-t border-slate-100 dark:border-slate-800 -mx-5 sm:-mx-6 px-5 sm:px-6">
+          <div className="flex items-center gap-6 border-t border-border -mx-5 sm:-mx-6 px-5 sm:px-6">
             <button
               type="button"
               onClick={() => setActiveDashboardView('portfolio')}
               className={`py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 -mb-px transition-colors ${
                 activeDashboardView === 'portfolio'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'border-brand text-foreground font-semibold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <Layers className="w-4 h-4" aria-hidden="true" />
@@ -476,8 +478,8 @@ export function DashboardClient() {
               onClick={() => setActiveDashboardView('operational')}
               className={`py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 -mb-px transition-colors ${
                 activeDashboardView === 'operational'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                  ? 'border-brand text-foreground font-semibold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
@@ -509,16 +511,16 @@ export function DashboardClient() {
           label="Total Rencana Aksi"
           value={metrics.total}
           icon={ClipboardList}
-          iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
+          iconClass="bg-muted text-fg-secondary"
           badge={
-            <svg className="w-14 h-6 shrink-0 opacity-80" viewBox="0 0 56 20" fill="none">
+            <svg className="w-14 h-6 shrink-0 opacity-80 text-chart-1" viewBox="0 0 56 20" fill="none">
               <path
                 d="M 2 16 C 12 14, 18 8, 30 10 C 40 12, 46 5, 54 3"
-                stroke="#1E3A6E"
+                stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
               />
-              <circle cx="54" cy="3" r="2" fill="#1A3260" />
+              <circle cx="54" cy="3" r="2" fill="currentColor" />
             </svg>
           }
           footer="Target rencana aksi pada rentang ini"
@@ -540,7 +542,7 @@ export function DashboardClient() {
           label="Sedang Berjalan"
           value={metrics.inProgress}
           icon={PlayCircle}
-          iconClass="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"
+          iconClass="bg-muted text-fg-secondary"
           footer={
             <div className="space-y-2">
               {(() => {
@@ -549,18 +551,18 @@ export function DashboardClient() {
                 const activePct = Math.round((activeOnly / totalActive) * 100)
                 const reviewPct = 100 - activePct
                 return (
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
-                    <div className="h-full bg-blue-500 rounded-l-full transition-all" style={{ width: `${activePct}%` }} />
+                  <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden flex">
+                    <div className={`h-full ${AP_STATUS_DOT.IN_PROGRESS} rounded-l-full transition-all`} style={{ width: `${activePct}%` }} />
                     <div className="h-full bg-indigo-500 rounded-r-full transition-all" style={{ width: `${reviewPct}%` }} />
                   </div>
                 )
               })()}
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className={`w-2 h-2 rounded-full ${AP_STATUS_DOT.IN_PROGRESS}`} />
                   <span>{Math.max(0, metrics.inProgress - metrics.inReview)} aktif</span>
                 </span>
-                <span className="text-slate-300 dark:text-slate-600">&bull;</span>
+                <span className="text-muted-foreground">&bull;</span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-indigo-500" />
                   <span>{metrics.inReview} review</span>
@@ -572,12 +574,12 @@ export function DashboardClient() {
         <MetricCard
           label="Lewat Tenggat"
           value={metrics.overdue}
-          valueClass={metrics.overdue > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-slate-900 dark:text-slate-50'}
+          valueClass={metrics.overdue > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-foreground'}
           icon={AlertTriangle}
           iconClass={
             metrics.overdue > 0
               ? 'bg-orange-50 text-orange-600 dark:bg-orange-950/50 dark:text-orange-300'
-              : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              : 'bg-muted text-muted-foreground'
           }
           badge={
             metrics.overdue > 0 ? (
@@ -601,14 +603,14 @@ export function DashboardClient() {
       </div>
 
       {/* Action Required (Menunggu Keputusan Anda) */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-slate-100 dark:border-slate-800">
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 w-full min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-2 border-b border-border">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="p-2 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 flex items-center justify-center">
+            <span className="p-2 rounded-md bg-muted text-fg-secondary flex items-center justify-center">
               <Gavel className="w-5 h-5" aria-hidden="true" />
             </span>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">Menunggu Keputusan Anda</h2>
-            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-semibold">
+            <h2 className="text-base font-semibold text-foreground">Menunggu Keputusan Anda</h2>
+            <span className="px-2 py-0.5 rounded-sm bg-muted text-fg-secondary text-xs font-semibold">
               {filteredActionRequired.length}{filteredActionRequired.length !== actionRequired.length ? ` dari ${actionRequired.length}` : ''} item
             </span>
           </div>
@@ -618,16 +620,16 @@ export function DashboardClient() {
             <button
               type="button"
               onClick={() => setArFilterOpen((v) => !v)}
-              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs font-semibold transition-colors cursor-pointer ${
                 arFilterOpen || arTypeFilter || arStatusFilters.length > 0
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-background text-fg-secondary hover:bg-accent'
               }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
               <span>Filter Cepat</span>
               {(arTypeFilter || arStatusFilters.length > 0) && (
-                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white text-blue-700 px-1 text-[10px] font-bold">
+                <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground px-1 text-[10px] font-bold">
                   {(arTypeFilter ? 1 : 0) + arStatusFilters.length}
                 </span>
               )}
@@ -665,7 +667,7 @@ export function DashboardClient() {
         {/* Active Chips Row */}
         {(arTypeFilter || arStatusFilters.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5 mb-3 px-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1 shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1 shrink-0">
               FILTER AKTIF:
             </span>
             {arTypeFilter && (
@@ -697,7 +699,7 @@ export function DashboardClient() {
 
         {filteredActionRequired.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {arTypeFilter || arStatusFilters.length > 0
                 ? 'Tidak ada item keputusan yang sesuai filter yang dipilih.'
                 : 'Semua sudah beres — tidak ada item yang menunggu.'}
@@ -709,7 +711,7 @@ export function DashboardClient() {
                   setArTypeFilter('')
                   setArStatusFilters([])
                 }}
-                className="mt-3 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                className="mt-3 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-input bg-background text-[11px] font-medium text-fg-secondary hover:bg-accent transition-colors cursor-pointer"
               >
                 Reset Filter
               </button>
@@ -736,16 +738,16 @@ export function DashboardClient() {
                       else setPreview(item)
                     }
                   }}
-                  className="p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer"
+                  className="p-4 rounded-lg border border-border hover:bg-accent transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 cursor-pointer"
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <span
-                      className={`p-2 rounded flex-shrink-0 mt-0.5 ${
+                      className={`p-2 rounded-md flex-shrink-0 mt-0.5 ${
                         isAP
                           ? isApproval
                             ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300'
                             : 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
-                          : 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300'
+                          : 'bg-muted text-fg-secondary'
                       }`}
                     >
                       {isAP ? (
@@ -760,10 +762,10 @@ export function DashboardClient() {
                     </span>
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">
+                        <span className="font-mono text-xs font-semibold text-fg-secondary">
                           #{item.refCode}
                         </span>
-                        <span className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate max-w-sm">
+                        <span className="text-sm font-medium text-foreground truncate max-w-sm">
                           {item.title}
                         </span>
                         <StatusBadge
@@ -772,11 +774,11 @@ export function DashboardClient() {
                           labelMap={isAP ? AP_STATUS_LABEL : PROPOSAL_STATUS_LABEL}
                         />
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5" aria-hidden="true" />
                           {isAP ? 'PIC: ' : 'Pengusul: '}
-                          <strong className="font-medium text-slate-700 dark:text-slate-300">{item.picName}</strong>
+                          <strong className="font-medium text-fg-secondary">{item.picName}</strong>
                         </span>
                         {item.createdAt && (
                           <span className="font-mono">
@@ -788,7 +790,7 @@ export function DashboardClient() {
                           <span className="font-mono">Deadline: {fmtDate(item.deadline)}</span>
                         )}
                         {item.evidenceLink && (
-                          <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1 text-fg-secondary">
                             <Paperclip className="w-3.5 h-3.5" aria-hidden="true" />
                             <span className="truncate max-w-[180px]">{item.evidenceLink}</span>
                           </span>
@@ -800,7 +802,7 @@ export function DashboardClient() {
                   <div className="flex items-center justify-end gap-2 flex-shrink-0">
                     {isAP && isApproval && (
                       isPic ? (
-                        <span className="flex items-center text-xs text-slate-400 dark:text-slate-500 font-medium group-hover:text-slate-600">
+                        <span className="flex items-center text-xs text-muted-foreground font-medium group-hover:text-fg-secondary">
                           Menunggu Review <ChevronRight className="w-4 h-4 ml-1" />
                         </span>
                       ) : (
@@ -810,7 +812,7 @@ export function DashboardClient() {
                             e.stopPropagation()
                             handleOpenAPDetail(item.id)
                           }}
-                          className={`${btnBase} w-32 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                          className={`${btnBase} w-32 bg-primary text-primary-foreground hover:bg-primary-hover font-semibold text-center`}
                         >
                           Review Bukti
                         </button>
@@ -824,7 +826,7 @@ export function DashboardClient() {
                             e.stopPropagation()
                             handleOpenAPDetail(item.id)
                           }}
-                          className={`${btnBase} w-32 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                          className={`${btnBase} w-32 bg-primary text-primary-foreground hover:bg-primary-hover font-semibold text-center`}
                         >
                           {item.status === 'REJECTED' ? 'Perbaiki' : 'Unggah Bukti'}
                         </button>
@@ -835,7 +837,7 @@ export function DashboardClient() {
                             e.stopPropagation()
                             handleRemind(item.id)
                           }}
-                          className={`${btnBase} w-32 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 text-center`}
+                          className={`${btnBase} w-32 bg-muted text-fg-secondary hover:bg-accent hover:text-foreground text-center`}
                         >
                           Ingatkan PIC
                         </button>
@@ -843,7 +845,7 @@ export function DashboardClient() {
                     )}
                     {!isAP && (
                       isPic ? (
-                        <span className="flex items-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+                        <span className="flex items-center text-xs text-muted-foreground font-medium">
                           Menunggu Approval <ChevronRight className="w-4 h-4 ml-1" />
                         </span>
                       ) : (
@@ -853,7 +855,7 @@ export function DashboardClient() {
                             e.stopPropagation()
                             setPreview(item)
                           }}
-                          className={`${btnBase} w-36 bg-blue-500 text-white hover:bg-blue-600 shadow-sm font-semibold text-center`}
+                          className={`${btnBase} w-36 bg-primary text-primary-foreground hover:bg-primary-hover font-semibold text-center`}
                         >
                           Review Proposal
                         </button>
@@ -880,12 +882,12 @@ export function DashboardClient() {
           />
         </div>
 
-        <div className="xl:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
+        <div className="xl:col-span-5 bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
           <div>
             <div className="flex items-center justify-between pb-4">
               <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Sebaran Status</h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
+                <h3 className="text-sm sm:text-base font-bold text-foreground">Sebaran Status</h3>
+                <span className="text-xs text-muted-foreground">
                   {metrics.total} rencana aksi pada rentang ini
                 </span>
               </div>
@@ -896,7 +898,7 @@ export function DashboardClient() {
               legendLayout="grid"
             />
           </div>
-          <div className="mt-4 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-xl flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-4 bg-muted p-2.5 rounded-lg flex items-center justify-between text-xs text-muted-foreground">
             <span>Realisasi Selesai</span>
             <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
               {metrics.complete} dari {metrics.total} ({Math.round(metrics.completionRate)}%)
@@ -908,38 +910,38 @@ export function DashboardClient() {
       {/* Baris Analisis 2: Beban Kerja Tim + Matriks Prioritas & Risiko */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 w-full min-w-0">
         <div className="xl:col-span-7 w-full min-w-0">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+          <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 w-full min-w-0">
             {/* Header Beban Kerja Tim + Status Legend */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                  <span className="p-1.5 rounded-md bg-muted text-fg-secondary">
                     <Users className="w-4 h-4" aria-hidden="true" />
                   </span>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                  <h3 className="text-sm sm:text-base font-bold text-foreground">
                     Beban Kerja Tim
                   </h3>
-                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-muted text-fg-secondary">
                     {picWorkload.length} Anggota
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Distribusi penugasan rencana aksi dan pemantauan kapasitas tim
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 shrink-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground shrink-0">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded bg-orange-500" aria-hidden="true" /> Terlambat
+                  <span className="w-2 h-2 rounded-sm bg-orange-500" aria-hidden="true" /> Terlambat
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded bg-indigo-500" aria-hidden="true" /> Review
+                  <span className="w-2 h-2 rounded-sm bg-indigo-500" aria-hidden="true" /> Review
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded bg-blue-500" aria-hidden="true" /> Dikerjakan
+                  <span className={`w-2 h-2 rounded-sm ${AP_STATUS_DOT.IN_PROGRESS}`} aria-hidden="true" /> Dikerjakan
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded bg-emerald-500" aria-hidden="true" /> Selesai
+                  <span className="w-2 h-2 rounded-sm bg-emerald-500" aria-hidden="true" /> Selesai
                 </span>
               </div>
             </div>
@@ -950,10 +952,10 @@ export function DashboardClient() {
                 <button
                   type="button"
                   onClick={() => setWorkloadFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     workloadFilter === 'ALL'
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      ? 'bg-primary text-primary-foreground font-semibold border border-primary'
+                      : 'bg-muted text-fg-secondary hover:bg-accent hover:text-foreground'
                   }`}
                 >
                   Semua ({picWorkload.length})
@@ -961,10 +963,10 @@ export function DashboardClient() {
                 <button
                   type="button"
                   onClick={() => setWorkloadFilter('HIGH')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     workloadFilter === 'HIGH'
                       ? 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300 font-semibold border border-orange-200 dark:border-orange-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-muted text-fg-secondary hover:bg-accent hover:text-foreground'
                   }`}
                 >
                   Beban Tinggi ({highCount})
@@ -972,10 +974,10 @@ export function DashboardClient() {
                 <button
                   type="button"
                   onClick={() => setWorkloadFilter('OVERDUE')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     workloadFilter === 'OVERDUE'
                       ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300 font-semibold border border-red-200 dark:border-red-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-muted text-fg-secondary hover:bg-accent hover:text-foreground'
                   }`}
                 >
                   Ada Terlambat ({overduePicCount})
@@ -983,10 +985,10 @@ export function DashboardClient() {
                 <button
                   type="button"
                   onClick={() => setWorkloadFilter('OPTIMAL')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     workloadFilter === 'OPTIMAL'
                       ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-muted text-fg-secondary hover:bg-accent hover:text-foreground'
                   }`}
                 >
                   Optimal ({optimalCount})
@@ -995,9 +997,9 @@ export function DashboardClient() {
             )}
 
             {picWorkload.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">Belum ada anggota tim.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">Belum ada anggota tim.</p>
             ) : filteredPicWorkload.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 py-6 text-center">
+              <p className="text-xs text-muted-foreground py-6 text-center">
                 Tidak ada anggota tim dengan kriteria beban ini.
               </p>
             ) : (
@@ -1006,15 +1008,15 @@ export function DashboardClient() {
                   const pct = (n: number) => (w.total > 0 ? Math.round((n / w.total) * 100) : 0)
                   const isHigh = (w.overdue >= 1 && w.total >= 6) || w.total >= 8
                   const chip = isHigh ? (
-                    <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 dark:border dark:border-orange-800/40 text-xs font-bold inline-flex items-center gap-1">
+                    <span className="px-1.5 py-0.5 rounded-sm bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 dark:border dark:border-orange-800/40 text-xs font-bold inline-flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" aria-hidden="true" /> Beban Tinggi ({w.total} AP)
                     </span>
                   ) : w.review > 0 ? (
-                    <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/40 text-xs font-medium">
+                    <span className="px-1.5 py-0.5 rounded-sm bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border dark:border-indigo-800/40 text-xs font-medium">
                       {w.review} Review ({w.total} AP)
                     </span>
                   ) : (
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/40 text-xs font-medium">
+                    <span className="px-1.5 py-0.5 rounded-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border dark:border-emerald-800/40 text-xs font-medium">
                       Optimal ({w.total} AP)
                     </span>
                   )
@@ -1022,20 +1024,20 @@ export function DashboardClient() {
                     <div key={w.picId} className="flex flex-col gap-1.5">
                       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                         <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          <span className="w-6 h-6 rounded-full bg-muted text-fg-secondary text-[10px] font-bold flex items-center justify-center shrink-0">
                             {initials(w.picName)}
                           </span>
-                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">{w.picName}</span>
+                          <span className="text-sm font-semibold text-foreground">{w.picName}</span>
                           {chip}
                         </div>
-                        <span className="font-mono text-xs text-slate-500 dark:text-slate-400 shrink-0">
+                        <span className="font-mono text-xs text-muted-foreground shrink-0">
                           {w.overdue} Terlambat · {w.active + w.review} Aktif · {w.done} Selesai
                         </span>
                       </div>
-                      <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded flex overflow-hidden">
+                      <div className="h-3.5 w-full bg-muted rounded-sm flex overflow-hidden">
                         <div className="bg-orange-500 h-full" style={{ width: `${pct(w.overdue)}%` }} />
                         <div className="bg-indigo-500 h-full" style={{ width: `${pct(w.review)}%` }} />
-                        <div className="bg-blue-500 h-full" style={{ width: `${pct(w.active)}%` }} />
+                        <div className={`${AP_STATUS_DOT.IN_PROGRESS} h-full`} style={{ width: `${pct(w.active)}%` }} />
                         <div className="bg-emerald-500 h-full" style={{ width: `${pct(w.done)}%` }} />
                       </div>
                     </div>
@@ -1043,11 +1045,11 @@ export function DashboardClient() {
                 })}
 
                 {filteredPicWorkload.length > 5 && (
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-2 text-center">
+                  <div className="pt-3 border-t border-border mt-2 text-center">
                     <button
                       type="button"
                       onClick={() => setWorkloadExpanded(!workloadExpanded)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-foreground hover:bg-accent transition-colors"
                     >
                       <span>
                         {workloadExpanded
@@ -1078,28 +1080,28 @@ export function DashboardClient() {
 
       {/* Analisis Proyek Kontributor — Manager+ only (deviasi resmi 2026-10-07) */}
       {(user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER') && (
-        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+        <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 w-full min-w-0">
           <ContributorAnalysisSection />
         </div>
       )}
 
       {/* TIER 3: CRITICAL OVERDUE DRILL-DOWN */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 w-full min-w-0">
+      <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 w-full min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
-            <span className="p-2.5 rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 flex items-center justify-center shrink-0">
+            <span className="p-2.5 rounded-md bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" aria-hidden="true" />
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-50">
+                <h3 className="text-base font-bold text-foreground">
                   Daftar Rencana Aksi Lewat Tenggat
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 font-mono text-xs font-bold">
                   {overdueList.length}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {overdueList.length === 0
                   ? 'Semua rencana aksi berjalan sesuai jadwal'
                   : `Menampilkan ${overdueShown.length} dari ${overdueMore ? '100+' : overdueList.length} tugas yang membutuhkan eskalasi segera`}
@@ -1108,11 +1110,11 @@ export function DashboardClient() {
           </div>
           {overdueList.length > 0 && (
             <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Urutkan:</span>
+              <span className="text-xs font-medium text-muted-foreground">Urutkan:</span>
               <select
                 value={overdueSort}
                 onChange={(e) => setOverdueSort(e.target.value as OverdueSort)}
-                className="h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs"
+                className="h-8 rounded-md border border-input bg-background px-2.5 text-xs font-semibold text-fg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -1125,52 +1127,52 @@ export function DashboardClient() {
         </div>
 
         {overdueList.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+          <div className="py-12 text-center text-muted-foreground text-xs">
             <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500 opacity-60" aria-hidden="true" />
-            <p className="font-semibold text-slate-800 dark:text-slate-200">
+            <p className="font-semibold text-fg-secondary">
               {hasPicFilter
                 ? `${selectedPicName ?? 'PIC ini'} tidak punya rencana aksi yang lewat tenggat.`
                 : 'Tidak ada action plan yang melewati tenggat. Semua berjalan tepat waktu.'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 border-t border-slate-100 dark:border-slate-800 -mx-5 sm:-mx-6 px-5 sm:px-6">
+          <div className="divide-y divide-border border-t border-border -mx-5 sm:-mx-6 px-5 sm:px-6">
             {overdueShown.map((row) => (
               <div
                 key={row.id}
-                className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 -mx-5 sm:-mx-6 px-5 sm:px-6 transition-colors min-w-0"
+                className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-accent -mx-5 sm:-mx-6 px-5 sm:px-6 transition-colors min-w-0"
               >
                 {/* Bagian Kiri: Kode Ref + Judul + Metadata */}
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="shrink-0 font-mono text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800/40">
+                    <span className="shrink-0 font-mono text-xs font-bold text-fg-secondary bg-muted px-2 py-0.5 rounded-sm border border-border">
                       {row.refCode}
                     </span>
-                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {row.title}
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold shrink-0 ${RISK_STYLE[row.risk]}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-semibold shrink-0 ${RISK_STYLE[row.risk]}`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${RISK_DOT[row.risk]}`} />
                       {RISK_LABEL[row.risk]}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {row.subtitle && (
-                      <span className="font-medium text-slate-600 dark:text-slate-300">
+                      <span className="font-medium text-fg-secondary">
                         {row.subtitle}
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[8px] font-bold flex items-center justify-center shrink-0">
+                      <span className="w-4 h-4 rounded-full bg-muted text-fg-secondary text-[8px] font-bold flex items-center justify-center shrink-0">
                         {initials(row.picName)}
                       </span>
                       <span>PIC: <strong>{row.picName}</strong></span>
                     </span>
                     <span className="inline-flex items-center gap-1 font-mono">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                       <span>Target: {fmtDate(row.deadline)}</span>
                     </span>
                   </div>
@@ -1179,7 +1181,7 @@ export function DashboardClient() {
                 {/* Bagian Kanan: Badge Keterlambatan + Tombol Aksi */}
                 <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/50 dark:border dark:border-orange-800/40 px-2.5 py-1 rounded-lg shrink-0">
+                    <span className="font-mono text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-950/50 dark:border dark:border-orange-800/40 px-2.5 py-1 rounded-md shrink-0">
                       Terlambat {row.lateDays} Hari
                     </span>
                   </div>
@@ -1189,7 +1191,7 @@ export function DashboardClient() {
                     <button
                       type="button"
                       onClick={() => handleOpenAPDetail(row.id)}
-                      className={`${btnBase} bg-blue-600 hover:bg-blue-700 text-white shadow-xs shrink-0`}
+                      className={`${btnBase} bg-primary hover:bg-primary-hover text-primary-foreground shrink-0`}
                     >
                       Detail
                     </button>
@@ -1206,26 +1208,26 @@ export function DashboardClient() {
       {/* Drawer preview proposal — Radix Portal agar tidak tertabrak sticky header */}
       <DialogPrimitive.Root open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[1px]" />
-          <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[500px] flex-col border-l border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right">
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/80" />
+          <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[500px] flex-col border-l border-border bg-card shadow-md outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-right data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right">
             {preview && (
               <>
                 {/* Header */}
-                <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+                <div className="border-b border-border px-6 py-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-xs font-semibold text-blue-700 dark:text-blue-400">
+                    <span className="font-mono text-xs font-semibold text-fg-secondary">
                       #{preview.refCode}
                     </span>
                     <DialogPrimitive.Close
                       aria-label="Tutup"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <X className="h-4 w-4" aria-hidden="true" />
                     </DialogPrimitive.Close>
                   </div>
                   <div className="mt-2 flex items-start gap-3">
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-base font-semibold leading-snug text-slate-900 dark:text-slate-50">
+                      <h2 className="text-base font-semibold leading-snug text-foreground">
                         {preview.title}
                       </h2>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1235,7 +1237,7 @@ export function DashboardClient() {
                           labelMap={PROPOSAL_STATUS_LABEL}
                         />
                         {preview.createdAt && (
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="text-xs text-muted-foreground">
                             Diajukan {fmtDate(preview.createdAt)}
                           </span>
                         )}
@@ -1247,22 +1249,22 @@ export function DashboardClient() {
                 {/* Body */}
                 <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
                   {/* Pengusul info card */}
-                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/40">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <div className="rounded-lg border border-border p-4 bg-muted">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Pengusul Inisiatif
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    <p className="mt-1 text-sm font-semibold text-foreground">
                       {preview.picName}
                     </p>
                   </div>
 
                   {/* Deskripsi */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Deskripsi Proposal
                     </h3>
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900">
-                      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    <div className="rounded-lg border border-border p-4 bg-card">
+                      <p className="text-sm text-fg-secondary whitespace-pre-wrap leading-relaxed">
                         {preview.description?.trim() || 'Tidak ada deskripsi rinci.'}
                       </p>
                     </div>
@@ -1270,16 +1272,16 @@ export function DashboardClient() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800 px-6 py-4">
+                <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-4">
                   <DialogPrimitive.Close
-                    className="inline-flex h-9 items-center rounded-md border border-slate-200 dark:border-slate-800 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                    className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium text-fg-secondary transition-colors hover:bg-accent"
                   >
                     Tutup
                   </DialogPrimitive.Close>
                   <Link
                     href="/proposals"
                     onClick={() => setPreview(null)}
-                    className="inline-flex h-9 items-center rounded-md bg-blue-500 hover:bg-blue-600 px-4 text-sm font-semibold text-white transition-colors shadow-sm"
+                    className="inline-flex h-9 items-center rounded-md bg-primary hover:bg-primary-hover px-4 text-sm font-semibold text-primary-foreground transition-colors"
                   >
                     Buka Halaman Proposal
                   </Link>

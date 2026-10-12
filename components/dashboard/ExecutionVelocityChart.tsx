@@ -43,33 +43,33 @@ function CustomTooltip({
   const completedItem = payload.find((p) => p.name === 'Selesai Mingguan')
 
   return (
-    <div className="bg-slate-900 dark:bg-slate-950 text-white text-xs rounded-xl shadow-xl p-3 border border-slate-800 space-y-1.5 min-w-[160px]">
-      <p className="font-semibold text-slate-300 font-mono text-[11px] border-b border-slate-800 pb-1">
+    <div className="bg-popover text-popover-foreground text-xs border border-border shadow-md rounded-lg p-3 space-y-1.5 min-w-[160px]">
+      <p className="font-semibold text-foreground font-mono text-[11px] border-b border-border pb-1">
         {label}
       </p>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-slate-400" />
-            <span className="text-slate-400 text-[11px]">Target Mingguan:</span>
+            <span className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+            <span className="text-muted-foreground text-[11px]">Target Mingguan:</span>
           </div>
-          <span className="font-mono font-bold text-white text-xs">
+          <span className="font-mono font-bold text-foreground text-xs">
             {targetItem ? targetItem.value : 25} AP
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-slate-400 text-[11px]">Selesai:</span>
+            <span className="w-2 h-2 rounded-full bg-chart-1/55" />
+            <span className="text-muted-foreground text-[11px]">Selesai:</span>
           </div>
-          <span className="font-mono font-bold text-blue-400 text-xs">
+          <span className="font-mono font-bold text-foreground text-xs">
             {completedItem ? completedItem.value : 0} AP
           </span>
         </div>
       </div>
-      <div className="pt-1.5 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
+      <div className="pt-1.5 border-t border-border text-[10px] text-muted-foreground flex items-center justify-between">
         <span>Target Bulanan:</span>
-        <span className="font-mono text-slate-300 font-bold">100 AP (4 Minggu)</span>
+        <span className="font-mono text-foreground font-bold">100 AP (4 Minggu)</span>
       </div>
     </div>
   )
@@ -136,27 +136,27 @@ export function ExecutionVelocityChart({
   const isVelocityOnTrack = monthlyAchievementRate >= 60 && overdue === 0
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
+    <div className="bg-card rounded-lg border border-border shadow-sm dark:shadow-none p-5 sm:p-6 flex flex-col justify-between w-full min-w-0">
       <div>
         {/* Header Visual */}
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+            <span className="p-1.5 rounded-md bg-muted text-fg-secondary">
               <Activity className="w-4 h-4" aria-hidden="true" />
             </span>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-sm sm:text-base font-bold text-foreground">
               Laju Eksekusi
             </h3>
           </div>
 
           {/* Legend */}
           <div className="flex items-center gap-3 text-xs font-medium shrink-0">
-            <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-              <span className="w-2.5 h-2.5 rounded bg-slate-300 dark:bg-slate-700" />
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-sm bg-muted-foreground/30" />
               <span>Target (25)</span>
             </span>
-            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
-              <span className="w-2.5 h-2.5 rounded bg-blue-500" />
+            <span className="flex items-center gap-1.5 text-fg-secondary font-medium">
+              <span className="w-2.5 h-2.5 rounded-sm bg-chart-1/55" />
               <span>Capaian</span>
             </span>
           </div>
@@ -167,17 +167,17 @@ export function ExecutionVelocityChart({
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 10, right: 12, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" className="dark:stroke-slate-800" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'monospace' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-mono), ui-monospace, monospace' }}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: '#94A3B8', fontFamily: 'monospace' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))', fontFamily: 'var(--font-mono), ui-monospace, monospace' }}
                   domain={[0, 30]}
                   ticks={[0, 10, 20, 25, 30]}
                 />
@@ -185,15 +185,14 @@ export function ExecutionVelocityChart({
                 <Bar
                   dataKey="target"
                   name="Target Rencana"
-                  fill="#E2E8F0"
+                  fill="hsl(var(--muted-foreground) / 0.3)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
-                  className="dark:fill-slate-700"
                 />
                 <Bar
                   dataKey="completed"
                   name="Selesai Mingguan"
-                  fill="#8CA0C8"
+                  fill="hsl(var(--chart-1) / 0.55)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
@@ -201,37 +200,37 @@ export function ExecutionVelocityChart({
                   type="monotone"
                   dataKey="trend"
                   name="Tren Realisasi"
-                  stroke="#102143"
+                  stroke="hsl(var(--chart-1))"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: '#FFFFFF', stroke: '#102143', strokeWidth: 2 }}
-                  activeDot={{ r: 5.5, fill: '#102143', stroke: '#FFFFFF', strokeWidth: 2 }}
+                  dot={{ r: 4, fill: 'hsl(var(--card))', stroke: 'hsl(var(--chart-1))', strokeWidth: 2 }}
+                  activeDot={{ r: 5.5, fill: 'hsl(var(--chart-1))', stroke: 'hsl(var(--card))', strokeWidth: 2 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-slate-50/50 dark:bg-slate-800/30 rounded-xl">
-              <span className="text-xs text-slate-400">Memuat grafik laju...</span>
+            <div className="w-full h-full flex items-center justify-center bg-muted/50 rounded-lg">
+              <span className="text-xs text-muted-foreground">Memuat grafik laju...</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Footer Diagnostik Laju */}
-      <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="mt-4 pt-3.5 border-t border-border flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
-          <span className="text-slate-500 dark:text-slate-400">Target Bulanan:</span>
-          <span className="font-bold font-mono text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+          <span className="text-muted-foreground">Target Bulanan:</span>
+          <span className="font-bold font-mono text-foreground bg-muted px-2 py-0.5 rounded-sm">
             100 AP (25 AP/minggu)
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-slate-500 dark:text-slate-400">Capaian Bulan Ini:</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
+          <span className="text-muted-foreground">Capaian Bulan Ini:</span>
+          <span className="font-semibold text-fg-secondary">
             {complete}/100 AP ({monthlyAchievementRate}%)
           </span>
           <span
-            className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+            className={`px-2 py-0.5 rounded-sm text-[11px] font-bold ${
               isVelocityOnTrack
                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                 : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
