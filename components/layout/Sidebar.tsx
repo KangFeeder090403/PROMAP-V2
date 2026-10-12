@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -18,6 +18,8 @@ import type { SessionUser } from '@/components/layout/DashboardShell'
 import { DevAccountSwitcher } from '@/components/dev/DevAccountSwitcher'
 import { LogoutConfirmDialog } from '@/components/layout/LogoutConfirmDialog'
 import { unsubscribePush } from '@/hooks/usePushNotifications'
+import { useMyWorkCount } from '@/hooks/useMyWorkCount'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 
 // Modal berat (ProfileModal 433 baris, AuditLogModal 538 baris) dipisah jadi
 // chunk sendiri dan baru di-mount saat dibuka. Sebelumnya keduanya selalu ada
@@ -76,25 +78,8 @@ export function Sidebar({
   const canAccessAuditLog =
     user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_OPERATIONAL' || user.role === 'MANAGER'
 
-  // Escape key listener untuk close profile popover
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setProfileOpen(false)
-    }
-    if (profileOpen) {
-      window.addEventListener('keydown', handleKeyDown)
-      return () => window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [profileOpen])
-
-  // Badge "butuh aksi" di My Work. Di-refresh saat pindah halaman
-  const [actionCount, setActionCount] = useState(0)
-  useEffect(() => {
-    fetch('/api/my-work/count')
-      .then((r) => (r.ok ? r.json() : { count: 0 }))
-      .then((d) => setActionCount(typeof d.count === 'number' ? d.count : 0))
-      .catch(() => setActionCount(0))
-  }, [pathname])
+  // Badge "butuh aksi" di My Work — throttled, nilai lama dipertahankan saat error
+  const actionCount = useMyWorkCount(pathname)
 
   // Urutan wajib: filter item by role DULU, baru buang grup yang jadi kosong
   const groups = NAV_GROUPS.map((group) => ({
@@ -142,8 +127,7 @@ export function Sidebar({
                   <p className="truncate text-xs font-semibold text-sidebar-foreground leading-tight">
                     {user.companyName ?? (user.role === 'SUPER_ADMIN' ? 'Sistem Global' : 'ProMaP Workspace')}
                   </p>
-                  <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <div className="flex items-center pt-0.5">
                     <p className="truncate text-[10px] font-medium text-sidebar-foreground/70 leading-none">
                       {user.divisionName ? user.divisionName : (user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Umum')}
                     </p>
@@ -186,13 +170,13 @@ export function Sidebar({
                             : item.label
                           : undefined
                       }
-                      className={`flex items-center rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent ${
+                      className={`flex items-center rounded-md border-l-2 border-transparent text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent ${
                         isCollapsed
                           ? 'justify-center p-2.5 h-10 w-full'
                           : 'gap-3 px-3 py-2'
                       } ${
                         active
-                          ? 'bg-white/10 text-sidebar-foreground font-medium border-l-2 border-sidebar-accent'
+                          ? 'bg-white/10 text-sidebar-foreground font-medium border-sidebar-accent'
                           : 'text-sidebar-foreground/80 hover:bg-white/5 hover:text-sidebar-foreground'
                       }`}
                     >
@@ -233,22 +217,41 @@ export function Sidebar({
         </nav>
 
         {/* Footer Profil User & Account Switcher */}
-        <div className="relative border-t border-white/10 p-2">
-          {/* Popover Dropup Profil User */}
-          {profileOpen && (
-            <>
-              <button
-                type="button"
-                aria-label="Tutup menu profil"
-                className="fixed inset-0 z-40 cursor-default bg-transparent border-0"
-                onClick={() => setProfileOpen(false)}
-              />
-              <div
-                role="menu"
+        <div className="border-t border-white/10 p-2">
+          {/* Trigger Footer */}
+          <div className={`flex items-center gap-1.5 ${isCollapsed ? 'flex-col justify-center' : 'justify-between'}`}>
+            <Popover open={profileOpen} onOpenChange={setProfileOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Menu profil: ${user.name} (${ROLE_LABEL[user.role] || user.role})`}
+                  className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent data-[state=open]:bg-white/10 ${
+                    isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
+                  }`}
+                >
+                  <div
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-bold text-sidebar shadow-sm"
+                  >
+                    {initials(user.name)}
+                  </div>
+                  {!isCollapsed && (
+                    <>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-sidebar-foreground">{user.name}</p>
+                        <p className="truncate text-[11px] text-sidebar-foreground/70">{ROLE_LABEL[user.role] || user.role}</p>
+                      </div>
+                      <ChevronsUpDown className="h-3.5 w-3.5 text-sidebar-foreground/70 shrink-0" />
+                    </>
+                  )}
+                </button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                side="top"
+                align={isCollapsed ? 'end' : 'start'}
+                sideOffset={8}
                 aria-label="Menu Pengguna"
-                className={`fixed z-50 w-72 rounded-xl border border-border bg-popover p-1.5 shadow-2xl text-popover-foreground transition-all ${
-                  isCollapsed ? 'left-16 bottom-3 ml-2' : 'left-3 bottom-16'
-                }`}
+                className="w-72 rounded-xl p-1.5 shadow-2xl text-popover-foreground"
               >
                 {/* Header Info Akun */}
                 <div className="px-3 py-2.5 rounded-lg bg-muted border border-border mb-1.5">
@@ -336,37 +339,8 @@ export function Sidebar({
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Keluar / Logout</span>
                 </button>
-              </div>
-            </>
-          )}
-
-          {/* Trigger Footer */}
-          <div className={`flex items-center gap-1.5 ${isCollapsed ? 'flex-col justify-center' : 'justify-between'}`}>
-            <button
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={profileOpen}
-              aria-label={`Menu profil: ${user.name} (${ROLE_LABEL[user.role] || user.role})`}
-              onClick={() => setProfileOpen((v) => !v)}
-              className={`flex items-center rounded-lg p-1.5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-accent ${
-                isCollapsed ? 'justify-center w-10 h-10' : 'flex-1 min-w-0 gap-2.5'
-              } ${profileOpen ? 'bg-white/10' : ''}`}
-            >
-              <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-bold text-sidebar shadow-sm"
-              >
-                {initials(user.name)}
-              </div>
-              {!isCollapsed && (
-                <>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-sidebar-foreground">{user.name}</p>
-                    <p className="truncate text-[11px] text-sidebar-foreground/70">{ROLE_LABEL[user.role] || user.role}</p>
-                  </div>
-                  <ChevronsUpDown className="h-3.5 w-3.5 text-sidebar-foreground/70 shrink-0" />
-                </>
-              )}
-            </button>
+              </PopoverContent>
+            </Popover>
 
             {user.role !== 'GUEST' && !user.isGuest && !user.id.startsWith('guest-') && (
               <div className={isCollapsed ? 'w-full flex justify-center mt-1' : 'shrink-0'}>
