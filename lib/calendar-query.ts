@@ -49,12 +49,14 @@ export function buildCalendarWhere(
     }
   }
 
+  // push ke AND — assign langsung menimpa key apScope (picId/divisionId)
+  const and = where.AND as Prisma.ActionPlanWhereInput[]
   if (filters?.divisionId) {
-    where.divisionId = filters.divisionId
+    and.push({ divisionId: filters.divisionId })
   }
 
   if (filters?.picId) {
-    where.picId = filters.picId
+    and.push({ picId: filters.picId })
   }
 
   if (filters?.projectId) {
