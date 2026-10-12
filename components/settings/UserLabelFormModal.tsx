@@ -119,12 +119,12 @@ export function UserLabelFormModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-slate-900">{title}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-1.5">
-            <Label htmlFor="name-preset" className="text-slate-700">
+            <Label htmlFor="name-preset">
               Nama Label
             </Label>
             <select
@@ -162,7 +162,7 @@ export function UserLabelFormModal({
 
           {isSuperAdmin && (
             <div className="space-y-1.5">
-              <Label htmlFor="companyId" className="text-slate-700">
+              <Label htmlFor="companyId">
                 Perusahaan
               </Label>
               <select
@@ -180,20 +180,20 @@ export function UserLabelFormModal({
             </div>
           )}
 
-          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+          {submitError && <p className="text-sm text-destructive-text">{submitError}</p>}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-input bg-card hover:bg-accent text-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             >
               {loading ? 'Menyimpan...' : 'Simpan'}
             </button>
