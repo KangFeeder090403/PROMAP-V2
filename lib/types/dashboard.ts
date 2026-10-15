@@ -48,6 +48,20 @@ export type OverdueRow = {
   lateDays: number
 }
 
+/** Baris tabel tracker Home — AP belum COMPLETE, urut OVERDUE dulu lalu deadline. */
+export type TrackerRow = {
+  id: string
+  refCode: string
+  title: string
+  picName: string
+  priority: Priority
+  status: ActionPlanStatus
+  startDate: string | null
+  deadline: string | null
+  checklistDone: number
+  checklistTotal: number
+}
+
 export type DashboardResponse = {
   metrics: {
     total: number
@@ -56,6 +70,10 @@ export type DashboardResponse = {
     inProgress: number
     inReview: number
     overdue: number
+    /** % AP COMPLETE dalam window yang selesai <= akhir hari tenggat (WIB). null = tak ada data. */
+    onTimeRate?: number | null
+    /** Sumber tanggal selesai: ActivityLog (fromLog) atau fallback updatedAt (fromUpdatedAt). */
+    onTimeBasis?: { total: number; fromLog: number; fromUpdatedAt: number }
   }
   statusBreakdown: { status: ActionPlanStatus; count: number }[]
   priorityBreakdown: { priority: Priority; count: number }[]
@@ -69,18 +87,11 @@ export type DashboardResponse = {
   picWorkload: PicWorkload[]
   actionRequired: ActionRequiredItem[]
   overdueList: OverdueRow[]
+  tracker?: TrackerRow[]
 }
 
 export type ProjectHealth = 'ON_TRACK' | 'AT_RISK' | 'DELAYED'
 export type MilestoneUrgency = 'CRITICAL' | 'UPCOMING' | 'HORIZON'
-
-export type ExecutiveDigest = {
-  headline: string
-  healthScore: number
-  keyBlockers: string[]
-  keyMilestones: string[]
-  urgentDecisions: string[]
-}
 
 export type UpcomingMilestone = {
   title: string
@@ -94,28 +105,8 @@ export type UpcomingMilestone = {
   urgency: MilestoneUrgency
 }
 
-export type BottleneckSummary = {
-  divisionId: string | null
-  divisionName: string | null
-  overdueCount: number
-  overdueRate: number
-} | null
-
 export type PortfolioSummary = {
   healthSummary: { onTrack: number; atRisk: number; delayed: number }
-  predictabilityScore: number
-  bottleneckSummary: BottleneckSummary
-  executiveDigest: ExecutiveDigest
-  timelineHorizon: {
-    minDate: string
-    maxDate: string
-    todayPositionPercent: number
-  }
-  temporalMilestones: {
-    critical: UpcomingMilestone[]
-    upcoming: UpcomingMilestone[]
-    horizon: UpcomingMilestone[]
-  }
   projectHealth: {
     id: string
     name: string
@@ -127,8 +118,6 @@ export type PortfolioSummary = {
     startDate: string | null
     endDate: string | null
     createdAt: string
-    timelineStartPercent: number
-    timelineWidthPercent: number
   }[]
   divisionProgress: {
     id: string

@@ -4,7 +4,9 @@ import type {
   DashboardResponse,
   OverdueRow,
   PicWorkload,
+  TrackerRow,
 } from '@/lib/types/dashboard'
+import { WIB_OFFSET_MS } from '@/lib/date-utils'
 
 const ALL_STATUSES: ActionPlanStatus[] = [
   'NOT_STARTED', 'IN_PROGRESS', 'PENDING_APPROVAL', 'EVIDENCE_REQUIRED',
@@ -14,6 +16,17 @@ const ALL_PRIORITIES: Priority[] = ['HIGH', 'MEDIUM', 'LOW']
 
 /** Kandidat overdue yang dikirim ke client; client sortir ulang lalu tampilkan 10 teratas. */
 export const OVERDUE_CANDIDATES = 100
+
+/** Baris tracker yang dikirim; client sortir lalu tampilkan 10. */
+export const TRACKER_CAP = 50
+
+const DAY_MS = 86_400_000
+
+/** Akhir hari kalender WIB (23:59:59.999 WIB) dari sebuah instant. */
+export function endOfDayWib(d: Date) {
+  const wib = d.getTime() + WIB_OFFSET_MS
+  return Math.floor(wib / DAY_MS) * DAY_MS + DAY_MS - 1 - WIB_OFFSET_MS
+}
 
 const RISK_BY_PRIORITY: Record<Priority, OverdueRow['risk']> = {
   HIGH: 'CRITICAL',
@@ -32,6 +45,10 @@ export type APRow = {
   evidenceLink?: string | null
   endDate?: Date | null
   createdAt?: Date | null
+  startDate?: Date | null
+  updatedAt?: Date | null
+  checklistDone?: number
+  checklistTotal?: number
 }
 
 export type ProposalRow = {
@@ -61,12 +78,16 @@ function riskRank(r: OverdueRow['risk']) {
 /** Pure aggregation — testable tanpa DB (lihat scripts/check-dashboard-aggregate.ts). */
 export function aggregateDashboard(
   actionPlans: APRow[],
-  proposals: ProposalRow[] = []
+  proposals: ProposalRow[] = [],
+  /** id AP -> waktu transisi terakhir ke COMPLETE (ActivityLog). Opsional. */
+  completedAt: Map<string, Date> = new Map()
 ): DashboardResponse {
   const total = actionPlans.length
   const complete = actionPlans.filter((ap) => ap.status === 'COMPLETE').length
   const inProgress = actionPlans.filter((ap) => ap.status === 'IN_PROGRESS').length
-  const inReview = actionPlans.filter((ap) => ap.status === 'PENDING_APPROVAL').length
+  const inReview = actionPlans.filter(
+    (ap) => ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED'
+  ).length
   const overdue = actionPlans.filter((ap) => ap.status === 'OVERDUE').length
 
   const statusBreakdown = ALL_STATUSES.map((status) => ({
@@ -106,7 +127,7 @@ export function aggregateDashboard(
     entry.total += 1
     if (ap.status === 'OVERDUE') entry.overdue += 1
     if (ap.status === 'IN_PROGRESS') entry.active += 1
-    if (ap.status === 'PENDING_APPROVAL') entry.review += 1
+    if (ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED') entry.review += 1
     if (ap.status === 'COMPLETE') entry.done += 1
     workloadMap.set(ap.picId, entry)
   }
@@ -170,6 +191,46 @@ export function aggregateDashboard(
     // telat beberapa hari tidak akan pernah masuk kandidat sort.
     .slice(0, OVERDUE_CANDIDATES)
 
+  // Tepat waktu: selesai <= akhir hari tenggat (WIB). Tanggal selesai dari log,
+  // fallback updatedAt (ditandai di onTimeBasis). Tanpa tanggal sama sekali -> tak dihitung.
+  const onTimeBasis = { total: 0, fromLog: 0, fromUpdatedAt: 0 }
+  let onTime = 0
+  for (const ap of actionPlans) {
+    if (ap.status !== 'COMPLETE' || !ap.endDate) continue
+    const logged = ap.id ? completedAt.get(ap.id) : undefined
+    const doneAt = logged ?? ap.updatedAt ?? null
+    if (!doneAt) continue
+    onTimeBasis.total += 1
+    if (logged) onTimeBasis.fromLog += 1
+    else onTimeBasis.fromUpdatedAt += 1
+    if (doneAt.getTime() <= endOfDayWib(ap.endDate)) onTime += 1
+  }
+  const onTimeRate = onTimeBasis.total > 0 ? (onTime / onTimeBasis.total) * 100 : null
+
+  const tracker: TrackerRow[] = actionPlans
+    .filter((ap) => ap.status !== 'COMPLETE' && ap.id && ap.title)
+    .sort((a, b) => {
+      const o = Number(b.status === 'OVERDUE') - Number(a.status === 'OVERDUE')
+      if (o) return o
+      const ea = a.endDate ? a.endDate.getTime() : Infinity
+      const eb = b.endDate ? b.endDate.getTime() : Infinity
+      return ea - eb
+    })
+    .slice(0, TRACKER_CAP)
+    .map((ap) => ({
+      id: ap.id!,
+      refCode: shortRef(ap.id!, 'AP'),
+      title: ap.title!,
+      picName: ap.pic.name,
+      priority: ap.priority,
+      status: ap.status,
+      // Fallback createdAt: startDate null (AP produksi tanpa tanggal mulai, atau data guest).
+      startDate: (ap.startDate ?? ap.createdAt)?.toISOString() ?? null,
+      deadline: ap.endDate ? ap.endDate.toISOString() : null,
+      checklistDone: ap.checklistDone ?? 0,
+      checklistTotal: ap.checklistTotal ?? 0,
+    }))
+
   return {
     metrics: {
       total,
@@ -178,6 +239,8 @@ export function aggregateDashboard(
       inProgress,
       inReview,
       overdue,
+      onTimeRate,
+      onTimeBasis,
     },
     statusBreakdown,
     priorityBreakdown,
@@ -185,5 +248,6 @@ export function aggregateDashboard(
     picWorkload,
     actionRequired,
     overdueList,
+    tracker,
   }
 }

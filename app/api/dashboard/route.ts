@@ -67,17 +67,11 @@ export async function GET(req: NextRequest) {
     // Handler data dummy khusus untuk role GUEST (Hendra Wijaya - Manager IT Operasional)
     if (user.role === 'GUEST') {
       const dummy = getGuestDummyData(new Date())
-      const pendingReviewApCount = dummy.actionPlans.filter(
-        (ap) => ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED'
-      ).length
-      const pendingProposalsCount = dummy.proposals.filter((p) => p.status === 'SUBMITTED').length
-
       const portfolio = buildPortfolio(
         dummy.portfolioProjects,
         dummy.portfolioTasks,
         dummy.divisionMap,
-        new Date(),
-        { pendingProposalsCount, pendingReviewApCount }
+        new Date()
       )
 
       const agg = aggregateDashboard(
@@ -147,8 +141,33 @@ export async function GET(req: NextRequest) {
         evidenceLink: true,
         endDate: true,
         createdAt: true,
+        startDate: true,
+        updatedAt: true,
+        checklists: { select: { isDone: true } },
       },
     })
+
+    // Waktu selesai sebenarnya: transisi terakhir ke COMPLETE. completeIds sudah
+    // ter-apScope (berasal dari query di atas), jadi log tidak bocor lintas tenant.
+    const completeIds = actionPlans.filter((ap) => ap.status === 'COMPLETE').map((ap) => ap.id)
+    const completeLogs = completeIds.length
+      ? await prisma.activityLog.findMany({
+          where: { actionPlanId: { in: completeIds }, action: 'STATUS_CHANGED', newValue: 'COMPLETE' },
+          select: { actionPlanId: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : []
+    const completedAt = new Map<string, Date>()
+    for (const log of completeLogs) {
+      if (log.actionPlanId && !completedAt.has(log.actionPlanId)) completedAt.set(log.actionPlanId, log.createdAt)
+    }
+
+    // Checklist mentah tidak ikut response — hanya hitungan done/total.
+    const apRows = actionPlans.map(({ checklists, ...ap }) => ({
+      ...ap,
+      checklistDone: checklists.filter((c) => c.isDone).length,
+      checklistTotal: checklists.length,
+    }))
 
     const proposalWhere: Prisma.ProposalWhereInput = {
       AND: [
@@ -231,21 +250,15 @@ export async function GET(req: NextRequest) {
       select: { id: true, name: true },
     })
 
-    const pendingReviewApCount = actionPlans.filter(
-      (ap) => ap.status === 'PENDING_APPROVAL' || ap.status === 'EVIDENCE_REQUIRED'
-    ).length
-    const pendingProposalsCount = proposals.filter((p) => p.status === 'SUBMITTED').length
-
     const portfolio = buildPortfolio(
       portfolioProjects,
       portfolioTasks,
       new Map(portfolioDivisions.map((d) => [d.id, d.name])),
-      new Date(),
-      { pendingProposalsCount, pendingReviewApCount }
+      new Date()
     )
 
     const agg = aggregateDashboard(
-      actionPlans,
+      apRows,
       proposals.map((p) => ({
         id: p.id,
         title: p.title,
@@ -253,7 +266,8 @@ export async function GET(req: NextRequest) {
         status: p.status as ProposalStatus,
         proposerName: p.proposer.name,
         createdAt: p.createdAt,
-      }))
+      })),
+      completedAt
     )
 
     return NextResponse.json({

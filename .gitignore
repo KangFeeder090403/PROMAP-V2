@@ -48,6 +48,7 @@ scripts/*
 !scripts/check-install-prompt.ts
 !scripts/check-push-tag.ts
 !scripts/gen-pwa-icons.mjs
+!scripts/check-dashboard-aggregate.ts
 
 # AI Agent tools (Claude, Windsurf, Agents, Kilo)
 .agents/

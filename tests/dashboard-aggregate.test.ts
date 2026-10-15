@@ -27,6 +27,8 @@ describe('lib/dashboard-aggregate.ts', () => {
         inProgress: 0,
         inReview: 0,
         overdue: 0,
+        onTimeRate: null,
+        onTimeBasis: { total: 0, fromLog: 0, fromUpdatedAt: 0 },
       })
       expect(result.statusBreakdown.length).toBe(8)
       expect(result.statusBreakdown.every((s) => s.count === 0)).toBe(true)

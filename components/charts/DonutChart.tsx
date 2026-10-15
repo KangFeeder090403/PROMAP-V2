@@ -31,7 +31,7 @@ export function DonutChart({
 
   return (
     <div className={legendLayout === 'grid' ? 'flex flex-col sm:flex-row items-center justify-center gap-6' : ''}>
-      <div className="relative w-40 h-40 shrink-0">
+      <div className="relative w-40 h-40 shrink-0 mx-auto">
         <svg viewBox="0 0 150 150" role="img" aria-label={`Distribusi status Action Plan, total ${total}`} className="w-full h-full">
           <circle cx={CX} cy={CY} r={R} fill="none" stroke="#E2E8F0" strokeWidth={20} />
           {total > 0 &&
